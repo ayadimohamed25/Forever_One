@@ -11,6 +11,7 @@ import '../../features/purchases/presentation/pages/purchases_page.dart';
 import '../../features/scan/presentation/pages/scan_page.dart';
 import '../../features/ai/presentation/pages/ai_chat_page.dart';
 import '../../features/dashboard/presentation/pages/insights_page.dart';
+import '../../features/dashboard/presentation/pages/audit_page.dart';
 final appRouter = GoRouter(
   initialLocation: '/login',
   routes: [
@@ -61,6 +62,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/insights',
       builder: (context, state) => const InsightsPage(),
+    ),
+    GoRoute(
+      path: '/audit',
+      builder: (context, state) => const AuditPage(),
     ),
   ],
 );

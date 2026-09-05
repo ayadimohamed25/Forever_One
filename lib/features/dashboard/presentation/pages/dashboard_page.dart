@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
-
+import 'package:open_filex/open_filex.dart';
+import '../providers/report_provider.dart';
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
@@ -40,6 +41,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final dashboardState = ref.watch(dashboardProvider);
+    final reportState = ref.watch(reportProvider);
+
+    ref.listen(reportProvider, (previous, next) {
+      if (next.file != null && previous?.file != next.file) {
+        OpenFilex.open(next.file!.path);
+      }
+      if (next.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.error!), backgroundColor: Colors.red),
+        );
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -116,6 +129,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 onPressed: () => context.push('/insights'),
                 icon: const Icon(Icons.insights),
                 label: const Text('Insights & Prévisions'),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => context.push('/audit'),
+                icon: const Icon(Icons.history),
+                label: const Text('Journal d\'audit'),
+              ),
+              const SizedBox(height: 12),
+              reportState.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton.icon(
+                onPressed: () => ref.read(reportProvider.notifier).download(),
+                icon: const Icon(Icons.picture_as_pdf),
+                label: const Text('Rapport PDF'),
               ),
             ],
           ),
