@@ -105,6 +105,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ElevatedButton(onPressed: () => context.push('/purchases'), child: const Text('Purchases')),
               const SizedBox(height: 12),
               ElevatedButton(onPressed: () => context.push('/scan'), child: const Text('Scan Document')),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => context.push('/ai'),
+                icon: const Icon(Icons.smart_toy),
+                label: const Text('AI Copilot'),
+              ),
             ],
           ),
         ),
