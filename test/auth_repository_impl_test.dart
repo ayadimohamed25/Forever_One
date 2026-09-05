@@ -1,5 +1,4 @@
-import 'package:dartz/dartz.dart';
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:foreverone/core/errors/failures.dart';
@@ -33,7 +32,7 @@ void main() {
   });
 
   group('AuthRepositoryImpl.login', () {
-    test('retourne un UserEntity quand la connexion réussit', () async {
+    test('retourne un UserEntity quand la connexion rÃ©ussit', () async {
       when(() => mockDatasource.login(any(), any())).thenAnswer((_) async => {
         'token': 'fake-jwt-token',
         'user': {
@@ -48,7 +47,7 @@ void main() {
 
       expect(result.isRight(), true);
       result.fold(
-            (failure) => fail('Ne devrait pas échouer'),
+            (failure) => fail('Ne devrait pas Ã©chouer'),
             (user) {
           expect(user.email, 'admin@demo.com');
           expect(user.role, 'admin');
@@ -76,11 +75,11 @@ void main() {
           expect(failure, isA<AuthFailure>());
           expect(failure.message, 'Invalid credentials');
         },
-            (user) => fail('Ne devrait pas réussir'),
+            (user) => fail('Ne devrait pas rÃ©ussir'),
       );
     });
 
-    test('retourne un message de connexion quand le réseau échoue', () async {
+    test('retourne un message de connexion quand le rÃ©seau Ã©choue', () async {
       when(() => mockDatasource.login(any(), any())).thenThrow(
         DioException(
           requestOptions: RequestOptions(path: '/auth/login'),
@@ -93,7 +92,7 @@ void main() {
       expect(result.isLeft(), true);
       result.fold(
             (failure) => expect(failure.message, contains('connection')),
-            (user) => fail('Ne devrait pas réussir'),
+            (user) => fail('Ne devrait pas rÃ©ussir'),
       );
     });
   });
