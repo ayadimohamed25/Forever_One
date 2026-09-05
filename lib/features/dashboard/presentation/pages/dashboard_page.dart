@@ -111,6 +111,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 icon: const Icon(Icons.smart_toy),
                 label: const Text('AI Copilot'),
               ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => context.push('/insights'),
+                icon: const Icon(Icons.insights),
+                label: const Text('Insights & Prévisions'),
+              ),
             ],
           ),
         ),
