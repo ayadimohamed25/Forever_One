@@ -258,8 +258,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               )
                   : OutlinedButton.icon(
-                onPressed: () =>
-                    ref.read(reportProvider.notifier).download(),
+                onPressed: () => ref.read(reportProvider.notifier).download(
+                  locale: Localizations.localeOf(context).languageCode,
+                ),
                 icon: const Icon(Icons.picture_as_pdf),
                 label: Text(l10n.generatePdfReport),
                 style: OutlinedButton.styleFrom(

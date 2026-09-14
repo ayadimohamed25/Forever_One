@@ -19,10 +19,10 @@ class ReportNotifier extends StateNotifier<ReportState> {
   final ReportRemoteDatasource datasource;
   ReportNotifier(this.datasource) : super(const ReportState());
 
-  Future<void> download() async {
+  Future<void> download({String locale = 'en'}) async {
     state = const ReportState(isLoading: true);
     try {
-      final file = await datasource.downloadDirectorReport();
+      final file = await datasource.downloadDirectorReport(locale: locale);
       state = ReportState(file: file);
     } catch (e) {
       state = const ReportState(error: 'Impossible de générer le rapport');
