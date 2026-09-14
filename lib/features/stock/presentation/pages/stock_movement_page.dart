@@ -1,8 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/product_provider.dart';
-import '../providers/warehouse_provider.dart';
 import '../providers/stock_movement_provider.dart';
+import '../providers/warehouse_provider.dart';
 
 class StockMovementPage extends ConsumerStatefulWidget {
   const StockMovementPage({super.key});
@@ -18,13 +19,6 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
   final quantityController = TextEditingController();
   final noteController = TextEditingController();
 
-  static const types = <String, ({String label, IconData icon, Color color})>{
-    'in': (label: 'Entrée', icon: Icons.arrow_downward, color: Colors.green),
-    'out': (label: 'Sortie', icon: Icons.arrow_upward, color: Colors.red),
-    'transfer': (label: 'Transfert', icon: Icons.swap_horiz, color: Colors.blue),
-    'correction': (label: 'Correction', icon: Icons.tune, color: Colors.orange),
-  };
-
   @override
   void initState() {
     super.initState();
@@ -34,19 +28,31 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
     });
   }
 
+  Map<String, ({String label, IconData icon, Color color})> _types(
+      AppLocalizations l10n) {
+    return {
+      'in': (label: l10n.stockIn, icon: Icons.arrow_downward, color: Colors.green),
+      'out': (label: l10n.stockOut, icon: Icons.arrow_upward, color: Colors.red),
+      'transfer': (label: l10n.transfer, icon: Icons.swap_horiz, color: Colors.blue),
+      'correction': (label: l10n.correction, icon: Icons.tune, color: Colors.orange),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final products = ref.watch(productListProvider).products;
     final warehouses = ref.watch(warehouseListProvider).warehouses;
     final movementState = ref.watch(stockMovementProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final types = _types(l10n);
 
     ref.listen(stockMovementProvider, (previous, next) {
       if (next.lastCurrentStock != null &&
           previous?.lastCurrentStock != next.lastCurrentStock) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Mouvement enregistré · Stock actuel : ${next.lastCurrentStock}'),
+            content: Text(l10n.movementRecorded(next.lastCurrentStock!)),
             backgroundColor: Colors.green.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -70,14 +76,14 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
         (int.tryParse(quantityController.text) ?? 0) > 0;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mouvement de stock')),
+      appBar: AppBar(title: Text(l10n.stockMovement)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Type de mouvement',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Text(l10n.movementType,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
             GridView.count(
               crossAxisCount: 2,
@@ -117,7 +123,8 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                           e.value.label,
                           style: TextStyle(
                             fontSize: 13.5,
-                            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.normal,
                             color: selected
                                 ? e.value.color
                                 : theme.colorScheme.onSurface,
@@ -129,7 +136,6 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                 );
               }).toList(),
             ),
-
             const SizedBox(height: 22),
             Card(
               elevation: 0,
@@ -145,7 +151,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                       initialValue: selectedProductId,
                       isExpanded: true,
                       decoration: InputDecoration(
-                        labelText: 'Produit',
+                        labelText: l10n.product,
                         prefixIcon: const Icon(Icons.inventory_2_outlined),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
@@ -153,7 +159,8 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                       items: products
                           .map((p) => DropdownMenuItem(
                         value: p.id,
-                        child: Text(p.name, overflow: TextOverflow.ellipsis),
+                        child: Text(p.name,
+                            overflow: TextOverflow.ellipsis),
                       ))
                           .toList(),
                       onChanged: (v) => setState(() => selectedProductId = v),
@@ -163,14 +170,14 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                       initialValue: selectedWarehouseId,
                       isExpanded: true,
                       decoration: InputDecoration(
-                        labelText: 'Dépôt',
+                        labelText: l10n.warehouse,
                         prefixIcon: const Icon(Icons.warehouse_outlined),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
                       ),
                       items: warehouses
-                          .map((w) => DropdownMenuItem(
-                          value: w.id, child: Text(w.name)))
+                          .map((w) =>
+                          DropdownMenuItem(value: w.id, child: Text(w.name)))
                           .toList(),
                       onChanged: (v) => setState(() => selectedWarehouseId = v),
                     ),
@@ -180,7 +187,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                       keyboardType: TextInputType.number,
                       onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        labelText: 'Quantité',
+                        labelText: l10n.quantity,
                         prefixIcon: const Icon(Icons.numbers),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
@@ -190,7 +197,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                     TextField(
                       controller: noteController,
                       decoration: InputDecoration(
-                        labelText: 'Note (optionnel)',
+                        labelText: l10n.noteOptional,
                         prefixIcon: const Icon(Icons.notes),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
@@ -200,7 +207,6 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
             SizedBox(
               height: 50,
@@ -210,7 +216,8 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                 onPressed: !canSubmit
                     ? null
                     : () {
-                  final qty = int.tryParse(quantityController.text) ?? 0;
+                  final qty =
+                      int.tryParse(quantityController.text) ?? 0;
                   ref.read(stockMovementProvider.notifier).record(
                     productId: selectedProductId!,
                     warehouseId: selectedWarehouseId!,
@@ -222,15 +229,14 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                   );
                 },
                 icon: const Icon(Icons.check),
-                label: const Text('Enregistrer le mouvement',
-                    style: TextStyle(fontSize: 15)),
+                label: Text(l10n.recordMovement,
+                    style: const TextStyle(fontSize: 15)),
                 style: FilledButton.styleFrom(
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
-
             if (movementState.lastCurrentStock != null) ...[
               const SizedBox(height: 20),
               Container(
@@ -246,7 +252,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Stock actuel après mouvement : ${movementState.lastCurrentStock}',
+                        l10n.currentStockAfter(movementState.lastCurrentStock!),
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,

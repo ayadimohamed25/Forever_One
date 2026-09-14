@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../finance/presentation/pages/payment_page.dart';
 import '../providers/purchase_provider.dart';
 import 'create_purchase_page.dart';
-import '../../../finance/presentation/pages/payment_page.dart';
 
 class PurchasesPage extends ConsumerStatefulWidget {
   const PurchasesPage({super.key});
@@ -29,14 +30,14 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
     }
   }
 
-  String _statusLabel(String status) {
+  String _statusLabel(String status, AppLocalizations l10n) {
     switch (status) {
       case 'received':
-        return 'Reçu';
+        return l10n.received;
       case 'cancelled':
-        return 'Annulé';
+        return l10n.cancelled;
       case 'draft':
-        return 'Brouillon';
+        return l10n.draft;
       default:
         return status;
     }
@@ -46,13 +47,15 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(purchaseListProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Achats'),
+        title: Text(l10n.purchases),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refresh,
             onPressed: () => ref.read(purchaseListProvider.notifier).load(),
           ),
         ],
@@ -67,11 +70,13 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
             Icon(Icons.shopping_cart_outlined,
                 size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            const Text('Aucun achat',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(l10n.noPurchases,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Text('Appuyez sur + pour en enregistrer un',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(l10n.tapPlusToRecord,
+                style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
       )
@@ -95,7 +100,7 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => PaymentPage(
                       purchaseId: p.id,
-                      title: 'Paiement — ${p.supplierName}',
+                      title: '${l10n.payment} — ${p.supplierName}',
                     ),
                   ));
                 },
@@ -121,7 +126,8 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
                             Text(
                               p.supplierName,
                               style: const TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w600),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600),
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 5),
@@ -134,7 +140,7 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                _statusLabel(p.status),
+                                _statusLabel(p.status, l10n),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -159,14 +165,16 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Text('Paiement',
+                              Text(l10n.payment,
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                    color: theme
+                                        .colorScheme.onSurfaceVariant,
                                   )),
                               Icon(Icons.chevron_right,
                                   size: 14,
-                                  color: theme.colorScheme.onSurfaceVariant),
+                                  color: theme
+                                      .colorScheme.onSurfaceVariant),
                             ],
                           ),
                         ],
@@ -187,7 +195,7 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
           ref.read(purchaseListProvider.notifier).load();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Achat'),
+        label: Text(l10n.newPurchase),
       ),
     );
   }

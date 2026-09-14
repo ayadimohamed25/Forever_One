@@ -28,9 +28,9 @@ class AiNotifier extends StateNotifier<AiState> {
     );
   }
 
-  Future<void> ask(String question) async {
+  Future<void> ask(String question, {String locale = 'en'}) async {
     state = AiState(isLoading: true, messages: state.messages);
-    final result = await repository.ask(question);
+    final result = await repository.ask(question, locale: locale);
     result.fold(
           (failure) => state = AiState(messages: state.messages, error: failure.message),
           (message) => state = AiState(messages: [...state.messages, message]),

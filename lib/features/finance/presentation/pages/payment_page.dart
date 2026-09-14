@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/payment_provider.dart';
 
 class PaymentPage extends ConsumerStatefulWidget {
@@ -7,7 +8,8 @@ class PaymentPage extends ConsumerStatefulWidget {
   final String? purchaseId;
   final String title;
 
-  const PaymentPage({super.key, this.saleId, this.purchaseId, required this.title});
+  const PaymentPage(
+      {super.key, this.saleId, this.purchaseId, required this.title});
 
   @override
   ConsumerState<PaymentPage> createState() => _PaymentPageState();
@@ -16,12 +18,6 @@ class PaymentPage extends ConsumerStatefulWidget {
 class _PaymentPageState extends ConsumerState<PaymentPage> {
   final amountController = TextEditingController();
   String method = 'cash';
-
-  static const methods = <String, ({String label, IconData icon})>{
-    'cash': (label: 'Espèces', icon: Icons.payments_outlined),
-    'bank_transfer': (label: 'Virement', icon: Icons.account_balance_outlined),
-    'check': (label: 'Chèque', icon: Icons.receipt_long_outlined),
-  };
 
   @override
   void initState() {
@@ -33,6 +29,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         ref.read(paymentProvider.notifier).loadPurchaseBalance(widget.purchaseId!);
       }
     });
+  }
+
+  Map<String, ({String label, IconData icon})> _methods(AppLocalizations l10n) {
+    return {
+      'cash': (label: l10n.cash, icon: Icons.payments_outlined),
+      'bank_transfer': (label: l10n.bankTransfer, icon: Icons.account_balance_outlined),
+      'check': (label: l10n.check, icon: Icons.receipt_long_outlined),
+    };
   }
 
   Widget _amountRow(String label, double value, ThemeData theme,
@@ -63,6 +67,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(paymentProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final methods = _methods(l10n);
 
     ref.listen(paymentProvider, (previous, next) {
       if (next.error != null) {
@@ -91,7 +97,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Balance summary card
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -113,7 +118,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        isPaid ? Icons.check_circle_outline : Icons.pending_outlined,
+                        isPaid
+                            ? Icons.check_circle_outline
+                            : Icons.pending_outlined,
                         size: 32,
                         color: isPaid
                             ? Colors.green.shade700
@@ -122,7 +129,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      isPaid ? 'Entièrement payé' : 'Solde à régler',
+                      isPaid ? l10n.paidInFull : l10n.balanceDue,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -132,15 +139,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
-
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 8,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        backgroundColor:
+                        theme.colorScheme.surfaceContainerHighest,
                         valueColor: AlwaysStoppedAnimation(
-                          isPaid ? Colors.green.shade600 : theme.colorScheme.primary,
+                          isPaid
+                              ? Colors.green.shade600
+                              : theme.colorScheme.primary,
                         ),
                       ),
                     ),
@@ -148,20 +157,20 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: Text(
-                        '${(progress * 100).toStringAsFixed(0)} % réglé',
+                        l10n.percentSettled(
+                            (progress * 100).toStringAsFixed(0)),
                         style: TextStyle(
                           fontSize: 11.5,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
-
                     const Divider(height: 26),
-                    _amountRow('Total', balance.total, theme),
-                    _amountRow('Déjà payé', balance.paid, theme,
+                    _amountRow(l10n.total, balance.total, theme),
+                    _amountRow(l10n.alreadyPaid, balance.paid, theme,
                         color: Colors.green.shade700),
                     const Divider(height: 20),
-                    _amountRow('Reste dû', balance.balance, theme,
+                    _amountRow(l10n.remainingDue, balance.balance, theme,
                         bold: true,
                         color: isPaid
                             ? Colors.green.shade700
@@ -170,19 +179,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             if (!isPaid) ...[
-              const Text('Enregistrer un paiement',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(l10n.recordPayment,
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600)),
               const SizedBox(height: 14),
-
               TextField(
                 controller: amountController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Montant',
+                  labelText: l10n.amount,
                   prefixIcon: const Icon(Icons.euro_symbol),
                   suffixText: 'DT',
                   border: OutlineInputBorder(
@@ -192,21 +199,20 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 ),
               ),
               const SizedBox(height: 8),
-
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: () => setState(() {
-                    amountController.text = balance.balance.toStringAsFixed(2);
+                    amountController.text =
+                        balance.balance.toStringAsFixed(2);
                   }),
                   icon: const Icon(Icons.done_all, size: 16),
-                  label: const Text('Régler la totalité',
-                      style: TextStyle(fontSize: 12.5)),
+                  label: Text(l10n.payFullAmount,
+                      style: const TextStyle(fontSize: 12.5)),
                 ),
               ),
-
               const SizedBox(height: 10),
-              Text('Mode de paiement',
+              Text(l10n.paymentMethod,
                   style: TextStyle(
                     fontSize: 12.5,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -229,13 +235,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   );
                 }).toList(),
               ),
-
               const SizedBox(height: 24),
               SizedBox(
                 height: 50,
                 child: FilledButton.icon(
                   onPressed: () {
-                    final amount = double.tryParse(amountController.text) ?? 0;
+                    final amount =
+                        double.tryParse(amountController.text) ?? 0;
                     if (amount <= 0) return;
                     ref.read(paymentProvider.notifier).pay(
                       saleId: widget.saleId,
@@ -246,8 +252,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                     amountController.clear();
                   },
                   icon: const Icon(Icons.check),
-                  label: const Text('Enregistrer le paiement',
-                      style: TextStyle(fontSize: 15)),
+                  label: Text(l10n.recordThePayment,
+                      style: const TextStyle(fontSize: 15)),
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

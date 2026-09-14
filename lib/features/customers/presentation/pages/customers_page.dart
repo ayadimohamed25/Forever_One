@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/customer_provider.dart';
 
 class CustomersPage extends ConsumerStatefulWidget {
@@ -23,7 +24,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
-  void _openAddDialog() {
+  void _openAddDialog(AppLocalizations l10n) {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final emailController = TextEditingController();
@@ -33,43 +34,43 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Nouveau client'),
+        title: Text(l10n.newCustomer),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom',
-                  prefixIcon: Icon(Icons.person_outline),
+                decoration: InputDecoration(
+                  labelText: l10n.name,
+                  prefixIcon: const Icon(Icons.person_outline),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Téléphone',
-                  prefixIcon: Icon(Icons.phone_outlined),
+                decoration: InputDecoration(
+                  labelText: l10n.phone,
+                  prefixIcon: const Icon(Icons.phone_outlined),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.mail_outline),
+                decoration: InputDecoration(
+                  labelText: l10n.email,
+                  prefixIcon: const Icon(Icons.mail_outline),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: creditController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Plafond de crédit',
-                  prefixIcon: Icon(Icons.credit_card_outlined),
+                decoration: InputDecoration(
+                  labelText: l10n.creditLimit,
+                  prefixIcon: const Icon(Icons.credit_card_outlined),
                 ),
               ),
             ],
@@ -78,20 +79,24 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               if (nameController.text.trim().isEmpty) return;
               ref.read(customerListProvider.notifier).add(
                 name: nameController.text.trim(),
-                phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
+                phone: phoneController.text.trim().isEmpty
+                    ? null
+                    : phoneController.text.trim(),
+                email: emailController.text.trim().isEmpty
+                    ? null
+                    : emailController.text.trim(),
                 creditLimit: double.tryParse(creditController.text) ?? 0,
               );
               Navigator.of(context).pop();
             },
-            child: const Text('Enregistrer'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -102,6 +107,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(customerListProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     ref.listen(customerListProvider, (previous, next) {
       if (next.error != null) {
@@ -117,10 +123,11 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Clients'),
+        title: Text(l10n.customers),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refresh,
             onPressed: () => ref.read(customerListProvider.notifier).load(),
           ),
         ],
@@ -135,11 +142,13 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             Icon(Icons.people_outline,
                 size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            const Text('Aucun client',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(l10n.noCustomers,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Text('Appuyez sur + pour en ajouter un',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(l10n.tapPlusToAdd,
+                style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
       )
@@ -180,7 +189,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                           Text(
                             c.name,
                             style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w600),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600),
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
@@ -189,12 +199,14 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                               children: [
                                 Icon(Icons.phone_outlined,
                                     size: 13,
-                                    color: theme.colorScheme.onSurfaceVariant),
+                                    color: theme
+                                        .colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 4),
                                 Text(c.phone!,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                      color: theme
+                                          .colorScheme.onSurfaceVariant,
                                     )),
                               ],
                             ),
@@ -204,7 +216,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('Plafond',
+                        Text(l10n.creditLimitShort,
                             style: TextStyle(
                               fontSize: 10,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -228,9 +240,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddDialog,
+        onPressed: () => _openAddDialog(l10n),
         icon: const Icon(Icons.add),
-        label: const Text('Client'),
+        label: Text(l10n.customer),
       ),
     );
   }

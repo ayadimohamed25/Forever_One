@@ -1,8 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../customers/presentation/providers/customer_provider.dart';
-import '../../../stock/presentation/providers/warehouse_provider.dart';
 import '../../../stock/presentation/providers/product_provider.dart';
+import '../../../stock/presentation/providers/warehouse_provider.dart';
 import '../../domain/entities/sale_line_entity.dart';
 import '../providers/sale_provider.dart';
 
@@ -59,12 +60,13 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
     final products = ref.watch(productListProvider).products;
     final saleState = ref.watch(saleListProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     ref.listen(saleListProvider, (previous, next) {
       if (next.lastTotal != null && previous?.lastTotal != next.lastTotal) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Vente crÃ©Ã©e Â· Total ${next.lastTotal!.toStringAsFixed(2)} DT'),
+            content: Text(l10n.saleCreated(next.lastTotal!.toStringAsFixed(2))),
             backgroundColor: Colors.green.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -85,7 +87,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
     final canSubmit = customerId != null && warehouseId != null && lines.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouvelle vente')),
+      appBar: AppBar(title: Text(l10n.newSale)),
       body: Column(
         children: [
           Expanded(
@@ -107,7 +109,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                           DropdownButtonFormField<String>(
                             initialValue: customerId,
                             decoration: InputDecoration(
-                              labelText: 'Client',
+                              labelText: l10n.customer,
                               prefixIcon: const Icon(Icons.person_outline),
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10)),
@@ -122,7 +124,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                           DropdownButtonFormField<String>(
                             initialValue: warehouseId,
                             decoration: InputDecoration(
-                              labelText: 'DÃ©pÃ´t',
+                              labelText: l10n.warehouse,
                               prefixIcon: const Icon(Icons.warehouse_outlined),
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10)),
@@ -137,18 +139,18 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 18),
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Ajouter un produit',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    child: Text(l10n.addProductLine,
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(height: 10),
-
                   Card(
                     elevation: 0,
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                     child: Padding(
@@ -161,10 +163,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                             child: DropdownButtonFormField<String>(
                               initialValue: lineProductId,
                               isExpanded: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Produit',
+                              decoration: InputDecoration(
+                                labelText: l10n.product,
                                 isDense: true,
-                                border: OutlineInputBorder(),
+                                border: const OutlineInputBorder(),
                               ),
                               items: products
                                   .map((p) => DropdownMenuItem(
@@ -178,15 +180,15 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                           ),
                           const SizedBox(width: 8),
                           SizedBox(
-                            width: 64,
+                            width: 68,
                             child: TextField(
                               controller: qtyController,
                               textAlign: TextAlign.center,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'QtÃ©',
+                              decoration: InputDecoration(
+                                labelText: l10n.qty,
                                 isDense: true,
-                                border: OutlineInputBorder(),
+                                border: const OutlineInputBorder(),
                               ),
                             ),
                           ),
@@ -194,25 +196,21 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                           IconButton.filled(
                             onPressed: _addLine,
                             icon: const Icon(Icons.add),
-                            tooltip: 'Ajouter la ligne',
                           ),
                         ],
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 18),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      lines.isEmpty
-                          ? 'Aucune ligne'
-                          : '${lines.length} ligne${lines.length > 1 ? "s" : ""}',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      lines.isEmpty ? l10n.noLines : l10n.linesCount(lines.length),
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ),
                   const SizedBox(height: 10),
-
                   if (lines.isEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 32),
@@ -222,7 +220,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                           Icon(Icons.shopping_basket_outlined,
                               size: 44, color: theme.colorScheme.outlineVariant),
                           const SizedBox(height: 10),
-                          Text('Ajoutez au moins un produit',
+                          Text(l10n.addAtLeastOneProduct,
                               style: TextStyle(
                                   color: theme.colorScheme.onSurfaceVariant,
                                   fontSize: 13)),
@@ -247,7 +245,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                               style: const TextStyle(
                                   fontSize: 14, fontWeight: FontWeight.w600)),
                           subtitle: Text(
-                              '${l.quantity} Ã— ${l.unitPrice.toStringAsFixed(2)} DT',
+                              '${l.quantity} × ${l.unitPrice.toStringAsFixed(2)} DT',
                               style: const TextStyle(fontSize: 12)),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -261,7 +259,8 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                                 icon: Icon(Icons.close,
                                     size: 18,
                                     color: theme.colorScheme.onSurfaceVariant),
-                                onPressed: () => setState(() => lines.removeAt(i)),
+                                onPressed: () =>
+                                    setState(() => lines.removeAt(i)),
                               ),
                             ],
                           ),
@@ -272,21 +271,21 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
               ),
             ),
           ),
-
-          // Sticky total + submit
           Container(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+              border: Border(
+                  top: BorderSide(color: theme.colorScheme.outlineVariant)),
             ),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Total',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    Text(l10n.total,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
                     Text('${total.toStringAsFixed(2)} DT',
                         style: TextStyle(
                           fontSize: 22,
@@ -310,8 +309,8 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                       lines: lines,
                     ),
                     icon: const Icon(Icons.check),
-                    label: const Text('Confirmer la vente',
-                        style: TextStyle(fontSize: 15)),
+                    label: Text(l10n.confirmSale,
+                        style: const TextStyle(fontSize: 15)),
                     style: FilledButton.styleFrom(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),

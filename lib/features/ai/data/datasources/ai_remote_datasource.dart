@@ -4,8 +4,11 @@ class AiRemoteDatasource {
   final Dio dio;
   AiRemoteDatasource(this.dio);
 
-  Future<Map<String, dynamic>> ask(String question) async {
-    final response = await dio.post('/ai/chat', data: {'question': question});
+  Future<Map<String, dynamic>> ask(String question, {String locale = 'en'}) async {
+    final response = await dio.post('/ai/chat', data: {
+      'question': question,
+      'locale': locale,
+    });
     return response.data;
   }
 

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../finance/presentation/pages/payment_page.dart';
 import '../providers/sale_provider.dart';
 import 'create_sale_page.dart';
-import '../../../finance/presentation/pages/payment_page.dart';
 
 class SalesPage extends ConsumerStatefulWidget {
   const SalesPage({super.key});
@@ -36,14 +37,14 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     }
   }
 
-  String _statusLabel(String status) {
+  String _statusLabel(String status, AppLocalizations l10n) {
     switch (status) {
       case 'confirmed':
-        return 'Confirmée';
+        return l10n.confirmed;
       case 'cancelled':
-        return 'Annulée';
+        return l10n.cancelled;
       case 'draft':
-        return 'Brouillon';
+        return l10n.draft;
       default:
         return status;
     }
@@ -53,13 +54,15 @@ class _SalesPageState extends ConsumerState<SalesPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(saleListProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ventes'),
+        title: Text(l10n.sales),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refresh,
             onPressed: () => ref.read(saleListProvider.notifier).load(),
           ),
         ],
@@ -74,11 +77,13 @@ class _SalesPageState extends ConsumerState<SalesPage> {
             Icon(Icons.point_of_sale_outlined,
                 size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            const Text('Aucune vente',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(l10n.noSales,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Text('Appuyez sur + pour en créer une',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(l10n.tapPlusToCreate,
+                style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
       )
@@ -102,7 +107,7 @@ class _SalesPageState extends ConsumerState<SalesPage> {
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => PaymentPage(
                       saleId: s.id,
-                      title: 'Paiement — ${s.customerName}',
+                      title: '${l10n.payment} — ${s.customerName}',
                     ),
                   ));
                 },
@@ -112,7 +117,8 @@ class _SalesPageState extends ConsumerState<SalesPage> {
                     children: [
                       CircleAvatar(
                         radius: 23,
-                        backgroundColor: theme.colorScheme.primaryContainer,
+                        backgroundColor:
+                        theme.colorScheme.primaryContainer,
                         child: Text(
                           _initials(s.customerName),
                           style: TextStyle(
@@ -129,7 +135,8 @@ class _SalesPageState extends ConsumerState<SalesPage> {
                             Text(
                               s.customerName,
                               style: const TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w600),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600),
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 5),
@@ -142,7 +149,7 @@ class _SalesPageState extends ConsumerState<SalesPage> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                _statusLabel(s.status),
+                                _statusLabel(s.status, l10n),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -167,14 +174,16 @@ class _SalesPageState extends ConsumerState<SalesPage> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Text('Paiement',
+                              Text(l10n.payment,
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                    color: theme
+                                        .colorScheme.onSurfaceVariant,
                                   )),
                               Icon(Icons.chevron_right,
                                   size: 14,
-                                  color: theme.colorScheme.onSurfaceVariant),
+                                  color: theme
+                                      .colorScheme.onSurfaceVariant),
                             ],
                           ),
                         ],
@@ -195,7 +204,7 @@ class _SalesPageState extends ConsumerState<SalesPage> {
           ref.read(saleListProvider.notifier).load();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Vente'),
+        label: Text(l10n.newSale),
       ),
     );
   }

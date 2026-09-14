@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/product_provider.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
@@ -16,7 +17,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     Future.microtask(() => ref.read(productListProvider.notifier).load());
   }
 
-  void _openAddDialog() {
+  void _openAddDialog(AppLocalizations l10n) {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
     final costController = TextEditingController();
@@ -27,16 +28,16 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Nouveau produit'),
+        title: Text(l10n.newProduct),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom',
-                  prefixIcon: Icon(Icons.label_outline),
+                decoration: InputDecoration(
+                  labelText: l10n.name,
+                  prefixIcon: const Icon(Icons.label_outline),
                 ),
               ),
               const SizedBox(height: 12),
@@ -45,7 +46,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   Expanded(
                     child: TextField(
                       controller: priceController,
-                      decoration: const InputDecoration(labelText: 'Prix'),
+                      decoration: InputDecoration(labelText: l10n.price),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -53,7 +54,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   Expanded(
                     child: TextField(
                       controller: costController,
-                      decoration: const InputDecoration(labelText: 'Coût'),
+                      decoration: InputDecoration(labelText: l10n.cost),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -65,7 +66,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   Expanded(
                     child: TextField(
                       controller: thresholdController,
-                      decoration: const InputDecoration(labelText: 'Seuil min'),
+                      decoration: InputDecoration(labelText: l10n.minThreshold),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -73,7 +74,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   Expanded(
                     child: TextField(
                       controller: unitController,
-                      decoration: const InputDecoration(labelText: 'Unité'),
+                      decoration: InputDecoration(labelText: l10n.unit),
                     ),
                   ),
                 ],
@@ -84,7 +85,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -100,7 +101,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               );
               Navigator.of(context).pop();
             },
-            child: const Text('Enregistrer'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -111,6 +112,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(productListProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     ref.listen(productListProvider, (previous, next) {
       if (next.error != null) {
@@ -126,10 +128,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Produits'),
+        title: Text(l10n.products),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refresh,
             onPressed: () => ref.read(productListProvider.notifier).load(),
           ),
         ],
@@ -144,11 +147,13 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             Icon(Icons.inventory_2_outlined,
                 size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            const Text('Aucun produit',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(l10n.noProducts,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Text('Appuyez sur + pour en ajouter un',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(l10n.tapPlusToAdd,
+                style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
       )
@@ -160,9 +165,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           itemBuilder: (context, index) {
             final product = state.products[index];
             final margin = product.price - product.cost;
-            final marginPercent = product.price > 0
-                ? (margin / product.price * 100)
-                : 0.0;
+            final marginPercent =
+            product.price > 0 ? (margin / product.price * 100) : 0.0;
 
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
@@ -193,7 +197,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                           Text(
                             product.name,
                             style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w600),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600),
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
@@ -201,13 +206,15 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                             children: [
                               Icon(Icons.warning_amber_rounded,
                                   size: 13,
-                                  color: theme.colorScheme.onSurfaceVariant),
+                                  color: theme
+                                      .colorScheme.onSurfaceVariant),
                               const SizedBox(width: 4),
                               Text(
-                                'Seuil ${product.minThreshold} ${product.unit}',
+                                '${l10n.threshold} ${product.minThreshold} ${product.unit}',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  color: theme
+                                      .colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -228,7 +235,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'marge ${marginPercent.toStringAsFixed(0)}%',
+                          '${l10n.margin} ${marginPercent.toStringAsFixed(0)}%',
                           style: TextStyle(
                             fontSize: 11,
                             color: margin > 0
@@ -246,9 +253,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddDialog,
+        onPressed: () => _openAddDialog(l10n),
         icon: const Icon(Icons.add),
-        label: const Text('Produit'),
+        label: Text(l10n.product),
       ),
     );
   }

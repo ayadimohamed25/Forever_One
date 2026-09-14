@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/audit_provider.dart';
 
 class AuditPage extends ConsumerStatefulWidget {
@@ -12,21 +13,23 @@ class AuditPage extends ConsumerStatefulWidget {
 class _AuditPageState extends ConsumerState<AuditPage> {
   String? selectedFilter;
 
-  static const filterOptions = <String, String>{
-    'create_sale': 'Ventes',
-    'create_purchase': 'Achats',
-    'record_payment': 'Paiements',
-    'stock_movement': 'Stock',
-    'ai_query': 'IA',
-    'confirm_document': 'Documents',
-    'login': 'Connexions',
-    'generate_report': 'Rapports',
-  };
-
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(auditProvider.notifier).load());
+  }
+
+  Map<String, String> _filterOptions(AppLocalizations l10n) {
+    return {
+      'create_sale': l10n.sales,
+      'create_purchase': l10n.purchases,
+      'record_payment': l10n.payments,
+      'stock_movement': l10n.stock,
+      'ai_query': l10n.ai,
+      'confirm_document': l10n.documents,
+      'login': l10n.logins,
+      'generate_report': l10n.reports,
+    };
   }
 
   IconData _actionIcon(String action) {
@@ -75,24 +78,24 @@ class _AuditPageState extends ConsumerState<AuditPage> {
     }
   }
 
-  String _actionLabel(String action) {
+  String _actionLabel(String action, AppLocalizations l10n) {
     switch (action) {
       case 'login':
-        return 'Connexion';
+        return l10n.connection;
       case 'create_sale':
-        return 'Vente créée';
+        return l10n.saleCreatedAction;
       case 'create_purchase':
-        return 'Achat enregistré';
+        return l10n.purchaseRecordedAction;
       case 'record_payment':
-        return 'Paiement enregistré';
+        return l10n.paymentRecordedAction;
       case 'stock_movement':
-        return 'Mouvement de stock';
+        return l10n.stockMovementAction;
       case 'confirm_document':
-        return 'Document validé';
+        return l10n.documentValidatedAction;
       case 'ai_query':
-        return 'Question IA';
+        return l10n.aiQueryAction;
       case 'generate_report':
-        return 'Rapport généré';
+        return l10n.reportGeneratedAction;
       default:
         return action;
     }
@@ -108,7 +111,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
         .replaceAll(',', ' · ');
   }
 
-  Widget _buildTimeline(List<dynamic> logs, ThemeData theme) {
+  Widget _buildTimeline(
+      List<dynamic> logs, ThemeData theme, AppLocalizations l10n) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       itemCount: logs.length,
@@ -151,7 +155,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                     children: [
                       const SizedBox(height: 4),
                       Text(
-                        _actionLabel(log.action),
+                        _actionLabel(log.action, l10n),
                         style: const TextStyle(
                             fontSize: 14.5, fontWeight: FontWeight.w600),
                       ),
@@ -159,11 +163,12 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                       Row(
                         children: [
                           Icon(Icons.person_outline,
-                              size: 12, color: theme.colorScheme.onSurfaceVariant),
+                              size: 12,
+                              color: theme.colorScheme.onSurfaceVariant),
                           const SizedBox(width: 3),
                           Flexible(
                             child: Text(
-                              log.userEmail ?? 'système',
+                              log.userEmail ?? l10n.system,
                               style: TextStyle(
                                 fontSize: 11.5,
                                 color: theme.colorScheme.onSurfaceVariant,
@@ -173,7 +178,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                           ),
                           const SizedBox(width: 8),
                           Icon(Icons.schedule,
-                              size: 12, color: theme.colorScheme.onSurfaceVariant),
+                              size: 12,
+                              color: theme.colorScheme.onSurfaceVariant),
                           const SizedBox(width: 3),
                           Text(
                             log.createdAt,
@@ -218,6 +224,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(auditProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final filterOptions = _filterOptions(l10n);
 
     final filteredLogs = selectedFilter == null
         ? state.logs
@@ -225,10 +233,11 @@ class _AuditPageState extends ConsumerState<AuditPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Journal d\'audit'),
+        title: Text(l10n.auditLog),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refresh,
             onPressed: () => ref.read(auditProvider.notifier).load(),
           ),
         ],
@@ -245,8 +254,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
               Icon(Icons.lock_outline,
                   size: 56, color: theme.colorScheme.outlineVariant),
               const SizedBox(height: 16),
-              const Text('Accès restreint',
-                  style: TextStyle(
+              Text(l10n.restrictedAccess,
+                  style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
               Text(state.error!,
@@ -265,8 +274,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
             Icon(Icons.history,
                 size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            const Text('Aucune action enregistrée',
-                style: TextStyle(
+            Text(l10n.noActionsRecorded,
+                style: const TextStyle(
                     fontSize: 16, fontWeight: FontWeight.w500)),
           ],
         ),
@@ -283,8 +292,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: const Text('Tout',
-                        style: TextStyle(fontSize: 12)),
+                    label: Text(l10n.all,
+                        style: const TextStyle(fontSize: 12)),
                     selected: selectedFilter == null,
                     onSelected: (_) =>
                         setState(() => selectedFilter = null),
@@ -297,8 +306,9 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                         style: const TextStyle(fontSize: 12)),
                     selected: selectedFilter == e.key,
                     onSelected: (_) => setState(() =>
-                    selectedFilter =
-                    selectedFilter == e.key ? null : e.key),
+                    selectedFilter = selectedFilter == e.key
+                        ? null
+                        : e.key),
                   ),
                 )),
               ],
@@ -313,19 +323,21 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                 children: [
                   Icon(Icons.filter_alt_off_outlined,
                       size: 48,
-                      color: theme.colorScheme.outlineVariant),
+                      color:
+                      theme.colorScheme.outlineVariant),
                   const SizedBox(height: 12),
-                  Text('Aucune action de ce type',
+                  Text(l10n.noActionsOfThisType,
                       style: TextStyle(
-                          color: theme
-                              .colorScheme.onSurfaceVariant)),
+                          color: theme.colorScheme
+                              .onSurfaceVariant)),
                 ],
               ),
             )
                 : RefreshIndicator(
               onRefresh: () =>
                   ref.read(auditProvider.notifier).load(),
-              child: _buildTimeline(filteredLogs, theme),
+              child:
+              _buildTimeline(filteredLogs, theme, l10n),
             ),
           ),
         ],

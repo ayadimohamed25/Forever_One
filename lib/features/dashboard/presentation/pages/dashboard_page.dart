@@ -1,7 +1,10 @@
-﻿import 'package:flutter/material.dart';
+﻿
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
+import '../../../../core/di/locale_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/report_provider.dart';
@@ -28,9 +31,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(label,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 4),
-              Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold, color: color)),
             ],
           ),
         ),
@@ -53,7 +59,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 28, color: color ?? Theme.of(context).colorScheme.primary),
+              Icon(icon,
+                  size: 28,
+                  color: color ?? Theme.of(context).colorScheme.primary),
               const SizedBox(height: 8),
               Text(
                 label,
@@ -72,6 +80,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final authState = ref.watch(authNotifierProvider);
     final dashboardState = ref.watch(dashboardProvider);
     final reportState = ref.watch(reportProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     ref.listen(reportProvider, (previous, next) {
       if (next.file != null && previous?.file != next.file) {
@@ -86,10 +95,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Forever One — Dashboard'),
+        title: Text('Forever One — ${l10n.dashboard}'),
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language),
+            tooltip: l10n.language,
+            onSelected: (code) =>
+                ref.read(localeProvider.notifier).setLocale(Locale(code)),
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'en', child: Text(l10n.english)),
+              PopupMenuItem(value: 'fr', child: Text(l10n.french)),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: l10n.logout,
             onPressed: () async {
               await ref.read(authRepositoryProvider).logout();
               if (context.mounted) context.go('/login');
@@ -106,7 +126,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bienvenue, ${authState.user?.email ?? "Utilisateur"}',
+                l10n.welcome(authState.user?.email ?? ''),
                 style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 16),
@@ -115,34 +135,41 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               else if (dashboardState.summary != null) ...[
                 Row(
                   children: [
-                    _kpiCard('Chiffre d\'affaires',
+                    _kpiCard(l10n.revenue,
                         dashboardState.summary!.revenue.toStringAsFixed(2)),
                     const SizedBox(width: 8),
-                    _kpiCard('Créances', dashboardState.summary!.receivables.toStringAsFixed(2),
-                        color: dashboardState.summary!.receivables > 0 ? Colors.orange : null),
+                    _kpiCard(l10n.receivables,
+                        dashboardState.summary!.receivables.toStringAsFixed(2),
+                        color: dashboardState.summary!.receivables > 0
+                            ? Colors.orange
+                            : null),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _kpiCard('Dettes', dashboardState.summary!.payables.toStringAsFixed(2),
-                        color: dashboardState.summary!.payables > 0 ? Colors.orange : null),
+                    _kpiCard(l10n.payables,
+                        dashboardState.summary!.payables.toStringAsFixed(2),
+                        color: dashboardState.summary!.payables > 0
+                            ? Colors.orange
+                            : null),
                     const SizedBox(width: 8),
-                    _kpiCard('Alertes stock', dashboardState.summary!.lowStockCount.toString(),
-                        color: dashboardState.summary!.lowStockCount > 0 ? Colors.red : Colors.green),
+                    _kpiCard(l10n.lowStockAlerts,
+                        dashboardState.summary!.lowStockCount.toString(),
+                        color: dashboardState.summary!.lowStockCount > 0
+                            ? Colors.red
+                            : Colors.green),
                   ],
                 ),
               ],
-
               const SizedBox(height: 24),
-
               Row(
                 children: [
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: () => context.push('/ai'),
                       icon: const Icon(Icons.smart_toy),
-                      label: const Text('AI Copilot'),
+                      label: Text(l10n.aiCopilot),
                       style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14)),
                     ),
@@ -152,22 +179,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     child: FilledButton.tonalIcon(
                       onPressed: () => context.push('/insights'),
                       icon: const Icon(Icons.insights),
-                      label: const Text('Insights'),
+                      label: Text(l10n.insights),
                       style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14)),
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Gestion',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                child: Text(l10n.management,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
               ),
               const SizedBox(height: 8),
-
               GridView.count(
                 crossAxisCount: 3,
                 shrinkWrap: true,
@@ -178,52 +204,51 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 children: [
                   _featureCard(
                     icon: Icons.inventory_2,
-                    label: 'Produits',
+                    label: l10n.products,
                     onTap: () => context.push('/products'),
                   ),
                   _featureCard(
                     icon: Icons.warehouse,
-                    label: 'Dépôts',
+                    label: l10n.warehouses,
                     onTap: () => context.push('/warehouses'),
                   ),
                   _featureCard(
                     icon: Icons.swap_vert,
-                    label: 'Mouvements',
+                    label: l10n.movements,
                     onTap: () => context.push('/stock-movement'),
                   ),
                   _featureCard(
                     icon: Icons.people,
-                    label: 'Clients',
+                    label: l10n.customers,
                     onTap: () => context.push('/customers'),
                   ),
                   _featureCard(
                     icon: Icons.local_shipping,
-                    label: 'Fournisseurs',
+                    label: l10n.suppliers,
                     onTap: () => context.push('/suppliers'),
                   ),
                   _featureCard(
                     icon: Icons.point_of_sale,
-                    label: 'Ventes',
+                    label: l10n.sales,
                     onTap: () => context.push('/sales'),
                   ),
                   _featureCard(
                     icon: Icons.shopping_cart,
-                    label: 'Achats',
+                    label: l10n.purchases,
                     onTap: () => context.push('/purchases'),
                   ),
                   _featureCard(
                     icon: Icons.document_scanner,
-                    label: 'Scanner',
+                    label: l10n.scanner,
                     onTap: () => context.push('/scan'),
                   ),
                   _featureCard(
                     icon: Icons.history,
-                    label: 'Audit',
+                    label: l10n.audit,
                     onTap: () => context.push('/audit'),
                   ),
                 ],
               ),
-
               const SizedBox(height: 16),
               reportState.isLoading
                   ? const Center(
@@ -233,9 +258,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               )
                   : OutlinedButton.icon(
-                onPressed: () => ref.read(reportProvider.notifier).download(),
+                onPressed: () =>
+                    ref.read(reportProvider.notifier).download(),
                 icon: const Icon(Icons.picture_as_pdf),
-                label: const Text('Générer le rapport PDF'),
+                label: Text(l10n.generatePdfReport),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                 ),

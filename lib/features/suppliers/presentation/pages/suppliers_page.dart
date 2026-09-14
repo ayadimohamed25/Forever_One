@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/supplier_provider.dart';
 
 class SuppliersPage extends ConsumerStatefulWidget {
@@ -16,7 +17,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     Future.microtask(() => ref.read(supplierListProvider.notifier).load());
   }
 
-  void _openAddDialog() {
+  void _openAddDialog(AppLocalizations l10n) {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final emailController = TextEditingController();
@@ -26,43 +27,43 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Nouveau fournisseur'),
+        title: Text(l10n.newSupplier),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom',
-                  prefixIcon: Icon(Icons.storefront_outlined),
+                decoration: InputDecoration(
+                  labelText: l10n.name,
+                  prefixIcon: const Icon(Icons.storefront_outlined),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Téléphone',
-                  prefixIcon: Icon(Icons.phone_outlined),
+                decoration: InputDecoration(
+                  labelText: l10n.phone,
+                  prefixIcon: const Icon(Icons.phone_outlined),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.mail_outline),
+                decoration: InputDecoration(
+                  labelText: l10n.email,
+                  prefixIcon: const Icon(Icons.mail_outline),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: leadTimeController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Délai de livraison (jours)',
-                  prefixIcon: Icon(Icons.schedule_outlined),
+                decoration: InputDecoration(
+                  labelText: l10n.leadTimeDays,
+                  prefixIcon: const Icon(Icons.schedule_outlined),
                 ),
               ),
             ],
@@ -71,20 +72,24 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               if (nameController.text.trim().isEmpty) return;
               ref.read(supplierListProvider.notifier).add(
                 name: nameController.text.trim(),
-                phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
+                phone: phoneController.text.trim().isEmpty
+                    ? null
+                    : phoneController.text.trim(),
+                email: emailController.text.trim().isEmpty
+                    ? null
+                    : emailController.text.trim(),
                 leadTimeDays: int.tryParse(leadTimeController.text) ?? 0,
               );
               Navigator.of(context).pop();
             },
-            child: const Text('Enregistrer'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -95,6 +100,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(supplierListProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     ref.listen(supplierListProvider, (previous, next) {
       if (next.error != null) {
@@ -110,10 +116,11 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fournisseurs'),
+        title: Text(l10n.suppliers),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refresh,
             onPressed: () => ref.read(supplierListProvider.notifier).load(),
           ),
         ],
@@ -128,11 +135,13 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
             Icon(Icons.local_shipping_outlined,
                 size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            const Text('Aucun fournisseur',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(l10n.noSuppliers,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Text('Appuyez sur + pour en ajouter un',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+            Text(l10n.tapPlusToAdd,
+                style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
       )
@@ -172,7 +181,8 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                           Text(
                             s.name,
                             style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w600),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600),
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
@@ -181,12 +191,14 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                               children: [
                                 Icon(Icons.phone_outlined,
                                     size: 13,
-                                    color: theme.colorScheme.onSurfaceVariant),
+                                    color: theme
+                                        .colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 4),
                                 Text(s.phone!,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                      color: theme
+                                          .colorScheme.onSurfaceVariant,
                                     )),
                               ],
                             ),
@@ -208,9 +220,10 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                               color: theme.colorScheme.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Text(
-                            '${s.leadTimeDays} j',
+                            '${s.leadTimeDays} ${l10n.days}',
                             style: const TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w600),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -223,9 +236,9 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddDialog,
+        onPressed: () => _openAddDialog(l10n),
         icon: const Icon(Icons.add),
-        label: const Text('Fournisseur'),
+        label: Text(l10n.supplier),
       ),
     );
   }

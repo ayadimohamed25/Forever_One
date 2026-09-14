@@ -28,6 +28,9 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   mocktail: ^1.0.4
   path_provider: ^2.1.5
   open_filex: ^4.5.0
@@ -51,11 +54,8 @@ dev_dependencies:
   freezed: ^2.5.7
   json_serializable: ^6.8.0
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

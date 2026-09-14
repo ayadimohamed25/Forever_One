@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/warehouse_provider.dart';
 
 class WarehousesPage extends ConsumerStatefulWidget {
@@ -20,13 +21,15 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(warehouseListProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dépôts'),
+        title: Text(l10n.warehouses),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: l10n.refresh,
             onPressed: () => ref.read(warehouseListProvider.notifier).load(),
           ),
         ],
@@ -41,8 +44,9 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
             Icon(Icons.warehouse_outlined,
                 size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            const Text('Aucun dépôt',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(l10n.noWarehouses,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w500)),
           ],
         ),
       )
@@ -82,20 +86,24 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
                           Text(
                             w.name,
                             style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w600),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600),
                           ),
-                          if (w.location != null && w.location!.isNotEmpty) ...[
+                          if (w.location != null &&
+                              w.location!.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Row(
                               children: [
                                 Icon(Icons.place_outlined,
                                     size: 13,
-                                    color: theme.colorScheme.onSurfaceVariant),
+                                    color: theme
+                                        .colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 4),
                                 Text(w.location!,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                      color: theme
+                                          .colorScheme.onSurfaceVariant,
                                     )),
                               ],
                             ),

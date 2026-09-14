@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/prediction_provider.dart';
 
 class InsightsPage extends ConsumerStatefulWidget {
@@ -27,18 +28,19 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
   }
 
-  String _urgencyLabel(String urgency) {
+  String _urgencyLabel(String urgency, AppLocalizations l10n) {
     switch (urgency) {
       case 'critical':
-        return 'Rupture';
+        return l10n.rupture;
       case 'warning':
-        return 'Bientôt';
+        return l10n.soon;
       default:
-        return 'OK';
+        return l10n.ok;
     }
   }
 
-  Widget _emptyState(IconData icon, String title, String subtitle, ThemeData theme) {
+  Widget _emptyState(
+      IconData icon, String title, String subtitle, ThemeData theme) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -47,7 +49,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           children: [
             Icon(icon, size: 64, color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(title,
+                style:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
             Text(subtitle,
                 textAlign: TextAlign.center,
@@ -62,23 +66,29 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(predictionProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Insights & Prévisions'),
+          title: Text(l10n.insightsAndForecasts),
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
+              tooltip: l10n.refresh,
               onPressed: () => ref.read(predictionProvider.notifier).loadAll(),
             ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.trending_down, size: 20), text: 'Stock'),
-              Tab(icon: Icon(Icons.hourglass_empty, size: 20), text: 'Dormants'),
-              Tab(icon: Icon(Icons.phone_callback, size: 20), text: 'Relances'),
+              Tab(icon: const Icon(Icons.trending_down, size: 20), text: l10n.stock),
+              Tab(
+                  icon: const Icon(Icons.hourglass_empty, size: 20),
+                  text: l10n.dormant),
+              Tab(
+                  icon: const Icon(Icons.phone_callback, size: 20),
+                  text: l10n.followUps),
             ],
           ),
         ),
@@ -86,10 +96,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
           children: [
-            // ---------- Stock forecast ----------
+            // Stock forecast
             state.stockForecast.isEmpty
-                ? _emptyState(Icons.inventory_2_outlined, 'Aucune donnée',
-                'Ajoutez des produits pour voir les prévisions', theme)
+                ? _emptyState(Icons.inventory_2_outlined, l10n.noStockData,
+                l10n.addProductsForForecasts, theme)
                 : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: state.stockForecast.length,
@@ -102,7 +112,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: theme.colorScheme.outlineVariant),
+                    side: BorderSide(
+                        color: theme.colorScheme.outlineVariant),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
@@ -114,8 +125,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                               width: 44,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
+                                color:
+                                color.withValues(alpha: 0.12),
+                                borderRadius:
+                                BorderRadius.circular(12),
                               ),
                               child: Center(
                                 child: Text(
@@ -131,21 +144,28 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                             const SizedBox(width: 14),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
                                 children: [
                                   Text(f.name,
                                       style: const TextStyle(
                                           fontSize: 15,
-                                          fontWeight: FontWeight.w600),
-                                      overflow: TextOverflow.ellipsis),
+                                          fontWeight:
+                                          FontWeight.w600),
+                                      overflow:
+                                      TextOverflow.ellipsis),
                                   const SizedBox(height: 4),
                                   Text(
                                     f.daysOfCoverage != null
-                                        ? '${f.daysOfCoverage} jours de couverture · ${f.dailySalesRate}/jour'
-                                        : 'Pas de ventes récentes',
+                                        ? l10n.daysOfCoverage(
+                                        f.daysOfCoverage!,
+                                        f.dailySalesRate
+                                            .toString())
+                                        : l10n.noRecentSales,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                      color: theme.colorScheme
+                                          .onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -155,11 +175,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(20),
+                                color:
+                                color.withValues(alpha: 0.12),
+                                borderRadius:
+                                BorderRadius.circular(20),
                               ),
                               child: Text(
-                                _urgencyLabel(f.urgency),
+                                _urgencyLabel(f.urgency, l10n),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -176,22 +198,26 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer
+                              color: theme
+                                  .colorScheme.primaryContainer
                                   .withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius:
+                              BorderRadius.circular(10),
                             ),
                             child: Row(
                               children: [
                                 Icon(Icons.lightbulb_outline,
                                     size: 16,
-                                    color: theme.colorScheme.primary),
+                                    color:
+                                    theme.colorScheme.primary),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Commander ${f.suggestedOrder} unités',
+                                  l10n.orderUnits(f.suggestedOrder),
                                   style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
-                                    color: theme.colorScheme.primary,
+                                    color:
+                                    theme.colorScheme.primary,
                                   ),
                                 ),
                               ],
@@ -205,10 +231,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               },
             ),
 
-            // ---------- Dormant products ----------
+            // Dormant products
             state.dormantProducts.isEmpty
-                ? _emptyState(Icons.check_circle_outline, 'Aucun produit dormant',
-                'Tous vos produits se vendent régulièrement', theme)
+                ? _emptyState(Icons.check_circle_outline,
+                l10n.noDormantProducts, l10n.allProductsSelling, theme)
                 : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: state.dormantProducts.length,
@@ -219,7 +245,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: theme.colorScheme.outlineVariant),
+                    side: BorderSide(
+                        color: theme.colorScheme.outlineVariant),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
@@ -229,16 +256,19 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
+                            color: theme
+                                .colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(Icons.hourglass_empty,
-                              color: theme.colorScheme.onSurfaceVariant),
+                              color: theme
+                                  .colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
                             children: [
                               Text(d.name,
                                   style: const TextStyle(
@@ -247,11 +277,13 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                               const SizedBox(height: 4),
                               Text(
                                 d.neverSold
-                                    ? 'Jamais vendu'
-                                    : 'Dernière vente il y a ${d.daysSinceSale} jours',
+                                    ? l10n.neverSold
+                                    : l10n.lastSaleDaysAgo(
+                                    d.daysSinceSale ?? 0),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  color: theme
+                                      .colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -262,10 +294,12 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
+                              color: Colors.orange
+                                  .withValues(alpha: 0.15),
+                              borderRadius:
+                              BorderRadius.circular(20),
                             ),
-                            child: Text('Jamais vendu',
+                            child: Text(l10n.neverSold,
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -279,10 +313,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               },
             ),
 
-            // ---------- Customer scoring ----------
+            // Customer scoring
             state.customerScores.isEmpty
-                ? _emptyState(Icons.people_outline, 'Aucun client',
-                'Ajoutez des clients pour voir les scores', theme)
+                ? _emptyState(Icons.people_outline, l10n.noCustomersYet,
+                l10n.addCustomersForScores, theme)
                 : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: state.customerScores.length,
@@ -299,7 +333,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: theme.colorScheme.outlineVariant),
+                    side: BorderSide(
+                        color: theme.colorScheme.outlineVariant),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
@@ -317,10 +352,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                                 child: CircularProgressIndicator(
                                   value: c.score / 100,
                                   strokeWidth: 4,
-                                  backgroundColor:
-                                  theme.colorScheme.surfaceContainerHighest,
-                                  valueColor:
-                                  AlwaysStoppedAnimation(scoreColor),
+                                  backgroundColor: theme.colorScheme
+                                      .surfaceContainerHighest,
+                                  valueColor: AlwaysStoppedAnimation(
+                                      scoreColor),
                                 ),
                               ),
                               Text('${c.score}',
@@ -335,7 +370,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
                             children: [
                               Text(c.name,
                                   style: const TextStyle(
@@ -346,7 +382,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                               Text(c.reason,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                    color: theme
+                                        .colorScheme.onSurfaceVariant,
                                   )),
                             ],
                           ),

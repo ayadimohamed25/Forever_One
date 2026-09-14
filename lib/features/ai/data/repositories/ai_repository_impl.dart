@@ -11,9 +11,9 @@ class AiRepositoryImpl implements AiRepository {
   AiRepositoryImpl(this.remote);
 
   @override
-  Future<Either<Failure, AiMessageEntity>> ask(String question) async {
+  Future<Either<Failure, AiMessageEntity>> ask(String question, {String locale = 'en'}) async {
     try {
-      final data = await remote.ask(question);
+      final data = await remote.ask(question, locale: locale);
       return Right(AiMessageModel.fromJson(data).toEntity());
     } on DioException catch (e) {
       return Left(ServerFailure(_extractError(e, 'Failed to get AI response')));

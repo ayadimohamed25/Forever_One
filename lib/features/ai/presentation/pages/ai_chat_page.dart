@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/ai_provider.dart';
 
 class AiChatPage extends ConsumerStatefulWidget {
@@ -14,12 +15,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   final questionController = TextEditingController();
   final scrollController = ScrollController();
 
-  final suggestions = [
-    'Quels produits risquent une rupture ?',
-    'Quels clients me doivent de l\'argent ?',
-    'Fais-moi un résumé de mon activité',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -28,7 +23,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
 
   void _send(String question) {
     if (question.trim().isEmpty) return;
-    ref.read(aiProvider.notifier).ask(question.trim());
+    final locale = Localizations.localeOf(context).languageCode;
+    ref.read(aiProvider.notifier).ask(question.trim(), locale: locale);
     questionController.clear();
     FocusScope.of(context).unfocus();
   }
@@ -37,6 +33,13 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(aiProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    final suggestions = [
+      l10n.suggestStockRupture,
+      l10n.suggestCustomerDebts,
+      l10n.suggestActivitySummary,
+    ];
 
     ref.listen(aiProvider, (previous, next) {
       if (next.error != null) {
@@ -76,13 +79,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                   size: 19, color: theme.colorScheme.onPrimaryContainer),
             ),
             const SizedBox(width: 10),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('AI Copilot', style: TextStyle(fontSize: 17)),
-                Text('Assistant métier',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.normal)),
+                Text(l10n.aiCopilot, style: const TextStyle(fontSize: 17)),
+                Text(l10n.aiAssistant,
+                    style: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.normal)),
               ],
             ),
           ],
@@ -110,13 +114,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                           color: theme.colorScheme.onPrimaryContainer),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Interrogez votre entreprise',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                    Text(
+                      l10n.askYourBusiness,
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Posez une question sur vos ventes, votre stock ou vos clients',
+                      l10n.askQuestionSubtitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -158,12 +163,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // User question
                     Align(
                       alignment: Alignment.centerRight,
                       child: Container(
                         constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.78,
+                          maxWidth:
+                          MediaQuery.of(context).size.width * 0.78,
                         ),
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(
@@ -186,8 +191,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                         ),
                       ),
                     ),
-
-                    // AI answer
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -209,7 +212,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 4),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
+                              color:
+                              theme.colorScheme.surfaceContainerHighest,
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(4),
                                 topRight: Radius.circular(16),
@@ -219,19 +223,25 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                             ),
                             child: MarkdownBody(
                               data: m.answer,
-                              styleSheet: MarkdownStyleSheet.fromTheme(theme)
+                              styleSheet:
+                              MarkdownStyleSheet.fromTheme(theme)
                                   .copyWith(
-                                p: const TextStyle(fontSize: 13.5, height: 1.45),
-                                listBullet:
-                                const TextStyle(fontSize: 13.5, height: 1.45),
+                                p: const TextStyle(
+                                    fontSize: 13.5, height: 1.45),
+                                listBullet: const TextStyle(
+                                    fontSize: 13.5, height: 1.45),
                                 strong: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 13.5),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13.5),
                                 h1: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
                                 h2: const TextStyle(
-                                    fontSize: 15, fontWeight: FontWeight.bold),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold),
                                 h3: const TextStyle(
-                                    fontSize: 14, fontWeight: FontWeight.bold),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -243,7 +253,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               },
             ),
           ),
-
           if (state.isLoading)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -259,7 +268,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('Analyse de vos données...',
+                  Text(l10n.analyzingData,
                       style: TextStyle(
                         fontSize: 13,
                         color: theme.colorScheme.onSurfaceVariant,
@@ -267,7 +276,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 ],
               ),
             ),
-
           SizedBox(
             height: 42,
             child: ListView(
@@ -283,14 +291,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                   onPressed: state.isLoading ? null : () => _send(s),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: theme.colorScheme.outlineVariant),
+                    side:
+                    BorderSide(color: theme.colorScheme.outlineVariant),
                   ),
                 ),
               ))
                   .toList(),
             ),
           ),
-
           Container(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
             decoration: BoxDecoration(
@@ -306,7 +314,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     controller: questionController,
                     textInputAction: TextInputAction.send,
                     decoration: InputDecoration(
-                      hintText: 'Posez votre question...',
+                      hintText: l10n.askYourQuestion,
                       filled: true,
                       fillColor: theme.colorScheme.surfaceContainerHighest,
                       contentPadding: const EdgeInsets.symmetric(
@@ -321,8 +329,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 ),
                 const SizedBox(width: 8),
                 IconButton.filled(
-                  onPressed:
-                  state.isLoading ? null : () => _send(questionController.text),
+                  onPressed: state.isLoading
+                      ? null
+                      : () => _send(questionController.text),
                   icon: const Icon(Icons.arrow_upward),
                   style: IconButton.styleFrom(
                     padding: const EdgeInsets.all(12),
