@@ -7,6 +7,7 @@ class ProductEntity {
   final double cost;
   final int minThreshold;
   final String unit;
+  final int currentStock;
 
   const ProductEntity({
     required this.id,
@@ -17,5 +18,10 @@ class ProductEntity {
     required this.cost,
     required this.minThreshold,
     required this.unit,
+    this.currentStock = 0,
   });
+
+  double get margin => price - cost;
+  double get marginPercent => price > 0 ? (margin / price * 100) : 0;
+  bool get isLowStock => currentStock <= minThreshold;
 }

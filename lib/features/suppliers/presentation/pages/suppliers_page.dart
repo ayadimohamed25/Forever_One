@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../domain/entities/supplier_entity.dart';
 import '../providers/supplier_provider.dart';
+import '../widgets/supplier_form_dialog.dart';
+import 'supplier_detail_page.dart';
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -11,89 +14,80 @@ class SuppliersPage extends ConsumerStatefulWidget {
 }
 
 class _SuppliersPageState extends ConsumerState<SuppliersPage> {
+  final searchController = TextEditingController();
+  bool searchVisible = false;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(supplierListProvider.notifier).load());
   }
 
-  void _openAddDialog(AppLocalizations l10n) {
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-    final emailController = TextEditingController();
-    final leadTimeController = TextEditingController(text: '0');
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
-    showDialog(
+  void _showSnack(String message, {bool isError = false}) {
+    final theme = Theme.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor:
+        isError ? theme.colorScheme.error : Colors.green.shade700,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _create() async {
+    final input = await showSupplierFormDialog(context);
+    if (input == null) return;
+    await ref.read(supplierListProvider.notifier).add(input);
+  }
+
+  Future<void> _edit(SupplierEntity supplier, AppLocalizations l10n) async {
+    final input = await showSupplierFormDialog(context, existing: supplier);
+    if (input == null) return;
+    await ref.read(supplierListProvider.notifier).update(supplier.id, input);
+    if (mounted) _showSnack(l10n.supplierUpdated);
+  }
+
+  Future<void> _delete(SupplierEntity supplier, AppLocalizations l10n) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(l10n.newSupplier),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: l10n.name,
-                  prefixIcon: const Icon(Icons.storefront_outlined),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: l10n.phone,
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: l10n.email,
-                  prefixIcon: const Icon(Icons.mail_outline),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: leadTimeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: l10n.leadTimeDays,
-                  prefixIcon: const Icon(Icons.schedule_outlined),
-                ),
-              ),
-            ],
-          ),
-        ),
+        title: Text(l10n.deleteConfirmTitle(supplier.name)),
+        content: Text(l10n.deleteConfirmMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(false),
             child: Text(l10n.cancel),
           ),
           FilledButton(
-            onPressed: () {
-              if (nameController.text.trim().isEmpty) return;
-              ref.read(supplierListProvider.notifier).add(
-                name: nameController.text.trim(),
-                phone: phoneController.text.trim().isEmpty
-                    ? null
-                    : phoneController.text.trim(),
-                email: emailController.text.trim().isEmpty
-                    ? null
-                    : emailController.text.trim(),
-                leadTimeDays: int.tryParse(leadTimeController.text) ?? 0,
-              );
-              Navigator.of(context).pop();
-            },
-            child: Text(l10n.save),
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.delete),
           ),
         ],
       ),
     );
+
+    if (confirmed != true) return;
+
+    final error = await ref.read(supplierListProvider.notifier).remove(supplier.id);
+    if (!mounted) return;
+
+    if (error == null) {
+      _showSnack(l10n.supplierDeleted);
+    } else if (error == 'SUPPLIER_IN_USE') {
+      _showSnack(l10n.supplierInUse, isError: true);
+    } else {
+      _showSnack(error, isError: true);
+    }
   }
 
   @override
@@ -102,27 +96,40 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    ref.listen(supplierListProvider, (previous, next) {
-      if (next.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: theme.colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    });
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.suppliers),
+        title: searchVisible
+            ? TextField(
+          controller: searchController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: l10n.searchSuppliers,
+            border: InputBorder.none,
+            hintStyle: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant, fontSize: 16),
+          ),
+          onChanged: (value) =>
+              ref.read(supplierListProvider.notifier).search(value),
+        )
+            : Text(l10n.suppliers),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: l10n.refresh,
-            onPressed: () => ref.read(supplierListProvider.notifier).load(),
+            icon: Icon(searchVisible ? Icons.close : Icons.search),
+            tooltip: l10n.search,
+            onPressed: () {
+              setState(() => searchVisible = !searchVisible);
+              if (!searchVisible) {
+                searchController.clear();
+                ref.read(supplierListProvider.notifier).clearSearch();
+              }
+            },
           ),
+          if (!searchVisible)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: l10n.refresh,
+              onPressed: () => ref.read(supplierListProvider.notifier).load(),
+            ),
         ],
       ),
       body: state.isLoading
@@ -132,14 +139,21 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.local_shipping_outlined,
-                size: 64, color: theme.colorScheme.outlineVariant),
+            Icon(
+                state.hasSearched
+                    ? Icons.search_off
+                    : Icons.local_shipping_outlined,
+                size: 64,
+                color: theme.colorScheme.outlineVariant),
             const SizedBox(height: 16),
-            Text(l10n.noSuppliers,
+            Text(state.hasSearched ? l10n.noResults : l10n.noSuppliers,
                 style: const TextStyle(
                     fontSize: 16, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Text(l10n.tapPlusToAdd,
+            Text(
+                state.hasSearched
+                    ? l10n.tryDifferentSearch
+                    : l10n.tapPlusToAdd,
                 style: TextStyle(
                     color: theme.colorScheme.onSurfaceVariant)),
           ],
@@ -152,83 +166,161 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
           itemCount: state.suppliers.length,
           itemBuilder: (context, index) {
             final s = state.suppliers[index];
+
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
               elevation: 0,
+              clipBehavior: Clip.antiAlias,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
+                side:
+                BorderSide(color: theme.colorScheme.outlineVariant),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: () async {
+                  await Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) =>
+                        SupplierDetailPage(supplierId: s.id),
+                  ));
+                  if (mounted) {
+                    ref.read(supplierListProvider.notifier).load();
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 4, 14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.local_shipping_outlined,
+                            color:
+                            theme.colorScheme.onTertiaryContainer),
                       ),
-                      child: Icon(Icons.local_shipping_outlined,
-                          color: theme.colorScheme.onTertiaryContainer),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            s.name,
-                            style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          if (s.phone != null && s.phone!.isNotEmpty)
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              s.name,
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.phone_outlined,
+                                if (s.contactPerson != null &&
+                                    s.contactPerson!.isNotEmpty) ...[
+                                  Icon(Icons.person_outline,
+                                      size: 13,
+                                      color: theme.colorScheme
+                                          .onSurfaceVariant),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      s.contactPerson!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: theme.colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                ],
+                                Icon(Icons.schedule,
                                     size: 13,
                                     color: theme
                                         .colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 4),
-                                Text(s.phone!,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: theme
-                                          .colorScheme.onSurfaceVariant,
-                                    )),
+                                Text(
+                                  '${s.leadTimeDays} ${l10n.days}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme
+                                        .colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
                               ],
                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Icon(Icons.schedule,
-                              size: 13,
-                              color: theme.colorScheme.onSurfaceVariant),
-                          const SizedBox(width: 4),
                           Text(
-                            '${s.leadTimeDays} ${l10n.days}',
-                            style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600),
+                            s.owesMoney
+                                ? '${s.balance.toStringAsFixed(2)} DT'
+                                : '—',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: s.owesMoney
+                                  ? theme.colorScheme.error
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.amountOwed,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert,
+                            size: 20,
+                            color: theme.colorScheme.onSurfaceVariant),
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            _edit(s, l10n);
+                          } else if (value == 'delete') {
+                            _delete(s, l10n);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.edit_outlined,
+                                    size: 18),
+                                const SizedBox(width: 10),
+                                Text(l10n.edit),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline,
+                                    size: 18,
+                                    color: theme.colorScheme.error),
+                                const SizedBox(width: 10),
+                                Text(l10n.delete,
+                                    style: TextStyle(
+                                        color:
+                                        theme.colorScheme.error)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -236,7 +328,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAddDialog(l10n),
+        onPressed: _create,
         icon: const Icon(Icons.add),
         label: Text(l10n.supplier),
       ),

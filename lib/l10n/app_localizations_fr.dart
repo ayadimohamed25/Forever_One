@@ -549,4 +549,207 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get days => 'j';
+
+  @override
+  String get search => 'Rechercher';
+
+  @override
+  String get searchProducts => 'Rechercher un produit...';
+
+  @override
+  String get searchCustomers => 'Rechercher un client...';
+
+  @override
+  String get searchSuppliers => 'Rechercher un fournisseur...';
+
+  @override
+  String get edit => 'Modifier';
+
+  @override
+  String get editProduct => 'Modifier le produit';
+
+  @override
+  String get deleteProduct => 'Supprimer le produit';
+
+  @override
+  String deleteConfirmTitle(String name) {
+    return 'Supprimer $name ?';
+  }
+
+  @override
+  String get deleteConfirmMessage => 'Cette action est irréversible.';
+
+  @override
+  String get productInUse =>
+      'Ce produit ne peut pas être supprimé car il est utilisé dans des ventes, achats ou mouvements de stock.';
+
+  @override
+  String get productDeleted => 'Produit supprimé';
+
+  @override
+  String get productUpdated => 'Produit modifié';
+
+  @override
+  String get currentStock => 'Stock actuel';
+
+  @override
+  String get inStock => 'en stock';
+
+  @override
+  String get details => 'Détails';
+
+  @override
+  String get barcode => 'Code-barres';
+
+  @override
+  String get noResults => 'Aucun résultat';
+
+  @override
+  String get tryDifferentSearch => 'Essayez un autre terme de recherche';
+
+  @override
+  String get customerDetails => 'Fiche client';
+
+  @override
+  String get supplierDetails => 'Fiche fournisseur';
+
+  @override
+  String get editCustomer => 'Modifier le client';
+
+  @override
+  String get editSupplier => 'Modifier le fournisseur';
+
+  @override
+  String get customerInUse =>
+      'Ce client ne peut pas être supprimé car il a un historique de ventes.';
+
+  @override
+  String get supplierInUse =>
+      'Ce fournisseur ne peut pas être supprimé car il a un historique d\'achats.';
+
+  @override
+  String get customerDeleted => 'Client supprimé';
+
+  @override
+  String get customerUpdated => 'Client modifié';
+
+  @override
+  String get address => 'Adresse';
+
+  @override
+  String get totalPurchases => 'Total des achats';
+
+  @override
+  String get outstandingBalance => 'Solde dû';
+
+  @override
+  String get orders => 'Commandes';
+
+  @override
+  String get lastOrder => 'Dernière commande';
+
+  @override
+  String get never => 'Jamais';
+
+  @override
+  String daysAgo(int days) {
+    return 'il y a $days jours';
+  }
+
+  @override
+  String get today => 'Aujourd\'hui';
+
+  @override
+  String get creditUsage => 'Utilisation du crédit';
+
+  @override
+  String get creditLimitExceeded => 'Plafond de crédit dépassé';
+
+  @override
+  String get creditLimitNearlyReached => 'Plafond de crédit bientôt atteint';
+
+  @override
+  String get purchaseHistory => 'Historique des achats';
+
+  @override
+  String get noPurchaseHistory => 'Aucun achat pour le moment';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get callCustomer => 'Appeler';
+
+  @override
+  String get sendEmail => 'Email';
+
+  @override
+  String get paid => 'payé';
+
+  @override
+  String get unpaid => 'impayé';
+
+  @override
+  String get taxId => 'Matricule fiscale';
+
+  @override
+  String get contactPerson => 'Personne à contacter';
+
+  @override
+  String get paymentTerms => 'Conditions de paiement';
+
+  @override
+  String get paymentTermsCash => 'Comptant';
+
+  @override
+  String paymentTermsDays(int days) {
+    return '$days jours';
+  }
+
+  @override
+  String get bankAccount => 'Compte bancaire (RIB)';
+
+  @override
+  String get notes => 'Notes';
+
+  @override
+  String get customerType => 'Type de client';
+
+  @override
+  String get individual => 'Particulier';
+
+  @override
+  String get company => 'Entreprise';
+
+  @override
+  String get supplierDeleted => 'Fournisseur supprimé';
+
+  @override
+  String get supplierUpdated => 'Fournisseur modifié';
+
+  @override
+  String get amountOwed => 'Montant dû';
+
+  @override
+  String get leadTime => 'Délai de livraison';
+
+  @override
+  String get deliveryReliability => 'Fiabilité des livraisons';
+
+  @override
+  String get noDeliveryData => 'Pas encore de données de livraison';
+
+  @override
+  String onTimeDeliveries(int onTime, int total) {
+    return '$onTime sur $total à l\'heure';
+  }
+
+  @override
+  String get reference => 'Référence';
+
+  @override
+  String get commercialInfo => 'Informations commerciales';
+
+  @override
+  String get totalOrders => 'Total des commandes';
 }

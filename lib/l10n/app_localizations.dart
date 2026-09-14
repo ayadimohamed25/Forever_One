@@ -1117,6 +1117,390 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'days'**
   String get days;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @searchProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Search products...'**
+  String get searchProducts;
+
+  /// No description provided for @searchCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search customers...'**
+  String get searchCustomers;
+
+  /// No description provided for @searchSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search suppliers...'**
+  String get searchSuppliers;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @editProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit product'**
+  String get editProduct;
+
+  /// No description provided for @deleteProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete product'**
+  String get deleteProduct;
+
+  /// No description provided for @deleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String deleteConfirmTitle(String name);
+
+  /// No description provided for @deleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone.'**
+  String get deleteConfirmMessage;
+
+  /// No description provided for @productInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'This product cannot be deleted because it is used in sales, purchases or stock movements.'**
+  String get productInUse;
+
+  /// No description provided for @productDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Product deleted'**
+  String get productDeleted;
+
+  /// No description provided for @productUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Product updated'**
+  String get productUpdated;
+
+  /// No description provided for @currentStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Current stock'**
+  String get currentStock;
+
+  /// No description provided for @inStock.
+  ///
+  /// In en, this message translates to:
+  /// **'in stock'**
+  String get inStock;
+
+  /// No description provided for @details.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get details;
+
+  /// No description provided for @barcode.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode'**
+  String get barcode;
+
+  /// No description provided for @noResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No results'**
+  String get noResults;
+
+  /// No description provided for @tryDifferentSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search term'**
+  String get tryDifferentSearch;
+
+  /// No description provided for @customerDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer details'**
+  String get customerDetails;
+
+  /// No description provided for @supplierDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier details'**
+  String get supplierDetails;
+
+  /// No description provided for @editCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit customer'**
+  String get editCustomer;
+
+  /// No description provided for @editSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit supplier'**
+  String get editSupplier;
+
+  /// No description provided for @customerInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'This customer cannot be deleted because they have sales history.'**
+  String get customerInUse;
+
+  /// No description provided for @supplierInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'This supplier cannot be deleted because they have purchase history.'**
+  String get supplierInUse;
+
+  /// No description provided for @customerDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer deleted'**
+  String get customerDeleted;
+
+  /// No description provided for @customerUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer updated'**
+  String get customerUpdated;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @totalPurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Total purchases'**
+  String get totalPurchases;
+
+  /// No description provided for @outstandingBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Outstanding balance'**
+  String get outstandingBalance;
+
+  /// No description provided for @orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get orders;
+
+  /// No description provided for @lastOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Last order'**
+  String get lastOrder;
+
+  /// No description provided for @never.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get never;
+
+  /// No description provided for @daysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days ago'**
+  String daysAgo(int days);
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @creditUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit usage'**
+  String get creditUsage;
+
+  /// No description provided for @creditLimitExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit limit exceeded'**
+  String get creditLimitExceeded;
+
+  /// No description provided for @creditLimitNearlyReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit limit nearly reached'**
+  String get creditLimitNearlyReached;
+
+  /// No description provided for @purchaseHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase history'**
+  String get purchaseHistory;
+
+  /// No description provided for @noPurchaseHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchases yet'**
+  String get noPurchaseHistory;
+
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contact;
+
+  /// No description provided for @callCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get callCustomer;
+
+  /// No description provided for @sendEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get sendEmail;
+
+  /// No description provided for @paid.
+  ///
+  /// In en, this message translates to:
+  /// **'paid'**
+  String get paid;
+
+  /// No description provided for @unpaid.
+  ///
+  /// In en, this message translates to:
+  /// **'unpaid'**
+  String get unpaid;
+
+  /// No description provided for @taxId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax ID'**
+  String get taxId;
+
+  /// No description provided for @contactPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact person'**
+  String get contactPerson;
+
+  /// No description provided for @paymentTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment terms'**
+  String get paymentTerms;
+
+  /// No description provided for @paymentTermsCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get paymentTermsCash;
+
+  /// No description provided for @paymentTermsDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days'**
+  String paymentTermsDays(int days);
+
+  /// No description provided for @bankAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account (RIB)'**
+  String get bankAccount;
+
+  /// No description provided for @notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notes;
+
+  /// No description provided for @customerType.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer type'**
+  String get customerType;
+
+  /// No description provided for @individual.
+  ///
+  /// In en, this message translates to:
+  /// **'Individual'**
+  String get individual;
+
+  /// No description provided for @company.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get company;
+
+  /// No description provided for @supplierDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier deleted'**
+  String get supplierDeleted;
+
+  /// No description provided for @supplierUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier updated'**
+  String get supplierUpdated;
+
+  /// No description provided for @amountOwed.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount owed'**
+  String get amountOwed;
+
+  /// No description provided for @leadTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Lead time'**
+  String get leadTime;
+
+  /// No description provided for @deliveryReliability.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery reliability'**
+  String get deliveryReliability;
+
+  /// No description provided for @noDeliveryData.
+  ///
+  /// In en, this message translates to:
+  /// **'No delivery data yet'**
+  String get noDeliveryData;
+
+  /// No description provided for @onTimeDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'{onTime} of {total} on time'**
+  String onTimeDeliveries(int onTime, int total);
+
+  /// No description provided for @reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get reference;
+
+  /// No description provided for @commercialInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Commercial information'**
+  String get commercialInfo;
+
+  /// No description provided for @totalOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Total orders'**
+  String get totalOrders;
 }
 
 class _AppLocalizationsDelegate

@@ -547,4 +547,207 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get days => 'days';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get searchProducts => 'Search products...';
+
+  @override
+  String get searchCustomers => 'Search customers...';
+
+  @override
+  String get searchSuppliers => 'Search suppliers...';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get editProduct => 'Edit product';
+
+  @override
+  String get deleteProduct => 'Delete product';
+
+  @override
+  String deleteConfirmTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get deleteConfirmMessage => 'This action cannot be undone.';
+
+  @override
+  String get productInUse =>
+      'This product cannot be deleted because it is used in sales, purchases or stock movements.';
+
+  @override
+  String get productDeleted => 'Product deleted';
+
+  @override
+  String get productUpdated => 'Product updated';
+
+  @override
+  String get currentStock => 'Current stock';
+
+  @override
+  String get inStock => 'in stock';
+
+  @override
+  String get details => 'Details';
+
+  @override
+  String get barcode => 'Barcode';
+
+  @override
+  String get noResults => 'No results';
+
+  @override
+  String get tryDifferentSearch => 'Try a different search term';
+
+  @override
+  String get customerDetails => 'Customer details';
+
+  @override
+  String get supplierDetails => 'Supplier details';
+
+  @override
+  String get editCustomer => 'Edit customer';
+
+  @override
+  String get editSupplier => 'Edit supplier';
+
+  @override
+  String get customerInUse =>
+      'This customer cannot be deleted because they have sales history.';
+
+  @override
+  String get supplierInUse =>
+      'This supplier cannot be deleted because they have purchase history.';
+
+  @override
+  String get customerDeleted => 'Customer deleted';
+
+  @override
+  String get customerUpdated => 'Customer updated';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get totalPurchases => 'Total purchases';
+
+  @override
+  String get outstandingBalance => 'Outstanding balance';
+
+  @override
+  String get orders => 'Orders';
+
+  @override
+  String get lastOrder => 'Last order';
+
+  @override
+  String get never => 'Never';
+
+  @override
+  String daysAgo(int days) {
+    return '$days days ago';
+  }
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get creditUsage => 'Credit usage';
+
+  @override
+  String get creditLimitExceeded => 'Credit limit exceeded';
+
+  @override
+  String get creditLimitNearlyReached => 'Credit limit nearly reached';
+
+  @override
+  String get purchaseHistory => 'Purchase history';
+
+  @override
+  String get noPurchaseHistory => 'No purchases yet';
+
+  @override
+  String get contact => 'Contact';
+
+  @override
+  String get callCustomer => 'Call';
+
+  @override
+  String get sendEmail => 'Email';
+
+  @override
+  String get paid => 'paid';
+
+  @override
+  String get unpaid => 'unpaid';
+
+  @override
+  String get taxId => 'Tax ID';
+
+  @override
+  String get contactPerson => 'Contact person';
+
+  @override
+  String get paymentTerms => 'Payment terms';
+
+  @override
+  String get paymentTermsCash => 'Cash';
+
+  @override
+  String paymentTermsDays(int days) {
+    return '$days days';
+  }
+
+  @override
+  String get bankAccount => 'Bank account (RIB)';
+
+  @override
+  String get notes => 'Notes';
+
+  @override
+  String get customerType => 'Customer type';
+
+  @override
+  String get individual => 'Individual';
+
+  @override
+  String get company => 'Company';
+
+  @override
+  String get supplierDeleted => 'Supplier deleted';
+
+  @override
+  String get supplierUpdated => 'Supplier updated';
+
+  @override
+  String get amountOwed => 'Amount owed';
+
+  @override
+  String get leadTime => 'Lead time';
+
+  @override
+  String get deliveryReliability => 'Delivery reliability';
+
+  @override
+  String get noDeliveryData => 'No delivery data yet';
+
+  @override
+  String onTimeDeliveries(int onTime, int total) {
+    return '$onTime of $total on time';
+  }
+
+  @override
+  String get reference => 'Reference';
+
+  @override
+  String get commercialInfo => 'Commercial information';
+
+  @override
+  String get totalOrders => 'Total orders';
 }

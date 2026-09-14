@@ -9,6 +9,7 @@ class ProductModel {
   final double cost;
   final int minThreshold;
   final String unit;
+  final int currentStock;
 
   ProductModel({
     required this.id,
@@ -19,18 +20,20 @@ class ProductModel {
     required this.cost,
     required this.minThreshold,
     required this.unit,
+    required this.currentStock,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
       id: json['id'],
       categoryId: json['category_id'],
-      name: json['name'],
+      name: json['name'] ?? '',
       barcode: json['barcode'],
-      price: double.parse(json['price'].toString()),
-      cost: double.parse(json['cost'].toString()),
-      minThreshold: int.parse(json['min_threshold'].toString()),
+      price: double.parse((json['price'] ?? 0).toString()),
+      cost: double.parse((json['cost'] ?? 0).toString()),
+      minThreshold: int.parse((json['min_threshold'] ?? 0).toString()),
       unit: json['unit'] ?? 'unit',
+      currentStock: int.parse((json['current_stock'] ?? 0).toString()),
     );
   }
 
@@ -44,6 +47,7 @@ class ProductModel {
       cost: cost,
       minThreshold: minThreshold,
       unit: unit,
+      currentStock: currentStock,
     );
   }
 }
