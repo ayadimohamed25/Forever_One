@@ -266,4 +266,21 @@
          "reference": "Reference",
          "commercialInfo": "Commercial information",
          "totalOrders": "Total orders"
+           ,"menu": "Menu",
+           "roleAdmin": "Administrator",
+           "roleFinance": "Finance manager",
+           "roleStock": "Stock manager",
+           "roleCommercial": "Sales rep",
+           "roleEmployee": "Employee",
+           "roleAuditor": "Auditor",
+           "business": "Business",
+           "intelligence": "Intelligence",
+           "system": "System",
+           "profile": "Profile",
+           "settings": "Settings",
+           "logoutConfirmTitle": "Log out?",
+           "logoutConfirmMessage": "You will need to sign in again.",
+           "goodMorning": "Good morning",
+           "goodAfternoon": "Good afternoon",
+           "goodEvening": "Good evening"
  }

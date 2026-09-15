@@ -253,4 +253,21 @@
          "reference": "Référence",
          "commercialInfo": "Informations commerciales",
          "totalOrders": "Total des commandes"
+           ,"menu": "Menu",
+           "roleAdmin": "Administrateur",
+           "roleFinance": "Responsable finance",
+           "roleStock": "Responsable stock",
+           "roleCommercial": "Commercial",
+           "roleEmployee": "Employé",
+           "roleAuditor": "Auditeur",
+           "business": "Activité",
+           "intelligence": "Intelligence",
+           "system": "Système",
+           "profile": "Profil",
+           "settings": "Paramètres",
+           "logoutConfirmTitle": "Se déconnecter ?",
+           "logoutConfirmMessage": "Vous devrez vous reconnecter.",
+           "goodMorning": "Bonjour",
+           "goodAfternoon": "Bon après-midi",
+           "goodEvening": "Bonsoir"
  }

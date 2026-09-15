@@ -8,6 +8,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/report_provider.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -94,6 +95,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     });
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/dashboard'),
       appBar: AppBar(
         title: Text('Forever One — ${l10n.dashboard}'),
         actions: [

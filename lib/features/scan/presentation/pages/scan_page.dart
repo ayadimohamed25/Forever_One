@@ -1,9 +1,10 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/document_provider.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class ScanPage extends ConsumerStatefulWidget {
   const ScanPage({super.key});
@@ -79,6 +80,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     final doc = state.document;
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/scan'),
       appBar: AppBar(title: Text(l10n.scanDocument)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

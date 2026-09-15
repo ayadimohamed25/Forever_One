@@ -4,6 +4,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/product_entity.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product_form_dialog.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
   const ProductsPage({super.key});
@@ -110,6 +111,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/products'),
       appBar: AppBar(
         title: searchVisible
             ? TextField(

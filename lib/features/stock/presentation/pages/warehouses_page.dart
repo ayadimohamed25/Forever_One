@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/warehouse_provider.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class WarehousesPage extends ConsumerStatefulWidget {
   const WarehousesPage({super.key});
@@ -24,6 +25,7 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/warehouses'),
       appBar: AppBar(
         title: Text(l10n.warehouses),
         actions: [

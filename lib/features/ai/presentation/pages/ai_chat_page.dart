@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/ai_provider.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class AiChatPage extends ConsumerStatefulWidget {
   const AiChatPage({super.key});
@@ -65,6 +66,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     });
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/ai'),
       appBar: AppBar(
         title: Row(
           children: [

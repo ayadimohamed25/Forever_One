@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../finance/presentation/pages/payment_page.dart';
 import '../providers/sale_provider.dart';
 import 'create_sale_page.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class SalesPage extends ConsumerStatefulWidget {
   const SalesPage({super.key});
@@ -57,6 +58,7 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/sales'),
       appBar: AppBar(
         title: Text(l10n.sales),
         actions: [
@@ -107,7 +109,7 @@ class _SalesPageState extends ConsumerState<SalesPage> {
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => PaymentPage(
                       saleId: s.id,
-                      title: '${l10n.payment} — ${s.customerName}',
+                      title: '${l10n.payment} â€” ${s.customerName}',
                     ),
                   ));
                 },

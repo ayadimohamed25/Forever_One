@@ -1091,7 +1091,7 @@ abstract class AppLocalizations {
   /// No description provided for @system.
   ///
   /// In en, this message translates to:
-  /// **'system'**
+  /// **'System'**
   String get system;
 
   /// No description provided for @language.
@@ -1501,6 +1501,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total orders'**
   String get totalOrders;
+
+  /// No description provided for @menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get menu;
+
+  /// No description provided for @roleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get roleAdmin;
+
+  /// No description provided for @roleFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance manager'**
+  String get roleFinance;
+
+  /// No description provided for @roleStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock manager'**
+  String get roleStock;
+
+  /// No description provided for @roleCommercial.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales rep'**
+  String get roleCommercial;
+
+  /// No description provided for @roleEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee'**
+  String get roleEmployee;
+
+  /// No description provided for @roleAuditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Auditor'**
+  String get roleAuditor;
+
+  /// No description provided for @business.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get business;
+
+  /// No description provided for @intelligence.
+  ///
+  /// In en, this message translates to:
+  /// **'Intelligence'**
+  String get intelligence;
+
+  /// No description provided for @profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @logoutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out?'**
+  String get logoutConfirmTitle;
+
+  /// No description provided for @logoutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You will need to sign in again.'**
+  String get logoutConfirmMessage;
+
+  /// No description provided for @goodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get goodMorning;
+
+  /// No description provided for @goodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get goodAfternoon;
+
+  /// No description provided for @goodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get goodEvening;
 }
 
 class _AppLocalizationsDelegate

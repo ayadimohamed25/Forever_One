@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/audit_provider.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class AuditPage extends ConsumerStatefulWidget {
   const AuditPage({super.key});
@@ -108,7 +109,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
         .replaceAll('}', '')
         .replaceAll('"', '')
         .replaceAll(':', ' : ')
-        .replaceAll(',', ' · ');
+        .replaceAll(',', ' Â· ');
   }
 
   Widget _buildTimeline(
@@ -232,6 +233,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
         : state.logs.where((l) => l.action == selectedFilter).toList();
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/audit'),
       appBar: AppBar(
         title: Text(l10n.auditLog),
         actions: [

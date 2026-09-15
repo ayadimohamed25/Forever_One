@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../domain/entities/supplier_entity.dart';
 import '../providers/supplier_provider.dart';
 import '../widgets/supplier_form_dialog.dart';
 import 'supplier_detail_page.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -97,6 +98,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/suppliers'),
       appBar: AppBar(
         title: searchVisible
             ? TextField(
@@ -260,7 +262,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                           Text(
                             s.owesMoney
                                 ? '${s.balance.toStringAsFixed(2)} DT'
-                                : '—',
+                                : 'â€”',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,

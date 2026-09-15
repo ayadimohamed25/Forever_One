@@ -4,6 +4,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../providers/product_provider.dart';
 import '../providers/stock_movement_provider.dart';
 import '../providers/warehouse_provider.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class StockMovementPage extends ConsumerStatefulWidget {
   const StockMovementPage({super.key});
@@ -76,6 +77,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
         (int.tryParse(quantityController.text) ?? 0) > 0;
 
     return Scaffold(
+      drawer: const AppDrawer(currentRoute: '/stock-movement'),
       appBar: AppBar(title: Text(l10n.stockMovement)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

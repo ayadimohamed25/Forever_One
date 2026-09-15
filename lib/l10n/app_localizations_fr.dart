@@ -536,7 +536,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get restrictedAccess => 'Accès restreint';
 
   @override
-  String get system => 'système';
+  String get system => 'Système';
 
   @override
   String get language => 'Langue';
@@ -752,4 +752,52 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get totalOrders => 'Total des commandes';
+
+  @override
+  String get menu => 'Menu';
+
+  @override
+  String get roleAdmin => 'Administrateur';
+
+  @override
+  String get roleFinance => 'Responsable finance';
+
+  @override
+  String get roleStock => 'Responsable stock';
+
+  @override
+  String get roleCommercial => 'Commercial';
+
+  @override
+  String get roleEmployee => 'Employé';
+
+  @override
+  String get roleAuditor => 'Auditeur';
+
+  @override
+  String get business => 'Activité';
+
+  @override
+  String get intelligence => 'Intelligence';
+
+  @override
+  String get profile => 'Profil';
+
+  @override
+  String get settings => 'Paramètres';
+
+  @override
+  String get logoutConfirmTitle => 'Se déconnecter ?';
+
+  @override
+  String get logoutConfirmMessage => 'Vous devrez vous reconnecter.';
+
+  @override
+  String get goodMorning => 'Bonjour';
+
+  @override
+  String get goodAfternoon => 'Bon après-midi';
+
+  @override
+  String get goodEvening => 'Bonsoir';
 }

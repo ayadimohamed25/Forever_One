@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/prediction_provider.dart';
+import '../../../../shared/widgets/app_drawer.dart';
 
 class InsightsPage extends ConsumerStatefulWidget {
   const InsightsPage({super.key});
@@ -71,6 +72,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        drawer: const AppDrawer(currentRoute: '/insights'),
         appBar: AppBar(
           title: Text(l10n.insightsAndForecasts),
           actions: [
