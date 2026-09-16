@@ -24,7 +24,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     state = const DashboardState(isLoading: true);
     try {
       final data = await datasource.getSummary();
-      state = DashboardState(summary: DashboardSummaryModel.fromJson(data).toEntity());
+      state = DashboardState(summary: DashboardSummaryModel.fromJson(data));
     } catch (e) {
       state = const DashboardState(error: 'Failed to load dashboard');
     }

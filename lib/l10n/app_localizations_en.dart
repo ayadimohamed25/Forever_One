@@ -798,4 +798,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goodEvening => 'Good evening';
+
+  @override
+  String get thisMonth => 'This month';
+
+  @override
+  String get vsLastMonth => 'vs last month';
+
+  @override
+  String get noComparison => 'No comparison';
+
+  @override
+  String get stockValue => 'Stock value';
+
+  @override
+  String get salesThisMonth => 'Sales this month';
+
+  @override
+  String get revenueTrend => 'Revenue (last 30 days)';
+
+  @override
+  String get topProducts => 'Top products';
+
+  @override
+  String get noSalesYet => 'No sales recorded yet';
+
+  @override
+  String get alerts => 'Alerts';
+
+  @override
+  String get noAlerts => 'Nothing needs your attention';
+
+  @override
+  String get allGood => 'Everything looks good';
+
+  @override
+  String lowStockAlert(String name) {
+    return '$name is out of stock';
+  }
+
+  @override
+  String lowStockWarning(String name, int qty) {
+    return '$name: only $qty left';
+  }
+
+  @override
+  String creditExceededAlert(String name) {
+    return '$name is over their credit limit';
+  }
+
+  @override
+  String overduePaymentAlert(String name, int days) {
+    return '$name: $days days overdue';
+  }
+
+  @override
+  String get recentActivity => 'Recent activity';
+
+  @override
+  String get noActivity => 'No activity yet';
+
+  @override
+  String get sale => 'Sale';
+
+  @override
+  String get purchase => 'Purchase';
+
+  @override
+  String get quickActions => 'Quick actions';
+
+  @override
+  String unitsSold(int qty) {
+    return '$qty sold';
+  }
 }

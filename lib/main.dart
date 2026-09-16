@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/di/locale_provider.dart';
 import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 
 void main() {
@@ -18,6 +19,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Forever One',
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
       routerConfig: appRouter,
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

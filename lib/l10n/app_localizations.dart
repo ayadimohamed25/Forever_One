@@ -1597,6 +1597,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Good evening'**
   String get goodEvening;
+
+  /// No description provided for @thisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get thisMonth;
+
+  /// No description provided for @vsLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'vs last month'**
+  String get vsLastMonth;
+
+  /// No description provided for @noComparison.
+  ///
+  /// In en, this message translates to:
+  /// **'No comparison'**
+  String get noComparison;
+
+  /// No description provided for @stockValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock value'**
+  String get stockValue;
+
+  /// No description provided for @salesThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales this month'**
+  String get salesThisMonth;
+
+  /// No description provided for @revenueTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue (last 30 days)'**
+  String get revenueTrend;
+
+  /// No description provided for @topProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Top products'**
+  String get topProducts;
+
+  /// No description provided for @noSalesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales recorded yet'**
+  String get noSalesYet;
+
+  /// No description provided for @alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get alerts;
+
+  /// No description provided for @noAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs your attention'**
+  String get noAlerts;
+
+  /// No description provided for @allGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything looks good'**
+  String get allGood;
+
+  /// No description provided for @lowStockAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is out of stock'**
+  String lowStockAlert(String name);
+
+  /// No description provided for @lowStockWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: only {qty} left'**
+  String lowStockWarning(String name, int qty);
+
+  /// No description provided for @creditExceededAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is over their credit limit'**
+  String creditExceededAlert(String name);
+
+  /// No description provided for @overduePaymentAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: {days} days overdue'**
+  String overduePaymentAlert(String name, int days);
+
+  /// No description provided for @recentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent activity'**
+  String get recentActivity;
+
+  /// No description provided for @noActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get noActivity;
+
+  /// No description provided for @sale.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale'**
+  String get sale;
+
+  /// No description provided for @purchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase'**
+  String get purchase;
+
+  /// No description provided for @quickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get quickActions;
+
+  /// No description provided for @unitsSold.
+  ///
+  /// In en, this message translates to:
+  /// **'{qty} sold'**
+  String unitsSold(int qty);
 }
 
 class _AppLocalizationsDelegate

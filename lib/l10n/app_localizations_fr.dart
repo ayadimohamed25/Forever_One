@@ -800,4 +800,77 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goodEvening => 'Bonsoir';
+
+  @override
+  String get thisMonth => 'Ce mois-ci';
+
+  @override
+  String get vsLastMonth => 'vs mois dernier';
+
+  @override
+  String get noComparison => 'Pas de comparaison';
+
+  @override
+  String get stockValue => 'Valeur du stock';
+
+  @override
+  String get salesThisMonth => 'Ventes ce mois-ci';
+
+  @override
+  String get revenueTrend => 'Chiffre d\'affaires (30 derniers jours)';
+
+  @override
+  String get topProducts => 'Meilleurs produits';
+
+  @override
+  String get noSalesYet => 'Aucune vente enregistrée';
+
+  @override
+  String get alerts => 'Alertes';
+
+  @override
+  String get noAlerts => 'Rien ne requiert votre attention';
+
+  @override
+  String get allGood => 'Tout va bien';
+
+  @override
+  String lowStockAlert(String name) {
+    return '$name est en rupture de stock';
+  }
+
+  @override
+  String lowStockWarning(String name, int qty) {
+    return '$name : plus que $qty en stock';
+  }
+
+  @override
+  String creditExceededAlert(String name) {
+    return '$name dépasse son plafond de crédit';
+  }
+
+  @override
+  String overduePaymentAlert(String name, int days) {
+    return '$name : $days jours de retard';
+  }
+
+  @override
+  String get recentActivity => 'Activité récente';
+
+  @override
+  String get noActivity => 'Aucune activité';
+
+  @override
+  String get sale => 'Vente';
+
+  @override
+  String get purchase => 'Achat';
+
+  @override
+  String get quickActions => 'Actions rapides';
+
+  @override
+  String unitsSold(int qty) {
+    return '$qty vendus';
+  }
 }
