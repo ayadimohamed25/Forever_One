@@ -11,4 +11,8 @@ class AuthRemoteDatasource {
     });
     return response.data;
   }
+  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
+    final response = await dio.post('/auth/register', data: data);
+    return response.data;
+  }
 }

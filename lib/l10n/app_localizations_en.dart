@@ -1105,4 +1105,159 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get warehouseActive => 'Warehouse is active';
+
+  @override
+  String get users => 'Users';
+
+  @override
+  String get user => 'User';
+
+  @override
+  String get newUser => 'New user';
+
+  @override
+  String get editUser => 'Edit user';
+
+  @override
+  String get searchUsers => 'Search users...';
+
+  @override
+  String get noUsers => 'No users';
+
+  @override
+  String get fullName => 'Full name';
+
+  @override
+  String get role => 'Role';
+
+  @override
+  String get newPassword => 'New password';
+
+  @override
+  String get currentPassword => 'Current password';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get resetPassword => 'Reset password';
+
+  @override
+  String get changePassword => 'Change password';
+
+  @override
+  String get passwordChanged => 'Password changed';
+
+  @override
+  String get passwordReset => 'Password reset';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get passwordTooShort => 'Password must be at least 8 characters';
+
+  @override
+  String get wrongPassword => 'Current password is incorrect';
+
+  @override
+  String get emailTaken => 'This email is already used';
+
+  @override
+  String get invalidEmail => 'Invalid email address';
+
+  @override
+  String get lastAdmin => 'You cannot remove the last administrator';
+
+  @override
+  String get cannotDeleteSelf => 'You cannot delete your own account';
+
+  @override
+  String get userHasActivity =>
+      'This user cannot be deleted because they have activity in the system. Deactivate them instead.';
+
+  @override
+  String get userCreated => 'User created';
+
+  @override
+  String get userUpdated => 'User updated';
+
+  @override
+  String get userDeleted => 'User deleted';
+
+  @override
+  String get userActive => 'Account is active';
+
+  @override
+  String get neverLoggedIn => 'Never logged in';
+
+  @override
+  String get lastLogin => 'Last login';
+
+  @override
+  String get myProfile => 'My profile';
+
+  @override
+  String get accountSecurity => 'Account security';
+
+  @override
+  String get accessRights => 'Access rights';
+
+  @override
+  String permissionsCount(int count) {
+    return '$count permissions';
+  }
+
+  @override
+  String get accountDisabled =>
+      'This account has been disabled. Contact your administrator.';
+
+  @override
+  String get forbidden => 'You do not have permission to do this';
+
+  @override
+  String get signUp => 'Create an account';
+
+  @override
+  String get signUpSubtitle => 'Set up your company on Forever One';
+
+  @override
+  String get noAccountYet => 'No account yet?';
+
+  @override
+  String get alreadyHaveAccount => 'Already have an account?';
+
+  @override
+  String get backToLogin => 'Sign in';
+
+  @override
+  String get companyName => 'Company name';
+
+  @override
+  String get yourName => 'Your name';
+
+  @override
+  String get city => 'City';
+
+  @override
+  String get mainWarehouse => 'Main warehouse';
+
+  @override
+  String get createMyAccount => 'Create my account';
+
+  @override
+  String get accountCreated => 'Welcome to Forever One';
+
+  @override
+  String get registrationFailed => 'Registration failed, please try again';
+
+  @override
+  String get companyInfo => 'Your company';
+
+  @override
+  String get yourAccount => 'Your account';
+
+  @override
+  String get signUpDisclaimer =>
+      'You will be the administrator of this company';
 }

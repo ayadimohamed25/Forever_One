@@ -1,8 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/di/locale_provider.dart';
+import '../../core/theme/app_colors.dart';
 import '../../features/auth/domain/entities/user_entity.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -32,16 +32,16 @@ class AppDrawer extends ConsumerWidget {
     }
   }
 
-  Widget _sectionLabel(String text, ThemeData theme) {
+  Widget _sectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 16, 6),
+      padding: const EdgeInsets.fromLTRB(26, 18, 16, 6),
       child: Text(
         text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.6,
-          color: theme.colorScheme.onSurfaceVariant,
+        style: const TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.8,
+          color: AppColors.textSecondary,
         ),
       ),
     );
@@ -52,47 +52,47 @@ class AppDrawer extends ConsumerWidget {
         required IconData icon,
         required String label,
         required String route,
-        Widget? trailing,
+        required Color color,
       }) {
-    final theme = Theme.of(context);
     final selected = currentRoute == route;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
       child: Material(
-        color: selected
-            ? theme.colorScheme.secondaryContainer
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(28),
+        color: selected ? color.withValues(alpha: 0.10) : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(14),
           onTap: () {
             Navigator.of(context).pop(); // close the drawer first
             if (!selected) context.push(route);
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             child: Row(
               children: [
-                Icon(icon,
-                    size: 21,
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
                     color: selected
-                        ? theme.colorScheme.onSecondaryContainer
-                        : theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 14),
+                        ? color
+                        : color.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(icon,
+                      size: 16, color: selected ? Colors.white : color),
+                ),
+                const SizedBox(width: 13),
                 Expanded(
                   child: Text(
                     label,
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                      color: selected
-                          ? theme.colorScheme.onSecondaryContainer
-                          : theme.colorScheme.onSurface,
+                      fontSize: 13.5,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? color : AppColors.textPrimary,
                     ),
                   ),
                 ),
-                ?trailing,
               ],
             ),
           ),
@@ -106,7 +106,6 @@ class AppDrawer extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(l10n.logoutConfirmTitle),
         content: Text(l10n.logoutConfirmMessage),
         actions: [
@@ -130,12 +129,101 @@ class AppDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final UserEntity? user = ref.watch(authNotifierProvider).user;
     final locale = ref.watch(localeProvider);
 
+    // Only show what this role is actually allowed to reach.
+    bool can(String permission) => user?.can(permission) ?? false;
+
+    final businessItems = <Widget>[
+      if (can('view_products'))
+        _navItem(context,
+            icon: Icons.inventory_2_outlined,
+            label: l10n.products,
+            route: '/products',
+            color: AppColors.stock),
+      if (can('view_warehouses'))
+        _navItem(context,
+            icon: Icons.warehouse_outlined,
+            label: l10n.warehouses,
+            route: '/warehouses',
+            color: AppColors.stock),
+      if (can('manage_stock'))
+        _navItem(context,
+            icon: Icons.swap_vert,
+            label: l10n.movements,
+            route: '/stock-movement',
+            color: AppColors.stock),
+      if (can('view_customers'))
+        _navItem(context,
+            icon: Icons.people_outline,
+            label: l10n.customers,
+            route: '/customers',
+            color: AppColors.finance),
+      if (can('view_suppliers'))
+        _navItem(context,
+            icon: Icons.local_shipping_outlined,
+            label: l10n.suppliers,
+            route: '/suppliers',
+            color: AppColors.purchases),
+      if (can('view_sales'))
+        _navItem(context,
+            icon: Icons.point_of_sale_outlined,
+            label: l10n.sales,
+            route: '/sales',
+            color: AppColors.sales),
+      if (can('view_purchases'))
+        _navItem(context,
+            icon: Icons.shopping_cart_outlined,
+            label: l10n.purchases,
+            route: '/purchases',
+            color: AppColors.purchases),
+    ];
+
+    final intelligenceItems = <Widget>[
+      if (can('use_ai'))
+        _navItem(context,
+            icon: Icons.smart_toy_outlined,
+            label: l10n.aiCopilot,
+            route: '/ai',
+            color: AppColors.primary),
+      if (can('view_insights'))
+        _navItem(context,
+            icon: Icons.insights_outlined,
+            label: l10n.insights,
+            route: '/insights',
+            color: AppColors.primary),
+      if (can('scan_documents'))
+        _navItem(context,
+            icon: Icons.document_scanner_outlined,
+            label: l10n.scanner,
+            route: '/scan',
+            color: AppColors.info),
+    ];
+
+    final systemItems = <Widget>[
+      if (can('manage_users'))
+        _navItem(context,
+            icon: Icons.group_outlined,
+            label: l10n.users,
+            route: '/users',
+            color: AppColors.primary),
+      if (can('view_audit'))
+        _navItem(context,
+            icon: Icons.history,
+            label: l10n.auditLog,
+            route: '/audit',
+            color: AppColors.info),
+      _navItem(context,
+          icon: Icons.person_outline,
+          label: l10n.myProfile,
+          route: '/profile',
+          color: AppColors.textSecondary),
+    ];
+
     return Drawer(
+      backgroundColor: AppColors.surface,
       child: Column(
         children: [
           // User header
@@ -143,16 +231,7 @@ class AppDrawer extends ConsumerWidget {
             width: double.infinity,
             padding: EdgeInsets.fromLTRB(
                 20, MediaQuery.of(context).padding.top + 24, 20, 24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primary.withValues(alpha: 0.8),
-                ],
-              ),
-            ),
+            decoration: const BoxDecoration(gradient: AppColors.brandGradient),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -163,17 +242,17 @@ class AppDrawer extends ConsumerWidget {
                       backgroundColor: Colors.white,
                       child: Text(
                         user?.initials ?? '?',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(20),
@@ -181,8 +260,8 @@ class AppDrawer extends ConsumerWidget {
                       child: Text(
                         _roleLabel(user?.role ?? '', l10n),
                         style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
@@ -194,7 +273,7 @@ class AppDrawer extends ConsumerWidget {
                   user?.displayName ?? '',
                   style: const TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
                 ),
@@ -202,7 +281,7 @@ class AppDrawer extends ConsumerWidget {
                 Text(
                   user?.email ?? '',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     color: Colors.white.withValues(alpha: 0.85),
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -212,14 +291,14 @@ class AppDrawer extends ConsumerWidget {
                   Row(
                     children: [
                       Icon(Icons.business,
-                          size: 13,
+                          size: 12,
                           color: Colors.white.withValues(alpha: 0.85)),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           user.companyName,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11.5,
                             color: Colors.white.withValues(alpha: 0.85),
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -232,81 +311,46 @@ class AppDrawer extends ConsumerWidget {
             ),
           ),
 
-          // Navigation
           Expanded(
             child: ListView(
               padding: const EdgeInsets.only(bottom: 8),
               children: [
-                const SizedBox(height: 8),
-                _navItem(context,
-                    icon: Icons.dashboard_outlined,
-                    label: l10n.dashboard,
-                    route: '/dashboard'),
+                const SizedBox(height: 10),
+                if (can('view_dashboard'))
+                  _navItem(context,
+                      icon: Icons.dashboard_outlined,
+                      label: l10n.dashboard,
+                      route: '/dashboard',
+                      color: AppColors.primary),
 
-                _sectionLabel(l10n.business, theme),
-                _navItem(context,
-                    icon: Icons.inventory_2_outlined,
-                    label: l10n.products,
-                    route: '/products'),
-                _navItem(context,
-                    icon: Icons.warehouse_outlined,
-                    label: l10n.warehouses,
-                    route: '/warehouses'),
-                _navItem(context,
-                    icon: Icons.swap_vert,
-                    label: l10n.movements,
-                    route: '/stock-movement'),
-                _navItem(context,
-                    icon: Icons.people_outline,
-                    label: l10n.customers,
-                    route: '/customers'),
-                _navItem(context,
-                    icon: Icons.local_shipping_outlined,
-                    label: l10n.suppliers,
-                    route: '/suppliers'),
-                _navItem(context,
-                    icon: Icons.point_of_sale_outlined,
-                    label: l10n.sales,
-                    route: '/sales'),
-                _navItem(context,
-                    icon: Icons.shopping_cart_outlined,
-                    label: l10n.purchases,
-                    route: '/purchases'),
+                if (businessItems.isNotEmpty) ...[
+                  _sectionLabel(l10n.business),
+                  ...businessItems,
+                ],
 
-                _sectionLabel(l10n.intelligence, theme),
-                _navItem(context,
-                    icon: Icons.smart_toy_outlined,
-                    label: l10n.aiCopilot,
-                    route: '/ai'),
-                _navItem(context,
-                    icon: Icons.insights_outlined,
-                    label: l10n.insights,
-                    route: '/insights'),
-                _navItem(context,
-                    icon: Icons.document_scanner_outlined,
-                    label: l10n.scanner,
-                    route: '/scan'),
+                if (intelligenceItems.isNotEmpty) ...[
+                  _sectionLabel(l10n.intelligence),
+                  ...intelligenceItems,
+                ],
 
-                _sectionLabel(l10n.system, theme),
-                _navItem(context,
-                    icon: Icons.history,
-                    label: l10n.auditLog,
-                    route: '/audit'),
+                _sectionLabel(l10n.system),
+                ...systemItems,
               ],
             ),
           ),
 
           const Divider(height: 1),
 
-          // Language + logout
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Column(
               children: [
                 ListTile(
                   dense: true,
-                  leading: const Icon(Icons.language, size: 21),
-                  title: Text(l10n.language, style: const TextStyle(fontSize: 14)),
+                  leading: const Icon(Icons.language,
+                      size: 20, color: AppColors.textSecondary),
+                  title: Text(l10n.language,
+                      style: const TextStyle(fontSize: 13.5)),
                   trailing: SegmentedButton<String>(
                     style: const ButtonStyle(
                       visualDensity: VisualDensity.compact,
@@ -325,11 +369,11 @@ class AppDrawer extends ConsumerWidget {
                 ),
                 ListTile(
                   dense: true,
-                  leading: Icon(Icons.logout,
-                      size: 21, color: theme.colorScheme.error),
+                  leading: const Icon(Icons.logout,
+                      size: 20, color: AppColors.danger),
                   title: Text(l10n.logout,
-                      style: TextStyle(
-                          fontSize: 14, color: theme.colorScheme.error)),
+                      style: const TextStyle(
+                          fontSize: 13.5, color: AppColors.danger)),
                   onTap: () => _confirmLogout(context, ref, l10n),
                 ),
               ],

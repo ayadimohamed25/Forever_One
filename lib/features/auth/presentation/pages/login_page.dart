@@ -151,6 +151,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(l10n.noAccountYet,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      )),
+                                  TextButton(
+                                    onPressed: () => context.push('/signup'),
+                                    child: Text(l10n.signUp,
+                                        style: const TextStyle(
+                                            fontSize: 13, fontWeight: FontWeight.w700)),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 24),
 
                               TextField(

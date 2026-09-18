@@ -2161,6 +2161,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Warehouse is active'**
   String get warehouseActive;
+
+  /// No description provided for @users.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get users;
+
+  /// No description provided for @user.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get user;
+
+  /// No description provided for @newUser.
+  ///
+  /// In en, this message translates to:
+  /// **'New user'**
+  String get newUser;
+
+  /// No description provided for @editUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit user'**
+  String get editUser;
+
+  /// No description provided for @searchUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search users...'**
+  String get searchUsers;
+
+  /// No description provided for @noUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'No users'**
+  String get noUsers;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get fullName;
+
+  /// No description provided for @role.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get role;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPassword;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get confirmPassword;
+
+  /// No description provided for @resetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get resetPassword;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePassword;
+
+  /// No description provided for @passwordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed'**
+  String get passwordChanged;
+
+  /// No description provided for @passwordReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset'**
+  String get passwordReset;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @passwordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get passwordTooShort;
+
+  /// No description provided for @wrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password is incorrect'**
+  String get wrongPassword;
+
+  /// No description provided for @emailTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This email is already used'**
+  String get emailTaken;
+
+  /// No description provided for @invalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid email address'**
+  String get invalidEmail;
+
+  /// No description provided for @lastAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot remove the last administrator'**
+  String get lastAdmin;
+
+  /// No description provided for @cannotDeleteSelf.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot delete your own account'**
+  String get cannotDeleteSelf;
+
+  /// No description provided for @userHasActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'This user cannot be deleted because they have activity in the system. Deactivate them instead.'**
+  String get userHasActivity;
+
+  /// No description provided for @userCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'User created'**
+  String get userCreated;
+
+  /// No description provided for @userUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'User updated'**
+  String get userUpdated;
+
+  /// No description provided for @userDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'User deleted'**
+  String get userDeleted;
+
+  /// No description provided for @userActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Account is active'**
+  String get userActive;
+
+  /// No description provided for @neverLoggedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Never logged in'**
+  String get neverLoggedIn;
+
+  /// No description provided for @lastLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Last login'**
+  String get lastLogin;
+
+  /// No description provided for @myProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'My profile'**
+  String get myProfile;
+
+  /// No description provided for @accountSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Account security'**
+  String get accountSecurity;
+
+  /// No description provided for @accessRights.
+  ///
+  /// In en, this message translates to:
+  /// **'Access rights'**
+  String get accessRights;
+
+  /// No description provided for @permissionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} permissions'**
+  String permissionsCount(int count);
+
+  /// No description provided for @accountDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has been disabled. Contact your administrator.'**
+  String get accountDisabled;
+
+  /// No description provided for @forbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to do this'**
+  String get forbidden;
+
+  /// No description provided for @signUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account'**
+  String get signUp;
+
+  /// No description provided for @signUpSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up your company on Forever One'**
+  String get signUpSubtitle;
+
+  /// No description provided for @noAccountYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No account yet?'**
+  String get noAccountYet;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account?'**
+  String get alreadyHaveAccount;
+
+  /// No description provided for @backToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get backToLogin;
+
+  /// No description provided for @companyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Company name'**
+  String get companyName;
+
+  /// No description provided for @yourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get yourName;
+
+  /// No description provided for @city.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get city;
+
+  /// No description provided for @mainWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Main warehouse'**
+  String get mainWarehouse;
+
+  /// No description provided for @createMyAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create my account'**
+  String get createMyAccount;
+
+  /// No description provided for @accountCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Forever One'**
+  String get accountCreated;
+
+  /// No description provided for @registrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration failed, please try again'**
+  String get registrationFailed;
+
+  /// No description provided for @companyInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Your company'**
+  String get companyInfo;
+
+  /// No description provided for @yourAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account'**
+  String get yourAccount;
+
+  /// No description provided for @signUpDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be the administrator of this company'**
+  String get signUpDisclaimer;
 }
 
 class _AppLocalizationsDelegate

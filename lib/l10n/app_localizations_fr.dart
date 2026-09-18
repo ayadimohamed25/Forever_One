@@ -1107,4 +1107,163 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get warehouseActive => 'Dépôt actif';
+
+  @override
+  String get users => 'Utilisateurs';
+
+  @override
+  String get user => 'Utilisateur';
+
+  @override
+  String get newUser => 'Nouvel utilisateur';
+
+  @override
+  String get editUser => 'Modifier l\'utilisateur';
+
+  @override
+  String get searchUsers => 'Rechercher un utilisateur...';
+
+  @override
+  String get noUsers => 'Aucun utilisateur';
+
+  @override
+  String get fullName => 'Nom complet';
+
+  @override
+  String get role => 'Rôle';
+
+  @override
+  String get newPassword => 'Nouveau mot de passe';
+
+  @override
+  String get currentPassword => 'Mot de passe actuel';
+
+  @override
+  String get confirmPassword => 'Confirmer le mot de passe';
+
+  @override
+  String get resetPassword => 'Réinitialiser le mot de passe';
+
+  @override
+  String get changePassword => 'Changer le mot de passe';
+
+  @override
+  String get passwordChanged => 'Mot de passe modifié';
+
+  @override
+  String get passwordReset => 'Mot de passe réinitialisé';
+
+  @override
+  String get passwordsDoNotMatch => 'Les mots de passe ne correspondent pas';
+
+  @override
+  String get passwordTooShort =>
+      'Le mot de passe doit contenir au moins 8 caractères';
+
+  @override
+  String get wrongPassword => 'Le mot de passe actuel est incorrect';
+
+  @override
+  String get emailTaken => 'Cet email est déjà utilisé';
+
+  @override
+  String get invalidEmail => 'Adresse email invalide';
+
+  @override
+  String get lastAdmin =>
+      'Vous ne pouvez pas retirer le dernier administrateur';
+
+  @override
+  String get cannotDeleteSelf =>
+      'Vous ne pouvez pas supprimer votre propre compte';
+
+  @override
+  String get userHasActivity =>
+      'Cet utilisateur ne peut pas être supprimé car il a de l\'activité dans le système. Désactivez-le plutôt.';
+
+  @override
+  String get userCreated => 'Utilisateur créé';
+
+  @override
+  String get userUpdated => 'Utilisateur modifié';
+
+  @override
+  String get userDeleted => 'Utilisateur supprimé';
+
+  @override
+  String get userActive => 'Compte actif';
+
+  @override
+  String get neverLoggedIn => 'Jamais connecté';
+
+  @override
+  String get lastLogin => 'Dernière connexion';
+
+  @override
+  String get myProfile => 'Mon profil';
+
+  @override
+  String get accountSecurity => 'Sécurité du compte';
+
+  @override
+  String get accessRights => 'Droits d\'accès';
+
+  @override
+  String permissionsCount(int count) {
+    return '$count permissions';
+  }
+
+  @override
+  String get accountDisabled =>
+      'Ce compte a été désactivé. Contactez votre administrateur.';
+
+  @override
+  String get forbidden => 'Vous n\'avez pas la permission de faire cela';
+
+  @override
+  String get signUp => 'Créer un compte';
+
+  @override
+  String get signUpSubtitle => 'Installez votre entreprise sur Forever One';
+
+  @override
+  String get noAccountYet => 'Pas encore de compte ?';
+
+  @override
+  String get alreadyHaveAccount => 'Vous avez déjà un compte ?';
+
+  @override
+  String get backToLogin => 'Se connecter';
+
+  @override
+  String get companyName => 'Nom de l\'entreprise';
+
+  @override
+  String get yourName => 'Votre nom';
+
+  @override
+  String get city => 'Ville';
+
+  @override
+  String get mainWarehouse => 'Dépôt principal';
+
+  @override
+  String get createMyAccount => 'Créer mon compte';
+
+  @override
+  String get accountCreated => 'Bienvenue sur Forever One';
+
+  @override
+  String get registrationFailed =>
+      'L\'inscription a échoué, veuillez réessayer';
+
+  @override
+  String get companyInfo => 'Votre entreprise';
+
+  @override
+  String get yourAccount => 'Votre compte';
+
+  @override
+  String get signUpDisclaimer =>
+      'Vous serez l\'administrateur de cette entreprise';
 }

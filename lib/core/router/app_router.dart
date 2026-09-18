@@ -12,6 +12,9 @@ import '../../features/scan/presentation/pages/scan_page.dart';
 import '../../features/ai/presentation/pages/ai_chat_page.dart';
 import '../../features/dashboard/presentation/pages/insights_page.dart';
 import '../../features/dashboard/presentation/pages/audit_page.dart';
+import '../../features/users/presentation/pages/profile_page.dart';
+import '../../features/users/presentation/pages/users_page.dart';
+import '../../features/auth/presentation/pages/signup_page.dart';
 final appRouter = GoRouter(
   initialLocation: '/login',
   routes: [
@@ -66,6 +69,18 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/audit',
       builder: (context, state) => const AuditPage(),
+    ),
+    GoRoute(
+      path: '/users',
+      builder: (context, state) => const UsersPage(),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfilePage(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => const SignUpPage(),
     ),
   ],
 );
