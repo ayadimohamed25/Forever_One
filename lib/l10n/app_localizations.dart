@@ -1723,6 +1723,444 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{qty} sold'**
   String unitsSold(int qty);
+
+  /// No description provided for @sku.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference (SKU)'**
+  String get sku;
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// No description provided for @categories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get categories;
+
+  /// No description provided for @newCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'New category'**
+  String get newCategory;
+
+  /// No description provided for @editCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit category'**
+  String get editCategory;
+
+  /// No description provided for @categoryInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'This category cannot be deleted because products are using it.'**
+  String get categoryInUse;
+
+  /// No description provided for @categoryDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Category deleted'**
+  String get categoryDeleted;
+
+  /// No description provided for @noCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories'**
+  String get noCategories;
+
+  /// No description provided for @noCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncategorized'**
+  String get noCategory;
+
+  /// No description provided for @productCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No products} =1{1 product} other{{count} products}}'**
+  String productCount(int count);
+
+  /// No description provided for @color.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get color;
+
+  /// No description provided for @vatRate.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT rate'**
+  String get vatRate;
+
+  /// No description provided for @maxThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Max threshold'**
+  String get maxThreshold;
+
+  /// No description provided for @shelfLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelf location'**
+  String get shelfLocation;
+
+  /// No description provided for @defaultSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Default supplier'**
+  String get defaultSupplier;
+
+  /// No description provided for @saleUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale unit'**
+  String get saleUnit;
+
+  /// No description provided for @purchaseUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase unit'**
+  String get purchaseUnit;
+
+  /// No description provided for @unitsPerPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Units per purchase unit'**
+  String get unitsPerPurchase;
+
+  /// No description provided for @active.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get active;
+
+  /// No description provided for @inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get inactive;
+
+  /// No description provided for @productActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Product is active'**
+  String get productActive;
+
+  /// No description provided for @generalInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'General information'**
+  String get generalInfo;
+
+  /// No description provided for @pricingAndVat.
+  ///
+  /// In en, this message translates to:
+  /// **'Pricing & VAT'**
+  String get pricingAndVat;
+
+  /// No description provided for @stockSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock settings'**
+  String get stockSettings;
+
+  /// No description provided for @unitsAndPackaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Units & packaging'**
+  String get unitsAndPackaging;
+
+  /// No description provided for @productDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Product details'**
+  String get productDetails;
+
+  /// No description provided for @stockHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock history'**
+  String get stockHistory;
+
+  /// No description provided for @noStockHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No stock movements yet'**
+  String get noStockHistory;
+
+  /// No description provided for @priceHt.
+  ///
+  /// In en, this message translates to:
+  /// **'Price (excl. VAT)'**
+  String get priceHt;
+
+  /// No description provided for @priceTtc.
+  ///
+  /// In en, this message translates to:
+  /// **'Price (incl. VAT)'**
+  String get priceTtc;
+
+  /// No description provided for @marginAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin'**
+  String get marginAmount;
+
+  /// No description provided for @filterByCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by category'**
+  String get filterByCategory;
+
+  /// No description provided for @allCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get allCategories;
+
+  /// No description provided for @showInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Show inactive'**
+  String get showInactive;
+
+  /// No description provided for @subtotalHt.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal (excl. VAT)'**
+  String get subtotalHt;
+
+  /// No description provided for @totalVat.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT'**
+  String get totalVat;
+
+  /// No description provided for @totalTtc.
+  ///
+  /// In en, this message translates to:
+  /// **'Total (incl. VAT)'**
+  String get totalTtc;
+
+  /// No description provided for @dueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get dueDate;
+
+  /// No description provided for @expectedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected delivery'**
+  String get expectedDate;
+
+  /// No description provided for @receivedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Received on'**
+  String get receivedDate;
+
+  /// No description provided for @markAsReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as received'**
+  String get markAsReceived;
+
+  /// No description provided for @purchaseReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase received'**
+  String get purchaseReceived;
+
+  /// No description provided for @alreadyReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'This purchase is already received'**
+  String get alreadyReceived;
+
+  /// No description provided for @overdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdue;
+
+  /// No description provided for @dueIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Due in {days} days'**
+  String dueIn(int days);
+
+  /// No description provided for @dueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get dueToday;
+
+  /// No description provided for @pendingDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending delivery'**
+  String get pendingDelivery;
+
+  /// No description provided for @lineVat.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT'**
+  String get lineVat;
+
+  /// No description provided for @invoiceDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice details'**
+  String get invoiceDetails;
+
+  /// No description provided for @optional.
+  ///
+  /// In en, this message translates to:
+  /// **'optional'**
+  String get optional;
+
+  /// No description provided for @searchSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Search sales...'**
+  String get searchSales;
+
+  /// No description provided for @searchPurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Search purchases...'**
+  String get searchPurchases;
+
+  /// No description provided for @editSale.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit sale'**
+  String get editSale;
+
+  /// No description provided for @editPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit purchase'**
+  String get editPurchase;
+
+  /// No description provided for @saleHasPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'This sale cannot be modified or deleted because payments have been recorded against it.'**
+  String get saleHasPayments;
+
+  /// No description provided for @purchaseHasPayments.
+  ///
+  /// In en, this message translates to:
+  /// **'This purchase cannot be modified or deleted because payments have been recorded against it.'**
+  String get purchaseHasPayments;
+
+  /// No description provided for @saleDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale deleted'**
+  String get saleDeleted;
+
+  /// No description provided for @saleUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale updated'**
+  String get saleUpdated;
+
+  /// No description provided for @purchaseDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase deleted'**
+  String get purchaseDeleted;
+
+  /// No description provided for @purchaseUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase updated'**
+  String get purchaseUpdated;
+
+  /// No description provided for @stockWillBeRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'The stock will be restored.'**
+  String get stockWillBeRestored;
+
+  /// No description provided for @searchWarehouses.
+  ///
+  /// In en, this message translates to:
+  /// **'Search warehouses...'**
+  String get searchWarehouses;
+
+  /// No description provided for @newWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'New warehouse'**
+  String get newWarehouse;
+
+  /// No description provided for @editWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit warehouse'**
+  String get editWarehouse;
+
+  /// No description provided for @warehouseInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'This warehouse cannot be deleted because it has stock movements.'**
+  String get warehouseInUse;
+
+  /// No description provided for @warehouseDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse deleted'**
+  String get warehouseDeleted;
+
+  /// No description provided for @warehouseUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse updated'**
+  String get warehouseUpdated;
+
+  /// No description provided for @code.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get code;
+
+  /// No description provided for @manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get manager;
+
+  /// No description provided for @totalUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'Units in stock'**
+  String get totalUnits;
+
+  /// No description provided for @distinctProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get distinctProducts;
+
+  /// No description provided for @warehouseActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse is active'**
+  String get warehouseActive;
 }
 
 class _AppLocalizationsDelegate

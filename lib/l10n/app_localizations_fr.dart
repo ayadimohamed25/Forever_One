@@ -873,4 +873,238 @@ class AppLocalizationsFr extends AppLocalizations {
   String unitsSold(int qty) {
     return '$qty vendus';
   }
+
+  @override
+  String get sku => 'Référence (SKU)';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get category => 'Catégorie';
+
+  @override
+  String get categories => 'Catégories';
+
+  @override
+  String get newCategory => 'Nouvelle catégorie';
+
+  @override
+  String get editCategory => 'Modifier la catégorie';
+
+  @override
+  String get categoryInUse =>
+      'Cette catégorie ne peut pas être supprimée car des produits l\'utilisent.';
+
+  @override
+  String get categoryDeleted => 'Catégorie supprimée';
+
+  @override
+  String get noCategories => 'Aucune catégorie';
+
+  @override
+  String get noCategory => 'Sans catégorie';
+
+  @override
+  String productCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count produits',
+      one: '1 produit',
+      zero: 'Aucun produit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get color => 'Couleur';
+
+  @override
+  String get vatRate => 'Taux de TVA';
+
+  @override
+  String get maxThreshold => 'Seuil maximum';
+
+  @override
+  String get shelfLocation => 'Emplacement';
+
+  @override
+  String get defaultSupplier => 'Fournisseur par défaut';
+
+  @override
+  String get saleUnit => 'Unité de vente';
+
+  @override
+  String get purchaseUnit => 'Unité d\'achat';
+
+  @override
+  String get unitsPerPurchase => 'Unités par unité d\'achat';
+
+  @override
+  String get active => 'Actif';
+
+  @override
+  String get inactive => 'Inactif';
+
+  @override
+  String get productActive => 'Produit actif';
+
+  @override
+  String get generalInfo => 'Informations générales';
+
+  @override
+  String get pricingAndVat => 'Prix & TVA';
+
+  @override
+  String get stockSettings => 'Paramètres de stock';
+
+  @override
+  String get unitsAndPackaging => 'Unités & conditionnement';
+
+  @override
+  String get productDetails => 'Fiche produit';
+
+  @override
+  String get stockHistory => 'Historique du stock';
+
+  @override
+  String get noStockHistory => 'Aucun mouvement de stock';
+
+  @override
+  String get priceHt => 'Prix HT';
+
+  @override
+  String get priceTtc => 'Prix TTC';
+
+  @override
+  String get marginAmount => 'Marge';
+
+  @override
+  String get filterByCategory => 'Filtrer par catégorie';
+
+  @override
+  String get allCategories => 'Toutes les catégories';
+
+  @override
+  String get showInactive => 'Afficher les inactifs';
+
+  @override
+  String get subtotalHt => 'Sous-total HT';
+
+  @override
+  String get totalVat => 'TVA';
+
+  @override
+  String get totalTtc => 'Total TTC';
+
+  @override
+  String get dueDate => 'Échéance';
+
+  @override
+  String get expectedDate => 'Livraison prévue';
+
+  @override
+  String get receivedDate => 'Reçu le';
+
+  @override
+  String get markAsReceived => 'Marquer comme reçu';
+
+  @override
+  String get purchaseReceived => 'Achat réceptionné';
+
+  @override
+  String get alreadyReceived => 'Cet achat est déjà réceptionné';
+
+  @override
+  String get overdue => 'En retard';
+
+  @override
+  String dueIn(int days) {
+    return 'Échéance dans $days jours';
+  }
+
+  @override
+  String get dueToday => 'Échéance aujourd\'hui';
+
+  @override
+  String get pendingDelivery => 'En attente de livraison';
+
+  @override
+  String get lineVat => 'TVA';
+
+  @override
+  String get invoiceDetails => 'Détails de la facture';
+
+  @override
+  String get optional => 'optionnel';
+
+  @override
+  String get searchSales => 'Rechercher une vente...';
+
+  @override
+  String get searchPurchases => 'Rechercher un achat...';
+
+  @override
+  String get editSale => 'Modifier la vente';
+
+  @override
+  String get editPurchase => 'Modifier l\'achat';
+
+  @override
+  String get saleHasPayments =>
+      'Cette vente ne peut pas être modifiée ou supprimée car des paiements y sont enregistrés.';
+
+  @override
+  String get purchaseHasPayments =>
+      'Cet achat ne peut pas être modifié ou supprimé car des paiements y sont enregistrés.';
+
+  @override
+  String get saleDeleted => 'Vente supprimée';
+
+  @override
+  String get saleUpdated => 'Vente modifiée';
+
+  @override
+  String get purchaseDeleted => 'Achat supprimé';
+
+  @override
+  String get purchaseUpdated => 'Achat modifié';
+
+  @override
+  String get stockWillBeRestored => 'Le stock sera restauré.';
+
+  @override
+  String get searchWarehouses => 'Rechercher un dépôt...';
+
+  @override
+  String get newWarehouse => 'Nouveau dépôt';
+
+  @override
+  String get editWarehouse => 'Modifier le dépôt';
+
+  @override
+  String get warehouseInUse =>
+      'Ce dépôt ne peut pas être supprimé car il contient des mouvements de stock.';
+
+  @override
+  String get warehouseDeleted => 'Dépôt supprimé';
+
+  @override
+  String get warehouseUpdated => 'Dépôt modifié';
+
+  @override
+  String get code => 'Code';
+
+  @override
+  String get manager => 'Responsable';
+
+  @override
+  String get totalUnits => 'Unités en stock';
+
+  @override
+  String get distinctProducts => 'Produits';
+
+  @override
+  String get warehouseActive => 'Dépôt actif';
 }

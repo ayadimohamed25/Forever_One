@@ -1,23 +1,23 @@
 import '../../domain/entities/purchase_entity.dart';
 
 class PurchaseModel {
-  final String id;
-  final String supplierName;
-  final double total;
-  final String status;
+  static double _d(dynamic v) => double.tryParse('${v ?? 0}') ?? 0;
+  static DateTime? _date(dynamic v) =>
+      v != null ? DateTime.tryParse('$v') : null;
 
-  PurchaseModel({required this.id, required this.supplierName, required this.total, required this.status});
-
-  factory PurchaseModel.fromJson(Map<String, dynamic> json) {
-    return PurchaseModel(
-      id: json['id'],
-      supplierName: json['supplier_name'] ?? '',
-      total: double.parse((json['total'] ?? 0).toString()),
-      status: json['status'] ?? '',
+  static PurchaseEntity fromJson(Map<String, dynamic> json) {
+    return PurchaseEntity(
+      id: '${json['id']}',
+      supplierName: '${json['supplier_name'] ?? ''}',
+      reference: json['reference']?.toString(),
+      subtotalHt: _d(json['subtotal_ht']),
+      totalVat: _d(json['total_vat']),
+      total: _d(json['total']),
+      paid: _d(json['paid']),
+      status: '${json['status'] ?? ''}',
+      expectedDate: _date(json['expected_date']),
+      receivedDate: _date(json['received_date']),
+      createdAt: _date(json['created_at']) ?? DateTime.now(),
     );
-  }
-
-  PurchaseEntity toEntity() {
-    return PurchaseEntity(id: id, supplierName: supplierName, total: total, status: status);
   }
 }

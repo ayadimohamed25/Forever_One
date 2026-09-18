@@ -1,23 +1,23 @@
 import '../../domain/entities/sale_entity.dart';
 
 class SaleModel {
-  final String id;
-  final String customerName;
-  final double total;
-  final String status;
+  static double _d(dynamic v) => double.tryParse('${v ?? 0}') ?? 0;
 
-  SaleModel({required this.id, required this.customerName, required this.total, required this.status});
-
-  factory SaleModel.fromJson(Map<String, dynamic> json) {
-    return SaleModel(
-      id: json['id'],
-      customerName: json['customer_name'] ?? '',
-      total: double.parse((json['total'] ?? 0).toString()),
-      status: json['status'] ?? '',
+  static SaleEntity fromJson(Map<String, dynamic> json) {
+    return SaleEntity(
+      id: '${json['id']}',
+      customerName: '${json['customer_name'] ?? ''}',
+      reference: json['reference']?.toString(),
+      subtotalHt: _d(json['subtotal_ht']),
+      totalVat: _d(json['total_vat']),
+      total: _d(json['total']),
+      paid: _d(json['paid']),
+      status: '${json['status'] ?? ''}',
+      dueDate: json['due_date'] != null
+          ? DateTime.tryParse('${json['due_date']}')
+          : null,
+      createdAt:
+      DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
     );
-  }
-
-  SaleEntity toEntity() {
-    return SaleEntity(id: id, customerName: customerName, total: total, status: status);
   }
 }

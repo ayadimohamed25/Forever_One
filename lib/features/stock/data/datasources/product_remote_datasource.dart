@@ -4,11 +4,26 @@ class ProductRemoteDatasource {
   final Dio dio;
   ProductRemoteDatasource(this.dio);
 
-  Future<List<dynamic>> getProducts({String? search}) async {
-    final response = await dio.get(
-      '/products',
-      queryParameters: search != null && search.isNotEmpty ? {'search': search} : null,
-    );
+  Future<List<dynamic>> getProducts({
+    String? search,
+    String? categoryId,
+    bool activeOnly = false,
+  }) async {
+    final params = <String, dynamic>{};
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    if (categoryId != null && categoryId.isNotEmpty) {
+      params['category_id'] = categoryId;
+    }
+    if (activeOnly) params['active_only'] = '1';
+
+    final response = await dio.get('/products',
+        queryParameters: params.isEmpty ? null : params);
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getProductDetail(String id) async {
+    final response =
+    await dio.get('/products/show', queryParameters: {'id': id});
     return response.data;
   }
 

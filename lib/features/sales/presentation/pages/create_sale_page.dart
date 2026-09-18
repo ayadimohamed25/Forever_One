@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../customers/presentation/providers/customer_provider.dart';
 import '../../../stock/presentation/providers/product_provider.dart';
@@ -8,15 +9,23 @@ import '../../domain/entities/sale_line_entity.dart';
 import '../providers/sale_provider.dart';
 
 class CreateSalePage extends ConsumerStatefulWidget {
-  const CreateSalePage({super.key});
+  /// When set, the page edits that sale instead of creating a new one.
+  final String? existingSaleId;
+
+  const CreateSalePage({super.key, this.existingSaleId});
 
   @override
   ConsumerState<CreateSalePage> createState() => _CreateSalePageState();
+
 }
 
 class _CreateSalePageState extends ConsumerState<CreateSalePage> {
+  bool isLoadingExisting = false;
+  bool get isEditing => widget.existingSaleId != null;
   String? customerId;
   String? warehouseId;
+  final referenceController = TextEditingController();
+  final notesController = TextEditingController();
   final List<SaleLineEntity> lines = [];
 
   String? lineProductId;
@@ -25,11 +34,33 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    Future.microtask(() async {
       ref.read(customerListProvider.notifier).load();
       ref.read(warehouseListProvider.notifier).load();
       ref.read(productListProvider.notifier).load();
+
+      if (widget.existingSaleId != null) {
+        setState(() => isLoadingExisting = true);
+        final result = await ref
+            .read(saleRepositoryProvider)
+            .getSaleDetail(widget.existingSaleId!);
+        result.fold((_) {}, (detail) {
+          setState(() {
+            referenceController.text = detail.sale.reference ?? '';
+            lines.addAll(detail.lines);
+            isLoadingExisting = false;
+          });
+        });
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    referenceController.dispose();
+    notesController.dispose();
+    qtyController.dispose();
+    super.dispose();
   }
 
   void _addLine() {
@@ -45,13 +76,40 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
         productName: product.name,
         quantity: qty,
         unitPrice: product.price,
+        vatRate: product.vatRate,
       ));
       lineProductId = null;
       qtyController.text = '1';
     });
   }
 
-  double get total => lines.fold(0, (sum, l) => sum + l.lineTotal);
+  double get subtotalHt => lines.fold(0, (sum, l) => sum + l.lineTotal);
+  double get totalVat => lines.fold(0, (sum, l) => sum + l.vatAmount);
+  double get totalTtc => subtotalHt + totalVat;
+
+  Widget _totalRow(String label, double value, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                fontSize: bold ? 15 : 12.5,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
+                color:
+                bold ? AppColors.textPrimary : AppColors.textSecondary,
+              )),
+          Text('${value.toStringAsFixed(3)} DT',
+              style: TextStyle(
+                fontSize: bold ? 20 : 13,
+                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+                color: bold ? AppColors.primary : AppColors.textPrimary,
+              )),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,16 +117,14 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
     final warehouses = ref.watch(warehouseListProvider).warehouses;
     final products = ref.watch(productListProvider).products;
     final saleState = ref.watch(saleListProvider);
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(saleListProvider, (previous, next) {
       if (next.lastTotal != null && previous?.lastTotal != next.lastTotal) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.saleCreated(next.lastTotal!.toStringAsFixed(2))),
-            backgroundColor: Colors.green.shade700,
-            behavior: SnackBarBehavior.floating,
+            content: Text(l10n.saleCreated(next.lastTotal!.toStringAsFixed(3))),
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.of(context).pop();
@@ -76,87 +132,99 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
       if (next.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.error!),
-            backgroundColor: theme.colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+              content: Text(next.error!), backgroundColor: AppColors.danger),
         );
       }
     });
 
-    final canSubmit = customerId != null && warehouseId != null && lines.isNotEmpty;
+    final canSubmit =
+        customerId != null && warehouseId != null && lines.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.newSale)),
+      backgroundColor: AppColors.surfaceAlt,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text(isEditing ? l10n.editSale : l10n.newSale),
+      ),
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
+            child: ListView(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: BorderSide(color: theme.colorScheme.outlineVariant),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        children: [
-                          DropdownButtonFormField<String>(
-                            initialValue: customerId,
-                            decoration: InputDecoration(
-                              labelText: l10n.customer,
-                              prefixIcon: const Icon(Icons.person_outline),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                            items: customers
-                                .map((c) => DropdownMenuItem(
-                                value: c.id, child: Text(c.name)))
-                                .toList(),
-                            onChanged: (v) => setState(() => customerId = v),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            initialValue: warehouseId,
-                            decoration: InputDecoration(
-                              labelText: l10n.warehouse,
-                              prefixIcon: const Icon(Icons.warehouse_outlined),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                            items: warehouses
-                                .map((w) => DropdownMenuItem(
-                                value: w.id, child: Text(w.name)))
-                                .toList(),
-                            onChanged: (v) => setState(() => warehouseId = v),
-                          ),
-                        ],
+              children: [
+                // Invoice details
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: AppColors.cardShadow,
+                  ),
+                  child: Column(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: customerId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: l10n.customer,
+                          prefixIcon: const Icon(Icons.person_outline),
+                        ),
+                        items: customers
+                            .map((c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name,
+                                overflow: TextOverflow.ellipsis)))
+                            .toList(),
+                        onChanged: (v) => setState(() => customerId = v),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: warehouseId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: l10n.warehouse,
+                          prefixIcon: const Icon(Icons.warehouse_outlined),
+                        ),
+                        items: warehouses
+                            .map((w) => DropdownMenuItem(
+                            value: w.id, child: Text(w.name)))
+                            .toList(),
+                        onChanged: (v) => setState(() => warehouseId = v),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: referenceController,
+                        decoration: InputDecoration(
+                          labelText: '${l10n.reference} (${l10n.optional})',
+                          prefixIcon: const Icon(Icons.tag),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 18),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(l10n.addProductLine,
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
+
+                const SizedBox(height: 18),
+
+                // Add line
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.18)),
                   ),
-                  const SizedBox(height: 10),
-                  Card(
-                    elevation: 0,
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.addProductLine,
+                          style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary)),
+                      const SizedBox(height: 10),
+                      Row(
                         children: [
                           Expanded(
                             flex: 3,
@@ -166,21 +234,24 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                               decoration: InputDecoration(
                                 labelText: l10n.product,
                                 isDense: true,
-                                border: const OutlineInputBorder(),
+                                fillColor: Colors.white,
                               ),
                               items: products
+                                  .where((p) => p.isActive)
                                   .map((p) => DropdownMenuItem(
                                 value: p.id,
-                                child: Text(p.name,
+                                child: Text(
+                                    '${p.name} · ${p.price.toStringAsFixed(2)} DT',
                                     overflow: TextOverflow.ellipsis),
                               ))
                                   .toList(),
-                              onChanged: (v) => setState(() => lineProductId = v),
+                              onChanged: (v) =>
+                                  setState(() => lineProductId = v),
                             ),
                           ),
                           const SizedBox(width: 8),
                           SizedBox(
-                            width: 68,
+                            width: 70,
                             child: TextField(
                               controller: qtyController,
                               textAlign: TextAlign.center,
@@ -188,7 +259,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                               decoration: InputDecoration(
                                 labelText: l10n.qty,
                                 isDense: true,
-                                border: const OutlineInputBorder(),
+                                fillColor: Colors.white,
                               ),
                             ),
                           ),
@@ -199,101 +270,121 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 18),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      lines.isEmpty ? l10n.noLines : l10n.linesCount(lines.length),
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+
+                const SizedBox(height: 18),
+
+                Text(
+                  lines.isEmpty ? l10n.noLines : l10n.linesCount(lines.length),
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 10),
+
+                if (lines.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 28),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.shopping_basket_outlined,
+                            size: 42, color: AppColors.border),
+                        const SizedBox(height: 10),
+                        Text(l10n.addAtLeastOneProduct,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary)),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (lines.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
-                      alignment: Alignment.center,
-                      child: Column(
-                        children: [
-                          Icon(Icons.shopping_basket_outlined,
-                              size: 44, color: theme.colorScheme.outlineVariant),
-                          const SizedBox(height: 10),
-                          Text(l10n.addAtLeastOneProduct,
-                              style: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontSize: 13)),
-                        ],
+                  )
+                else
+                  ...lines.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final l = entry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
                       ),
-                    )
-                  else
-                    ...lines.asMap().entries.map((entry) {
-                      final i = entry.key;
-                      final l = entry.value;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: theme.colorScheme.outlineVariant),
-                        ),
-                        child: ListTile(
-                          contentPadding:
-                          const EdgeInsets.only(left: 14, right: 6),
-                          title: Text(l.productName,
-                              style: const TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.w600)),
-                          subtitle: Text(
-                              '${l.quantity} × ${l.unitPrice.toStringAsFixed(2)} DT',
-                              style: const TextStyle(fontSize: 12)),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(l.productName,
+                                    style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary),
+                                    overflow: TextOverflow.ellipsis),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${l.quantity} × ${l.unitPrice.toStringAsFixed(3)} · ${l10n.lineVat} ${l.vatRate.toStringAsFixed(0)}%',
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text('${l.lineTotal.toStringAsFixed(2)} DT',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.primary,
-                                  )),
-                              IconButton(
-                                icon: Icon(Icons.close,
-                                    size: 18,
-                                    color: theme.colorScheme.onSurfaceVariant),
-                                onPressed: () =>
-                                    setState(() => lines.removeAt(i)),
-                              ),
+                              Text('${l.lineTotalTtc.toStringAsFixed(3)} DT',
+                                  style: const TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary)),
+                              Text(
+                                  '${l.lineTotal.toStringAsFixed(3)} HT',
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.textSecondary)),
                             ],
                           ),
-                        ),
-                      );
-                    }),
-                ],
-              ),
+                          IconButton(
+                            icon: const Icon(Icons.close,
+                                size: 18, color: AppColors.textSecondary),
+                            onPressed: () => setState(() => lines.removeAt(i)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: '${l10n.notes} (${l10n.optional})',
+                    fillColor: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
+
+          // Totals + submit
           Container(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(
-                  top: BorderSide(color: theme.colorScheme.outlineVariant)),
+              color: Colors.white,
+              border: Border(top: BorderSide(color: AppColors.border)),
             ),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(l10n.total,
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600)),
-                    Text('${total.toStringAsFixed(2)} DT',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        )),
-                  ],
-                ),
+                _totalRow(l10n.subtotalHt, subtotalHt),
+                _totalRow(l10n.totalVat, totalVat),
+                const Divider(height: 14),
+                _totalRow(l10n.totalTtc, totalTtc, bold: true),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -303,18 +394,52 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                       : FilledButton.icon(
                     onPressed: !canSubmit
                         ? null
-                        : () => ref.read(saleListProvider.notifier).submit(
-                      customerId: customerId!,
-                      warehouseId: warehouseId!,
-                      lines: lines,
-                    ),
+                        : () async {
+                      if (isEditing) {
+                        final error = await ref
+                            .read(saleListProvider.notifier)
+                            .edit(
+                          id: widget.existingSaleId!,
+                          customerId: customerId!,
+                          warehouseId: warehouseId!,
+                          reference: referenceController
+                              .text.trim().isEmpty
+                              ? null
+                              : referenceController.text.trim(),
+                          notes: notesController
+                              .text.trim().isEmpty
+                              ? null
+                              : notesController.text.trim(),
+                          lines: lines,
+                        );
+                        if (!context.mounted) return;
+                        if (error == 'SALE_HAS_PAYMENTS') {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(
+                            content: Text(l10n.saleHasPayments),
+                            backgroundColor: AppColors.danger,
+                          ));
+                        } else {
+                          Navigator.of(context).pop(true);
+                        }
+                      } else {
+                        ref.read(saleListProvider.notifier).submit(
+                          customerId: customerId!,
+                          warehouseId: warehouseId!,
+                          reference: referenceController
+                              .text.trim().isEmpty
+                              ? null
+                              : referenceController.text.trim(),
+                          notes: notesController
+                              .text.trim().isEmpty
+                              ? null
+                              : notesController.text.trim(),
+                          lines: lines,
+                        );
+                      }
+                    },
                     icon: const Icon(Icons.check),
-                    label: Text(l10n.confirmSale,
-                        style: const TextStyle(fontSize: 15)),
-                    style: FilledButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
+                    label: Text(l10n.confirmSale),
                   ),
                 ),
               ],

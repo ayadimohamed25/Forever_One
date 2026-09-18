@@ -1,19 +1,32 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../data/datasources/category_remote_datasource.dart';
 import '../../data/datasources/product_remote_datasource.dart';
+import '../../data/repositories/category_repository_impl.dart';
 import '../../data/repositories/product_repository_impl.dart';
+import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/product_entity.dart';
+import '../../domain/entities/stock_movement_history_entity.dart';
+import '../../domain/repositories/product_repository.dart';
 
 final productRepositoryProvider = Provider((ref) {
   final dio = ref.read(apiClientProvider).dio;
   return ProductRepositoryImpl(ProductRemoteDatasource(dio));
 });
 
+final categoryRepositoryProvider = Provider((ref) {
+  final dio = ref.read(apiClientProvider).dio;
+  return CategoryRepositoryImpl(CategoryRemoteDatasource(dio));
+});
+
+// ---------- Product list ----------
+
 class ProductListState {
   final bool isLoading;
   final List<ProductEntity> products;
   final String? error;
   final String searchQuery;
+  final String? categoryFilter;
   final bool hasSearched;
 
   const ProductListState({
@@ -21,6 +34,7 @@ class ProductListState {
     this.products = const [],
     this.error,
     this.searchQuery = '',
+    this.categoryFilter,
     this.hasSearched = false,
   });
 
@@ -29,6 +43,8 @@ class ProductListState {
     List<ProductEntity>? products,
     String? error,
     String? searchQuery,
+    String? categoryFilter,
+    bool clearCategoryFilter = false,
     bool? hasSearched,
   }) {
     return ProductListState(
@@ -36,6 +52,8 @@ class ProductListState {
       products: products ?? this.products,
       error: error,
       searchQuery: searchQuery ?? this.searchQuery,
+      categoryFilter:
+      clearCategoryFilter ? null : (categoryFilter ?? this.categoryFilter),
       hasSearched: hasSearched ?? this.hasSearched,
     );
   }
@@ -45,15 +63,23 @@ class ProductListNotifier extends StateNotifier<ProductListState> {
   final ProductRepositoryImpl repository;
   ProductListNotifier(this.repository) : super(const ProductListState());
 
-  Future<void> load({String? search}) async {
+  Future<void> load({String? search, String? categoryId, bool clearCategory = false}) async {
     final query = search ?? state.searchQuery;
+    final category = clearCategory ? null : (categoryId ?? state.categoryFilter);
+
     state = state.copyWith(
       isLoading: true,
       searchQuery: query,
-      hasSearched: query.isNotEmpty,
+      categoryFilter: category,
+      clearCategoryFilter: clearCategory,
+      hasSearched: query.isNotEmpty || category != null,
     );
 
-    final result = await repository.getProducts(search: query);
+    final result = await repository.getProducts(
+      search: query,
+      categoryId: category,
+    );
+
     result.fold(
           (failure) =>
       state = state.copyWith(isLoading: false, error: failure.message),
@@ -62,71 +88,33 @@ class ProductListNotifier extends StateNotifier<ProductListState> {
   }
 
   Future<void> search(String query) => load(search: query);
-
   Future<void> clearSearch() => load(search: '');
+  Future<void> filterByCategory(String? categoryId) =>
+      load(categoryId: categoryId, clearCategory: categoryId == null);
 
-  Future<void> add({
-    required String name,
-    String? barcode,
-    required double price,
-    required double cost,
-    required int minThreshold,
-    required String unit,
-  }) async {
-    final result = await repository.createProduct(
-      name: name,
-      barcode: barcode,
-      price: price,
-      cost: cost,
-      minThreshold: minThreshold,
-      unit: unit,
-    );
-
+  Future<void> add(ProductInput input) async {
+    final result = await repository.createProduct(input);
     if (result.isLeft()) {
-      final message = result.fold((f) => f.message, (_) => '');
-      state = state.copyWith(error: message);
+      state = state.copyWith(error: result.fold((f) => f.message, (_) => ''));
       return;
     }
-
     await load();
   }
 
-  Future<void> update({
-    required String id,
-    required String name,
-    String? barcode,
-    required double price,
-    required double cost,
-    required int minThreshold,
-    required String unit,
-  }) async {
-    final result = await repository.updateProduct(
-      id: id,
-      name: name,
-      barcode: barcode,
-      price: price,
-      cost: cost,
-      minThreshold: minThreshold,
-      unit: unit,
-    );
-
+  Future<void> update(String id, ProductInput input) async {
+    final result = await repository.updateProduct(id, input);
     if (result.isLeft()) {
-      final message = result.fold((f) => f.message, (_) => '');
-      state = state.copyWith(error: message);
+      state = state.copyWith(error: result.fold((f) => f.message, (_) => ''));
       return;
     }
-
     await load();
   }
 
-  /// Returns null on success, or an error code the UI can translate.
   Future<String?> remove(String id) async {
     final result = await repository.deleteProduct(id);
-
     if (result.isLeft()) {
       return result.fold((f) => f.message, (_) => null);
     }
-
     await load();
     return null;
   }
@@ -135,4 +123,126 @@ class ProductListNotifier extends StateNotifier<ProductListState> {
 final productListProvider =
 StateNotifierProvider<ProductListNotifier, ProductListState>((ref) {
   return ProductListNotifier(ref.read(productRepositoryProvider));
+});
+
+// ---------- Product detail ----------
+
+class ProductDetailState {
+  final bool isLoading;
+  final ProductEntity? product;
+  final List<StockMovementHistoryEntity> history;
+  final String? error;
+
+  const ProductDetailState({
+    this.isLoading = false,
+    this.product,
+    this.history = const [],
+    this.error,
+  });
+}
+
+class ProductDetailNotifier extends StateNotifier<ProductDetailState> {
+  final ProductRepositoryImpl repository;
+  ProductDetailNotifier(this.repository) : super(const ProductDetailState());
+
+  Future<void> load(String id) async {
+    state = const ProductDetailState(isLoading: true);
+    final result = await repository.getProductDetail(id);
+    result.fold(
+          (failure) => state = ProductDetailState(error: failure.message),
+          (detail) => state = ProductDetailState(
+        product: detail.product,
+        history: detail.history,
+      ),
+    );
+  }
+}
+
+final productDetailProvider =
+StateNotifierProvider<ProductDetailNotifier, ProductDetailState>((ref) {
+  return ProductDetailNotifier(ref.read(productRepositoryProvider));
+});
+
+// ---------- Categories ----------
+
+class CategoryListState {
+  final bool isLoading;
+  final List<CategoryEntity> categories;
+  final String? error;
+
+  const CategoryListState({
+    this.isLoading = false,
+    this.categories = const [],
+    this.error,
+  });
+}
+
+class CategoryListNotifier extends StateNotifier<CategoryListState> {
+  final CategoryRepositoryImpl repository;
+  CategoryListNotifier(this.repository) : super(const CategoryListState());
+
+  Future<void> load() async {
+    state = const CategoryListState(isLoading: true);
+    final result = await repository.getCategories();
+    result.fold(
+          (failure) => state = CategoryListState(error: failure.message),
+          (categories) => state = CategoryListState(categories: categories),
+    );
+  }
+
+  Future<void> add({
+    required String name,
+    String? description,
+    String? colorHex,
+  }) async {
+    final result = await repository.createCategory(
+      name: name,
+      description: description,
+      colorHex: colorHex,
+    );
+    if (result.isLeft()) {
+      state = CategoryListState(
+        categories: state.categories,
+        error: result.fold((f) => f.message, (_) => ''),
+      );
+      return;
+    }
+    await load();
+  }
+
+  Future<void> update({
+    required String id,
+    required String name,
+    String? description,
+    String? colorHex,
+  }) async {
+    final result = await repository.updateCategory(
+      id: id,
+      name: name,
+      description: description,
+      colorHex: colorHex,
+    );
+    if (result.isLeft()) {
+      state = CategoryListState(
+        categories: state.categories,
+        error: result.fold((f) => f.message, (_) => ''),
+      );
+      return;
+    }
+    await load();
+  }
+
+  Future<String?> remove(String id) async {
+    final result = await repository.deleteCategory(id);
+    if (result.isLeft()) {
+      return result.fold((f) => f.message, (_) => null);
+    }
+    await load();
+    return null;
+  }
+}
+
+final categoryListProvider =
+StateNotifierProvider<CategoryListNotifier, CategoryListState>((ref) {
+  return CategoryListNotifier(ref.read(categoryRepositoryProvider));
 });

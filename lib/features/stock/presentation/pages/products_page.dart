@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/product_entity.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product_form_dialog.dart';
-import '../../../../shared/widgets/app_drawer.dart';
+import 'categories_page.dart';
+import 'product_detail_page.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
   const ProductsPage({super.key});
@@ -20,7 +24,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(productListProvider.notifier).load());
+    Future.microtask(() {
+      ref.read(productListProvider.notifier).load();
+      ref.read(categoryListProvider.notifier).load();
+    });
   }
 
   @override
@@ -30,41 +37,24 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? theme.colorScheme.error : Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
       ),
     );
   }
 
-  Future<void> _create(AppLocalizations l10n) async {
-    final result = await showProductFormDialog(context);
-    if (result == null) return;
-    await ref.read(productListProvider.notifier).add(
-      name: result.name,
-      barcode: result.barcode,
-      price: result.price,
-      cost: result.cost,
-      minThreshold: result.minThreshold,
-      unit: result.unit,
-    );
+  Future<void> _create() async {
+    final input = await showProductFormDialog(context, ref);
+    if (input == null) return;
+    await ref.read(productListProvider.notifier).add(input);
   }
 
   Future<void> _edit(ProductEntity product, AppLocalizations l10n) async {
-    final result = await showProductFormDialog(context, existing: product);
-    if (result == null) return;
-    await ref.read(productListProvider.notifier).update(
-      id: product.id,
-      name: result.name,
-      barcode: result.barcode,
-      price: result.price,
-      cost: result.cost,
-      minThreshold: result.minThreshold,
-      unit: result.unit,
-    );
+    final input = await showProductFormDialog(context, ref, existing: product);
+    if (input == null) return;
+    await ref.read(productListProvider.notifier).update(product.id, input);
     if (mounted) _showSnack(l10n.productUpdated);
   }
 
@@ -72,7 +62,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(l10n.deleteConfirmTitle(product.name)),
         content: Text(l10n.deleteConfirmMessage),
         actions: [
@@ -81,8 +70,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             child: Text(l10n.cancel),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(l10n.delete),
           ),
@@ -92,7 +80,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
     if (confirmed != true) return;
 
-    final error = await ref.read(productListProvider.notifier).remove(product.id);
+    final error =
+    await ref.read(productListProvider.notifier).remove(product.id);
     if (!mounted) return;
 
     if (error == null) {
@@ -107,22 +96,31 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productListProvider);
-    final theme = Theme.of(context);
+    final categories = ref.watch(categoryListProvider).categories;
     final l10n = AppLocalizations.of(context)!;
 
+    ref.listen(productListProvider, (previous, next) {
+      if (next.error != null) _showSnack(next.error!, isError: true);
+    });
+
     return Scaffold(
+      backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/products'),
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: searchVisible
             ? TextField(
           controller: searchController,
           autofocus: true,
           decoration: InputDecoration(
             hintText: l10n.searchProducts,
+            filled: false,
             border: InputBorder.none,
-            hintStyle: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant, fontSize: 16),
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
           ),
+          style: const TextStyle(fontSize: 16),
           onChanged: (value) =>
               ref.read(productListProvider.notifier).search(value),
         )
@@ -130,7 +128,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         actions: [
           IconButton(
             icon: Icon(searchVisible ? Icons.close : Icons.search),
-            tooltip: l10n.search,
             onPressed: () {
               setState(() => searchVisible = !searchVisible);
               if (!searchVisible) {
@@ -141,192 +138,227 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           ),
           if (!searchVisible)
             IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: l10n.refresh,
-              onPressed: () => ref.read(productListProvider.notifier).load(),
+              icon: const Icon(Icons.category_outlined),
+              tooltip: l10n.categories,
+              onPressed: () async {
+                await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const CategoriesPage(),
+                ));
+                if (mounted) {
+                  ref.read(categoryListProvider.notifier).load();
+                  ref.read(productListProvider.notifier).load();
+                }
+              },
             ),
         ],
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.products.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-                state.hasSearched
-                    ? Icons.search_off
-                    : Icons.inventory_2_outlined,
-                size: 64,
-                color: theme.colorScheme.outlineVariant),
-            const SizedBox(height: 16),
-            Text(state.hasSearched ? l10n.noResults : l10n.noProducts,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 4),
-            Text(
-                state.hasSearched
-                    ? l10n.tryDifferentSearch
-                    : l10n.tapPlusToAdd,
-                style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant)),
-          ],
-        ),
-      )
-          : RefreshIndicator(
-        onRefresh: () => ref.read(productListProvider.notifier).load(),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
-          itemCount: state.products.length,
-          itemBuilder: (context, index) {
-            final product = state.products[index];
-            final stockColor = product.isLowStock
-                ? theme.colorScheme.error
-                : Colors.green.shade700;
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              elevation: 0,
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              child: InkWell(
-                onTap: () => _edit(product, l10n),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 4, 14),
-                  child: Row(
-                    children: [
-                      // Stock badge
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: stockColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${product.currentStock}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: stockColor,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product.name,
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                    product.isLowStock
-                                        ? Icons.warning_amber_rounded
-                                        : Icons.check_circle_outline,
-                                    size: 13,
-                                    color: stockColor),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    '${product.currentStock} ${product.unit} ${l10n.inStock} · ${l10n.threshold} ${product.minThreshold}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: theme
-                                          .colorScheme.onSurfaceVariant,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '${product.price.toStringAsFixed(2)} DT',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${l10n.margin} ${product.marginPercent.toStringAsFixed(0)}%',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: product.margin > 0
-                                  ? Colors.green.shade700
-                                  : theme.colorScheme.error,
-                            ),
-                          ),
-                        ],
-                      ),
-                      PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert,
-                            size: 20,
-                            color: theme.colorScheme.onSurfaceVariant),
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _edit(product, l10n);
-                          } else if (value == 'delete') {
-                            _delete(product, l10n);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.edit_outlined, size: 18),
-                                const SizedBox(width: 10),
-                                Text(l10n.edit),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline,
-                                    size: 18,
-                                    color: theme.colorScheme.error),
-                                const SizedBox(width: 10),
-                                Text(l10n.delete,
-                                    style: TextStyle(
-                                        color: theme.colorScheme.error)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+      body: Column(
+        children: [
+          // Category filter chips
+          if (categories.isNotEmpty)
+            SizedBox(
+              height: 46,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(l10n.allCategories,
+                          style: const TextStyle(fontSize: 12)),
+                      selected: state.categoryFilter == null,
+                      onSelected: (_) => ref
+                          .read(productListProvider.notifier)
+                          .filterByCategory(null),
+                    ),
                   ),
-                ),
+                  ...categories.map((c) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      avatar: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                            color: c.color, shape: BoxShape.circle),
+                      ),
+                      label:
+                      Text(c.name, style: const TextStyle(fontSize: 12)),
+                      selected: state.categoryFilter == c.id,
+                      onSelected: (_) => ref
+                          .read(productListProvider.notifier)
+                          .filterByCategory(
+                          state.categoryFilter == c.id ? null : c.id),
+                    ),
+                  )),
+                ],
               ),
-            );
-          },
-        ),
+            ),
+
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.products.isEmpty
+                ? AppEmptyState(
+              icon: state.hasSearched
+                  ? Icons.search_off
+                  : Icons.inventory_2_outlined,
+              title:
+              state.hasSearched ? l10n.noResults : l10n.noProducts,
+              subtitle: state.hasSearched
+                  ? l10n.tryDifferentSearch
+                  : l10n.tapPlusToAdd,
+              color: AppColors.stock,
+            )
+                : RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(productListProvider.notifier).load(),
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
+                itemCount: state.products.length,
+                itemBuilder: (context, index) {
+                  final p = state.products[index];
+                  final stockColor = p.isLowStock
+                      ? AppColors.danger
+                      : AppColors.sales;
+
+                  return Opacity(
+                    opacity: p.isActive ? 1 : 0.55,
+                    child: AppCard(
+                      onTap: () async {
+                        await Navigator.of(context)
+                            .push(MaterialPageRoute(
+                          builder: (_) =>
+                              ProductDetailPage(productId: p.id),
+                        ));
+                        if (mounted) {
+                          ref
+                              .read(productListProvider.notifier)
+                              .load();
+                        }
+                      },
+                      padding:
+                      const EdgeInsets.fromLTRB(14, 14, 4, 14),
+                      accentColor:
+                      p.isLowStock ? AppColors.danger : null,
+                      child: Row(
+                        children: [
+                          AppValueBadge(
+                              value: '${p.currentStock}',
+                              color: stockColor),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(p.name,
+                                          style: const TextStyle(
+                                              fontSize: 14.5,
+                                              fontWeight:
+                                              FontWeight.w700,
+                                              color: AppColors
+                                                  .textPrimary),
+                                          overflow:
+                                          TextOverflow.ellipsis),
+                                    ),
+                                    if (!p.isActive) ...[
+                                      const SizedBox(width: 6),
+                                      AppStatusChip(
+                                          label: l10n.inactive,
+                                          color: AppColors
+                                              .textSecondary),
+                                    ] else if (p.isLowStock) ...[
+                                      const SizedBox(width: 6),
+                                      AppStatusChip(
+                                          label: p.currentStock <= 0
+                                              ? l10n.rupture
+                                              : l10n.soon,
+                                          color: AppColors.danger),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                AppMetaRow(items: [
+                                  if (p.sku != null)
+                                    (
+                                    icon: Icons.tag,
+                                    text: p.sku!
+                                    ),
+                                  (
+                                  icon: Icons.inventory_2_outlined,
+                                  text: '${p.currentStock} ${p.unit}'
+                                  ),
+                                  if (p.categoryName != null)
+                                    (
+                                    icon: Icons.category_outlined,
+                                    text: p.categoryName!
+                                    ),
+                                ]),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          AppTrailingStat(
+                            value:
+                            '${p.price.toStringAsFixed(2)} DT',
+                            label:
+                            'TVA ${p.vatRate.toStringAsFixed(0)}%',
+                            valueColor: AppColors.primary,
+                          ),
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert,
+                                size: 19,
+                                color: AppColors.textSecondary),
+                            shape: RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(14)),
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _edit(p, l10n);
+                              } else if (value == 'delete') {
+                                _delete(p, l10n);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Row(children: [
+                                  const Icon(Icons.edit_outlined,
+                                      size: 18),
+                                  const SizedBox(width: 10),
+                                  Text(l10n.edit),
+                                ]),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(children: [
+                                  const Icon(Icons.delete_outline,
+                                      size: 18,
+                                      color: AppColors.danger),
+                                  const SizedBox(width: 10),
+                                  Text(l10n.delete,
+                                      style: const TextStyle(
+                                          color: AppColors.danger)),
+                                ]),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _create(l10n),
+        onPressed: _create,
         icon: const Icon(Icons.add),
         label: Text(l10n.product),
       ),

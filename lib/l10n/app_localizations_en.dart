@@ -871,4 +871,238 @@ class AppLocalizationsEn extends AppLocalizations {
   String unitsSold(int qty) {
     return '$qty sold';
   }
+
+  @override
+  String get sku => 'Reference (SKU)';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get category => 'Category';
+
+  @override
+  String get categories => 'Categories';
+
+  @override
+  String get newCategory => 'New category';
+
+  @override
+  String get editCategory => 'Edit category';
+
+  @override
+  String get categoryInUse =>
+      'This category cannot be deleted because products are using it.';
+
+  @override
+  String get categoryDeleted => 'Category deleted';
+
+  @override
+  String get noCategories => 'No categories';
+
+  @override
+  String get noCategory => 'Uncategorized';
+
+  @override
+  String productCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count products',
+      one: '1 product',
+      zero: 'No products',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get color => 'Color';
+
+  @override
+  String get vatRate => 'VAT rate';
+
+  @override
+  String get maxThreshold => 'Max threshold';
+
+  @override
+  String get shelfLocation => 'Shelf location';
+
+  @override
+  String get defaultSupplier => 'Default supplier';
+
+  @override
+  String get saleUnit => 'Sale unit';
+
+  @override
+  String get purchaseUnit => 'Purchase unit';
+
+  @override
+  String get unitsPerPurchase => 'Units per purchase unit';
+
+  @override
+  String get active => 'Active';
+
+  @override
+  String get inactive => 'Inactive';
+
+  @override
+  String get productActive => 'Product is active';
+
+  @override
+  String get generalInfo => 'General information';
+
+  @override
+  String get pricingAndVat => 'Pricing & VAT';
+
+  @override
+  String get stockSettings => 'Stock settings';
+
+  @override
+  String get unitsAndPackaging => 'Units & packaging';
+
+  @override
+  String get productDetails => 'Product details';
+
+  @override
+  String get stockHistory => 'Stock history';
+
+  @override
+  String get noStockHistory => 'No stock movements yet';
+
+  @override
+  String get priceHt => 'Price (excl. VAT)';
+
+  @override
+  String get priceTtc => 'Price (incl. VAT)';
+
+  @override
+  String get marginAmount => 'Margin';
+
+  @override
+  String get filterByCategory => 'Filter by category';
+
+  @override
+  String get allCategories => 'All categories';
+
+  @override
+  String get showInactive => 'Show inactive';
+
+  @override
+  String get subtotalHt => 'Subtotal (excl. VAT)';
+
+  @override
+  String get totalVat => 'VAT';
+
+  @override
+  String get totalTtc => 'Total (incl. VAT)';
+
+  @override
+  String get dueDate => 'Due date';
+
+  @override
+  String get expectedDate => 'Expected delivery';
+
+  @override
+  String get receivedDate => 'Received on';
+
+  @override
+  String get markAsReceived => 'Mark as received';
+
+  @override
+  String get purchaseReceived => 'Purchase received';
+
+  @override
+  String get alreadyReceived => 'This purchase is already received';
+
+  @override
+  String get overdue => 'Overdue';
+
+  @override
+  String dueIn(int days) {
+    return 'Due in $days days';
+  }
+
+  @override
+  String get dueToday => 'Due today';
+
+  @override
+  String get pendingDelivery => 'Pending delivery';
+
+  @override
+  String get lineVat => 'VAT';
+
+  @override
+  String get invoiceDetails => 'Invoice details';
+
+  @override
+  String get optional => 'optional';
+
+  @override
+  String get searchSales => 'Search sales...';
+
+  @override
+  String get searchPurchases => 'Search purchases...';
+
+  @override
+  String get editSale => 'Edit sale';
+
+  @override
+  String get editPurchase => 'Edit purchase';
+
+  @override
+  String get saleHasPayments =>
+      'This sale cannot be modified or deleted because payments have been recorded against it.';
+
+  @override
+  String get purchaseHasPayments =>
+      'This purchase cannot be modified or deleted because payments have been recorded against it.';
+
+  @override
+  String get saleDeleted => 'Sale deleted';
+
+  @override
+  String get saleUpdated => 'Sale updated';
+
+  @override
+  String get purchaseDeleted => 'Purchase deleted';
+
+  @override
+  String get purchaseUpdated => 'Purchase updated';
+
+  @override
+  String get stockWillBeRestored => 'The stock will be restored.';
+
+  @override
+  String get searchWarehouses => 'Search warehouses...';
+
+  @override
+  String get newWarehouse => 'New warehouse';
+
+  @override
+  String get editWarehouse => 'Edit warehouse';
+
+  @override
+  String get warehouseInUse =>
+      'This warehouse cannot be deleted because it has stock movements.';
+
+  @override
+  String get warehouseDeleted => 'Warehouse deleted';
+
+  @override
+  String get warehouseUpdated => 'Warehouse updated';
+
+  @override
+  String get code => 'Code';
+
+  @override
+  String get manager => 'Manager';
+
+  @override
+  String get totalUnits => 'Units in stock';
+
+  @override
+  String get distinctProducts => 'Products';
+
+  @override
+  String get warehouseActive => 'Warehouse is active';
 }
