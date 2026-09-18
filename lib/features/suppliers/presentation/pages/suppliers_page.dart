@@ -1,11 +1,13 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/supplier_entity.dart';
 import '../providers/supplier_provider.dart';
 import '../widgets/supplier_form_dialog.dart';
 import 'supplier_detail_page.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -31,13 +33,10 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-        isError ? theme.colorScheme.error : Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
       ),
     );
   }
@@ -48,19 +47,18 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     await ref.read(supplierListProvider.notifier).add(input);
   }
 
-  Future<void> _edit(SupplierEntity supplier, AppLocalizations l10n) async {
-    final input = await showSupplierFormDialog(context, existing: supplier);
+  Future<void> _edit(SupplierEntity s, AppLocalizations l10n) async {
+    final input = await showSupplierFormDialog(context, existing: s);
     if (input == null) return;
-    await ref.read(supplierListProvider.notifier).update(supplier.id, input);
+    await ref.read(supplierListProvider.notifier).update(s.id, input);
     if (mounted) _showSnack(l10n.supplierUpdated);
   }
 
-  Future<void> _delete(SupplierEntity supplier, AppLocalizations l10n) async {
+  Future<void> _delete(SupplierEntity s, AppLocalizations l10n) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(l10n.deleteConfirmTitle(supplier.name)),
+        title: Text(l10n.deleteConfirmTitle(s.name)),
         content: Text(l10n.deleteConfirmMessage),
         actions: [
           TextButton(
@@ -68,8 +66,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
             child: Text(l10n.cancel),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(l10n.delete),
           ),
@@ -79,7 +76,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
 
     if (confirmed != true) return;
 
-    final error = await ref.read(supplierListProvider.notifier).remove(supplier.id);
+    final error = await ref.read(supplierListProvider.notifier).remove(s.id);
     if (!mounted) return;
 
     if (error == null) {
@@ -94,30 +91,37 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(supplierListProvider);
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
+    ref.listen(supplierListProvider, (previous, next) {
+      if (next.error != null) _showSnack(next.error!, isError: true);
+    });
+
     return Scaffold(
+      backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/suppliers'),
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: searchVisible
             ? TextField(
           controller: searchController,
           autofocus: true,
           decoration: InputDecoration(
             hintText: l10n.searchSuppliers,
+            filled: false,
             border: InputBorder.none,
-            hintStyle: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant, fontSize: 16),
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
           ),
-          onChanged: (value) =>
-              ref.read(supplierListProvider.notifier).search(value),
+          style: const TextStyle(fontSize: 16),
+          onChanged: (v) =>
+              ref.read(supplierListProvider.notifier).search(v),
         )
             : Text(l10n.suppliers),
         actions: [
           IconButton(
             icon: Icon(searchVisible ? Icons.close : Icons.search),
-            tooltip: l10n.search,
             onPressed: () {
               setState(() => searchVisible = !searchVisible);
               if (!searchVisible) {
@@ -129,7 +133,6 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
           if (!searchVisible)
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: l10n.refresh,
               onPressed: () => ref.read(supplierListProvider.notifier).load(),
             ),
         ],
@@ -137,154 +140,85 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.suppliers.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-                state.hasSearched
-                    ? Icons.search_off
-                    : Icons.local_shipping_outlined,
-                size: 64,
-                color: theme.colorScheme.outlineVariant),
-            const SizedBox(height: 16),
-            Text(state.hasSearched ? l10n.noResults : l10n.noSuppliers,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 4),
-            Text(
-                state.hasSearched
-                    ? l10n.tryDifferentSearch
-                    : l10n.tapPlusToAdd,
-                style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant)),
-          ],
-        ),
+          ? AppEmptyState(
+        icon: state.hasSearched
+            ? Icons.search_off
+            : Icons.local_shipping_outlined,
+        title: state.hasSearched ? l10n.noResults : l10n.noSuppliers,
+        subtitle: state.hasSearched
+            ? l10n.tryDifferentSearch
+            : l10n.tapPlusToAdd,
+        color: AppColors.purchases,
       )
           : RefreshIndicator(
-        onRefresh: () => ref.read(supplierListProvider.notifier).load(),
+        onRefresh: () =>
+            ref.read(supplierListProvider.notifier).load(),
         child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
           itemCount: state.suppliers.length,
           itemBuilder: (context, index) {
             final s = state.suppliers[index];
+            final reliability = s.reliabilityRate;
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              elevation: 0,
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side:
-                BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              child: InkWell(
-                onTap: () async {
-                  await Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) =>
-                        SupplierDetailPage(supplierId: s.id),
-                  ));
-                  if (mounted) {
-                    ref.read(supplierListProvider.notifier).load();
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 4, 14),
-                  child: Row(
+            return AppCard(
+              padding: const EdgeInsets.fromLTRB(14, 14, 4, 12),
+              onTap: () async {
+                await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => SupplierDetailPage(supplierId: s.id),
+                ));
+                if (mounted) {
+                  ref.read(supplierListProvider.notifier).load();
+                }
+              },
+              child: Column(
+                children: [
+                  Row(
                     children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.tertiaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.local_shipping_outlined,
-                            color:
-                            theme.colorScheme.onTertiaryContainer),
-                      ),
+                      AppIconBadge(
+                          icon: Icons.local_shipping_outlined,
+                          color: AppColors.purchases),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              s.name,
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            Text(s.name,
+                                style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary),
+                                overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                if (s.contactPerson != null &&
-                                    s.contactPerson!.isNotEmpty) ...[
-                                  Icon(Icons.person_outline,
-                                      size: 13,
-                                      color: theme.colorScheme
-                                          .onSurfaceVariant),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      s.contactPerson!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: theme.colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                ],
-                                Icon(Icons.schedule,
-                                    size: 13,
-                                    color: theme
-                                        .colorScheme.onSurfaceVariant),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${s.leadTimeDays} ${l10n.days}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme
-                                        .colorScheme.onSurfaceVariant,
-                                  ),
+                            AppMetaRow(items: [
+                              if (s.contactPerson != null)
+                                (
+                                icon: Icons.person_outline,
+                                text: s.contactPerson!
                                 ),
-                              ],
-                            ),
+                              (
+                              icon: Icons.schedule,
+                              text: '${s.leadTimeDays} ${l10n.days}'
+                              ),
+                            ]),
                           ],
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            s.owesMoney
-                                ? '${s.balance.toStringAsFixed(2)} DT'
-                                : 'â€”',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: s.owesMoney
-                                  ? theme.colorScheme.error
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            l10n.amountOwed,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                      AppTrailingStat(
+                        value: s.owesMoney
+                            ? '${s.balance.toStringAsFixed(2)} DT'
+                            : '—',
+                        label: l10n.amountOwed,
+                        valueColor: s.owesMoney
+                            ? AppColors.danger
+                            : AppColors.textSecondary,
                       ),
                       PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert,
-                            size: 20,
-                            color: theme.colorScheme.onSurfaceVariant),
+                        icon: const Icon(Icons.more_vert,
+                            size: 19,
+                            color: AppColors.textSecondary),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
                         onSelected: (value) {
                           if (value == 'edit') {
                             _edit(s, l10n);
@@ -295,41 +229,61 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                         itemBuilder: (context) => [
                           PopupMenuItem(
                             value: 'edit',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.edit_outlined,
-                                    size: 18),
-                                const SizedBox(width: 10),
-                                Text(l10n.edit),
-                              ],
-                            ),
+                            child: Row(children: [
+                              const Icon(Icons.edit_outlined,
+                                  size: 18),
+                              const SizedBox(width: 10),
+                              Text(l10n.edit),
+                            ]),
                           ),
                           PopupMenuItem(
                             value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline,
-                                    size: 18,
-                                    color: theme.colorScheme.error),
-                                const SizedBox(width: 10),
-                                Text(l10n.delete,
-                                    style: TextStyle(
-                                        color:
-                                        theme.colorScheme.error)),
-                              ],
-                            ),
+                            child: Row(children: [
+                              const Icon(Icons.delete_outline,
+                                  size: 18, color: AppColors.danger),
+                              const SizedBox(width: 10),
+                              Text(l10n.delete,
+                                  style: const TextStyle(
+                                      color: AppColors.danger)),
+                            ]),
                           ),
                         ],
                       ),
                     ],
                   ),
-                ),
+                  if (reliability != null) ...[
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Row(
+                        children: [
+                          AppStatusChip(
+                            label:
+                            '${(reliability * 100).toStringAsFixed(0)}% ${l10n.onTimeDeliveries(s.onTimeDeliveries, s.trackedDeliveries)}',
+                            color: reliability >= 0.8
+                                ? AppColors.success
+                                : reliability >= 0.5
+                                ? AppColors.warning
+                                : AppColors.danger,
+                          ),
+                          const Spacer(),
+                          Text(
+                              '${s.orderCount} ${l10n.orders.toLowerCase()}',
+                              style: const TextStyle(
+                                  fontSize: 10.5,
+                                  color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
             );
           },
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppColors.purchases,
         onPressed: _create,
         icon: const Icon(Icons.add),
         label: Text(l10n.supplier),

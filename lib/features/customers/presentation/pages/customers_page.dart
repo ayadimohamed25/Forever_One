@@ -1,11 +1,13 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../providers/customer_provider.dart';
 import '../widgets/customer_form_dialog.dart';
 import 'customer_detail_page.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 
 class CustomersPage extends ConsumerStatefulWidget {
   const CustomersPage({super.key});
@@ -30,21 +32,11 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     super.dispose();
   }
 
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first[0].toUpperCase();
-    return (parts.first[0] + parts.last[0]).toUpperCase();
-  }
-
   void _showSnack(String message, {bool isError = false}) {
-    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-        isError ? theme.colorScheme.error : Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
       ),
     );
   }
@@ -55,19 +47,18 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     await ref.read(customerListProvider.notifier).add(input);
   }
 
-  Future<void> _edit(CustomerEntity customer, AppLocalizations l10n) async {
-    final input = await showCustomerFormDialog(context, existing: customer);
+  Future<void> _edit(CustomerEntity c, AppLocalizations l10n) async {
+    final input = await showCustomerFormDialog(context, existing: c);
     if (input == null) return;
-    await ref.read(customerListProvider.notifier).update(customer.id, input);
+    await ref.read(customerListProvider.notifier).update(c.id, input);
     if (mounted) _showSnack(l10n.customerUpdated);
   }
 
-  Future<void> _delete(CustomerEntity customer, AppLocalizations l10n) async {
+  Future<void> _delete(CustomerEntity c, AppLocalizations l10n) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(l10n.deleteConfirmTitle(customer.name)),
+        title: Text(l10n.deleteConfirmTitle(c.name)),
         content: Text(l10n.deleteConfirmMessage),
         actions: [
           TextButton(
@@ -75,8 +66,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             child: Text(l10n.cancel),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(l10n.delete),
           ),
@@ -86,7 +76,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
     if (confirmed != true) return;
 
-    final error = await ref.read(customerListProvider.notifier).remove(customer.id);
+    final error = await ref.read(customerListProvider.notifier).remove(c.id);
     if (!mounted) return;
 
     if (error == null) {
@@ -101,30 +91,37 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(customerListProvider);
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
+    ref.listen(customerListProvider, (previous, next) {
+      if (next.error != null) _showSnack(next.error!, isError: true);
+    });
+
     return Scaffold(
+      backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/customers'),
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: searchVisible
             ? TextField(
           controller: searchController,
           autofocus: true,
           decoration: InputDecoration(
             hintText: l10n.searchCustomers,
+            filled: false,
             border: InputBorder.none,
-            hintStyle: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant, fontSize: 16),
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
           ),
-          onChanged: (value) =>
-              ref.read(customerListProvider.notifier).search(value),
+          style: const TextStyle(fontSize: 16),
+          onChanged: (v) =>
+              ref.read(customerListProvider.notifier).search(v),
         )
             : Text(l10n.customers),
         actions: [
           IconButton(
             icon: Icon(searchVisible ? Icons.close : Icons.search),
-            tooltip: l10n.search,
             onPressed: () {
               setState(() => searchVisible = !searchVisible);
               if (!searchVisible) {
@@ -136,7 +133,6 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
           if (!searchVisible)
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: l10n.refresh,
               onPressed: () => ref.read(customerListProvider.notifier).load(),
             ),
         ],
@@ -144,177 +140,101 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.customers.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-                state.hasSearched
-                    ? Icons.search_off
-                    : Icons.people_outline,
-                size: 64,
-                color: theme.colorScheme.outlineVariant),
-            const SizedBox(height: 16),
-            Text(state.hasSearched ? l10n.noResults : l10n.noCustomers,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 4),
-            Text(
-                state.hasSearched
-                    ? l10n.tryDifferentSearch
-                    : l10n.tapPlusToAdd,
-                style: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant)),
-          ],
-        ),
+          ? AppEmptyState(
+        icon: state.hasSearched
+            ? Icons.search_off
+            : Icons.people_outline,
+        title: state.hasSearched ? l10n.noResults : l10n.noCustomers,
+        subtitle: state.hasSearched
+            ? l10n.tryDifferentSearch
+            : l10n.tapPlusToAdd,
+        color: AppColors.finance,
       )
           : RefreshIndicator(
-        onRefresh: () => ref.read(customerListProvider.notifier).load(),
+        onRefresh: () =>
+            ref.read(customerListProvider.notifier).load(),
         child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
           itemCount: state.customers.length,
           itemBuilder: (context, index) {
             final c = state.customers[index];
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              elevation: 0,
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side:
-                BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              child: InkWell(
-                onTap: () async {
-                  await Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) =>
-                        CustomerDetailPage(customerId: c.id),
-                  ));
-                  if (mounted) {
-                    ref.read(customerListProvider.notifier).load();
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 4, 14),
-                  child: Row(
+            return AppCard(
+              accentColor:
+              c.isOverCreditLimit ? AppColors.danger : null,
+              padding: const EdgeInsets.fromLTRB(14, 14, 4, 12),
+              onTap: () async {
+                await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => CustomerDetailPage(customerId: c.id),
+                ));
+                if (mounted) {
+                  ref.read(customerListProvider.notifier).load();
+                }
+              },
+              child: Column(
+                children: [
+                  Row(
                     children: [
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 23,
-                            backgroundColor:
-                            theme.colorScheme.primaryContainer,
-                            child: Text(
-                              _initials(c.name),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: theme
-                                    .colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                          if (c.isOverCreditLimit)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                width: 14,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.error,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color:
-                                      theme.colorScheme.surface,
-                                      width: 2),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                      AppInitialsBadge(
+                          name: c.name, color: AppColors.finance),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              c.name,
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.receipt_long_outlined,
-                                    size: 13,
-                                    color: theme
-                                        .colorScheme.onSurfaceVariant),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${c.orderCount} ${l10n.orders.toLowerCase()}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme
-                                        .colorScheme.onSurfaceVariant,
-                                  ),
+                                Expanded(
+                                  child: Text(c.name,
+                                      style: const TextStyle(
+                                          fontSize: 14.5,
+                                          fontWeight: FontWeight.w700,
+                                          color:
+                                          AppColors.textPrimary),
+                                      overflow:
+                                      TextOverflow.ellipsis),
                                 ),
-                                if (c.phone != null &&
-                                    c.phone!.isNotEmpty) ...[
-                                  const SizedBox(width: 10),
-                                  Icon(Icons.phone_outlined,
-                                      size: 13,
-                                      color: theme.colorScheme
-                                          .onSurfaceVariant),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      c.phone!,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: theme.colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
+                                if (c.isOverCreditLimit) ...[
+                                  const SizedBox(width: 6),
+                                  const Icon(
+                                      Icons.warning_amber_rounded,
+                                      size: 15,
+                                      color: AppColors.danger),
                                 ],
                               ],
                             ),
+                            const SizedBox(height: 4),
+                            AppMetaRow(items: [
+                              (
+                              icon: Icons.receipt_long_outlined,
+                              text:
+                              '${c.orderCount} ${l10n.orders.toLowerCase()}'
+                              ),
+                              if (c.phone != null)
+                                (
+                                icon: Icons.phone_outlined,
+                                text: c.phone!
+                                ),
+                            ]),
                           ],
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            c.owesMoney
-                                ? '${c.balance.toStringAsFixed(2)} DT'
-                                : 'â€”',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: c.owesMoney
-                                  ? theme.colorScheme.error
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            l10n.outstandingBalance,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                      AppTrailingStat(
+                        value: c.owesMoney
+                            ? '${c.balance.toStringAsFixed(2)} DT'
+                            : '—',
+                        label: l10n.outstandingBalance,
+                        valueColor: c.owesMoney
+                            ? AppColors.danger
+                            : AppColors.textSecondary,
                       ),
                       PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert,
-                            size: 20,
-                            color: theme.colorScheme.onSurfaceVariant),
+                        icon: const Icon(Icons.more_vert,
+                            size: 19,
+                            color: AppColors.textSecondary),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
                         onSelected: (value) {
                           if (value == 'edit') {
                             _edit(c, l10n);
@@ -325,35 +245,71 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                         itemBuilder: (context) => [
                           PopupMenuItem(
                             value: 'edit',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.edit_outlined,
-                                    size: 18),
-                                const SizedBox(width: 10),
-                                Text(l10n.edit),
-                              ],
-                            ),
+                            child: Row(children: [
+                              const Icon(Icons.edit_outlined,
+                                  size: 18),
+                              const SizedBox(width: 10),
+                              Text(l10n.edit),
+                            ]),
                           ),
                           PopupMenuItem(
                             value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline,
-                                    size: 18,
-                                    color: theme.colorScheme.error),
-                                const SizedBox(width: 10),
-                                Text(l10n.delete,
-                                    style: TextStyle(
-                                        color:
-                                        theme.colorScheme.error)),
-                              ],
-                            ),
+                            child: Row(children: [
+                              const Icon(Icons.delete_outline,
+                                  size: 18, color: AppColors.danger),
+                              const SizedBox(width: 10),
+                              Text(l10n.delete,
+                                  style: const TextStyle(
+                                      color: AppColors.danger)),
+                            ]),
                           ),
                         ],
                       ),
                     ],
                   ),
-                ),
+                  if (c.creditLimit > 0) ...[
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: LinearProgressIndicator(
+                              value: c.creditUsage.clamp(0.0, 1.0),
+                              minHeight: 5,
+                              backgroundColor: AppColors.surfaceAlt,
+                              valueColor: AlwaysStoppedAnimation(
+                                c.isOverCreditLimit
+                                    ? AppColors.danger
+                                    : c.isNearCreditLimit
+                                    ? AppColors.warning
+                                    : AppColors.success,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(l10n.creditUsage,
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      color:
+                                      AppColors.textSecondary)),
+                              const Spacer(),
+                              Text(
+                                  '${c.balance.toStringAsFixed(0)} / ${c.creditLimit.toStringAsFixed(0)} DT',
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      color:
+                                      AppColors.textSecondary)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
             );
           },

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../providers/prediction_provider.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_widgets.dart';
+import '../providers/prediction_provider.dart';
 
 class InsightsPage extends ConsumerStatefulWidget {
   const InsightsPage({super.key});
@@ -18,14 +20,14 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     Future.microtask(() => ref.read(predictionProvider.notifier).loadAll());
   }
 
-  Color _urgencyColor(String urgency, ThemeData theme) {
+  Color _urgencyColor(String urgency) {
     switch (urgency) {
       case 'critical':
-        return theme.colorScheme.error;
+        return AppColors.danger;
       case 'warning':
-        return Colors.orange.shade700;
+        return AppColors.warning;
       default:
-        return Colors.green.shade700;
+        return AppColors.success;
     }
   }
 
@@ -40,56 +42,39 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     }
   }
 
-  Widget _emptyState(
-      IconData icon, String title, String subtitle, ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 64, color: theme.colorScheme.outlineVariant),
-            const SizedBox(height: 16),
-            Text(title,
-                style:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 4),
-            Text(subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(predictionProvider);
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: AppColors.surfaceAlt,
         drawer: const AppDrawer(currentRoute: '/insights'),
         appBar: AppBar(
+          backgroundColor: Colors.transparent,
           title: Text(l10n.insightsAndForecasts),
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: l10n.refresh,
               onPressed: () => ref.read(predictionProvider.notifier).loadAll(),
             ),
           ],
           bottom: TabBar(
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
+            indicatorWeight: 2.5,
+            labelStyle:
+            const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
             tabs: [
-              Tab(icon: const Icon(Icons.trending_down, size: 20), text: l10n.stock),
+              Tab(icon: const Icon(Icons.trending_down, size: 19), text: l10n.stock),
               Tab(
-                  icon: const Icon(Icons.hourglass_empty, size: 20),
+                  icon: const Icon(Icons.hourglass_empty, size: 19),
                   text: l10n.dormant),
               Tab(
-                  icon: const Icon(Icons.phone_callback, size: 20),
+                  icon: const Icon(Icons.phone_callback, size: 19),
                   text: l10n.followUps),
             ],
           ),
@@ -98,311 +83,238 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
           children: [
-            // Stock forecast
+            // ---------- Stock forecast ----------
             state.stockForecast.isEmpty
-                ? _emptyState(Icons.inventory_2_outlined, l10n.noStockData,
-                l10n.addProductsForForecasts, theme)
+                ? AppEmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: l10n.noStockData,
+              subtitle: l10n.addProductsForForecasts,
+              color: AppColors.stock,
+            )
                 : ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
               itemCount: state.stockForecast.length,
               itemBuilder: (context, index) {
                 final f = state.stockForecast[index];
-                final color = _urgencyColor(f.urgency, theme);
+                final color = _urgencyColor(f.urgency);
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(
-                        color: theme.colorScheme.outlineVariant),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color:
-                                color.withValues(alpha: 0.12),
-                                borderRadius:
-                                BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${f.currentStock}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: color,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  Text(f.name,
-                                      style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight:
-                                          FontWeight.w600),
-                                      overflow:
-                                      TextOverflow.ellipsis),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    f.daysOfCoverage != null
-                                        ? l10n.daysOfCoverage(
-                                        f.daysOfCoverage!,
-                                        f.dailySalesRate
-                                            .toString())
-                                        : l10n.noRecentSales,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: theme.colorScheme
-                                          .onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color:
-                                color.withValues(alpha: 0.12),
-                                borderRadius:
-                                BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                _urgencyLabel(f.urgency, l10n),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: color,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (f.suggestedOrder > 0) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: theme
-                                  .colorScheme.primaryContainer
-                                  .withValues(alpha: 0.4),
-                              borderRadius:
-                              BorderRadius.circular(10),
-                            ),
-                            child: Row(
+                return AppCard(
+                  accentColor: f.urgency == 'critical'
+                      ? AppColors.danger
+                      : null,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          AppValueBadge(
+                              value: '${f.currentStock}',
+                              color: color),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.lightbulb_outline,
-                                    size: 16,
-                                    color:
-                                    theme.colorScheme.primary),
-                                const SizedBox(width: 8),
+                                Text(f.name,
+                                    style: const TextStyle(
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors
+                                            .textPrimary),
+                                    overflow:
+                                    TextOverflow.ellipsis),
+                                const SizedBox(height: 4),
                                 Text(
-                                  l10n.orderUnits(f.suggestedOrder),
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                    theme.colorScheme.primary,
-                                  ),
+                                  f.daysOfCoverage != null
+                                      ? l10n.daysOfCoverage(
+                                      f.daysOfCoverage!,
+                                      f.dailySalesRate
+                                          .toString())
+                                      : l10n.noRecentSales,
+                                  style: const TextStyle(
+                                      fontSize: 11.5,
+                                      color: AppColors
+                                          .textSecondary),
                                 ),
                               ],
                             ),
                           ),
+                          AppStatusChip(
+                              label:
+                              _urgencyLabel(f.urgency, l10n),
+                              color: color),
                         ],
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // Dormant products
-            state.dormantProducts.isEmpty
-                ? _emptyState(Icons.check_circle_outline,
-                l10n.noDormantProducts, l10n.allProductsSelling, theme)
-                : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: state.dormantProducts.length,
-              itemBuilder: (context, index) {
-                final d = state.dormantProducts[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(
-                        color: theme.colorScheme.outlineVariant),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
+                      ),
+                      if (f.suggestedOrder > 0) ...[
+                        const SizedBox(height: 12),
                         Container(
-                          width: 44,
-                          height: 44,
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: theme
-                                .colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
+                            gradient: AppColors.tintGradient(
+                                AppColors.primary),
+                            borderRadius:
+                            BorderRadius.circular(12),
                           ),
-                          child: Icon(Icons.hourglass_empty,
-                              color: theme
-                                  .colorScheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(d.name,
-                                  style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 4),
+                              const Icon(Icons.lightbulb_outline,
+                                  size: 15,
+                                  color: AppColors.primary),
+                              const SizedBox(width: 8),
                               Text(
-                                d.neverSold
-                                    ? l10n.neverSold
-                                    : l10n.lastSaleDaysAgo(
-                                    d.daysSinceSale ?? 0),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: theme
-                                      .colorScheme.onSurfaceVariant,
+                                l10n.orderUnits(f.suggestedOrder),
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        if (d.neverSold)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.orange
-                                  .withValues(alpha: 0.15),
-                              borderRadius:
-                              BorderRadius.circular(20),
-                            ),
-                            child: Text(l10n.neverSold,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange.shade800,
-                                )),
-                          ),
                       ],
-                    ),
+                    ],
                   ),
                 );
               },
             ),
 
-            // Customer scoring
-            state.customerScores.isEmpty
-                ? _emptyState(Icons.people_outline, l10n.noCustomersYet,
-                l10n.addCustomersForScores, theme)
+            // ---------- Dormant products ----------
+            state.dormantProducts.isEmpty
+                ? AppEmptyState(
+              icon: Icons.check_circle_outline,
+              title: l10n.noDormantProducts,
+              subtitle: l10n.allProductsSelling,
+              color: AppColors.success,
+            )
                 : ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+              itemCount: state.dormantProducts.length,
+              itemBuilder: (context, index) {
+                final d = state.dormantProducts[index];
+                return AppCard(
+                  child: Row(
+                    children: [
+                      AppIconBadge(
+                          icon: Icons.hourglass_empty,
+                          color: AppColors.textSecondary),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          children: [
+                            Text(d.name,
+                                style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary)),
+                            const SizedBox(height: 4),
+                            Text(
+                              d.neverSold
+                                  ? l10n.neverSold
+                                  : l10n.lastSaleDaysAgo(
+                                  d.daysSinceSale ?? 0),
+                              style: const TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (d.neverSold)
+                        AppStatusChip(
+                            label: l10n.neverSold,
+                            color: AppColors.warning),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            // ---------- Customer scoring ----------
+            state.customerScores.isEmpty
+                ? AppEmptyState(
+              icon: Icons.people_outline,
+              title: l10n.noCustomersYet,
+              subtitle: l10n.addCustomersForScores,
+              color: AppColors.finance,
+            )
+                : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
               itemCount: state.customerScores.length,
               itemBuilder: (context, index) {
                 final c = state.customerScores[index];
                 final scoreColor = c.score >= 60
-                    ? theme.colorScheme.error
+                    ? AppColors.danger
                     : c.score >= 30
-                    ? Colors.orange.shade700
-                    : Colors.green.shade700;
+                    ? AppColors.warning
+                    : AppColors.success;
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(
-                        color: theme.colorScheme.outlineVariant),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 46,
-                          height: 46,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 46,
-                                height: 46,
-                                child: CircularProgressIndicator(
-                                  value: c.score / 100,
-                                  strokeWidth: 4,
-                                  backgroundColor: theme.colorScheme
-                                      .surfaceContainerHighest,
-                                  valueColor: AlwaysStoppedAnimation(
-                                      scoreColor),
-                                ),
+                return AppCard(
+                  accentColor:
+                  c.score >= 60 ? AppColors.danger : null,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 46,
+                        height: 46,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 46,
+                              height: 46,
+                              child: CircularProgressIndicator(
+                                value: c.score / 100,
+                                strokeWidth: 4,
+                                strokeCap: StrokeCap.round,
+                                backgroundColor:
+                                AppColors.surfaceAlt,
+                                valueColor: AlwaysStoppedAnimation(
+                                    scoreColor),
                               ),
-                              Text('${c.score}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: scoreColor,
-                                  )),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            children: [
-                              Text(c.name,
-                                  style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 4),
-                              Text(c.reason,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme
-                                        .colorScheme.onSurfaceVariant,
-                                  )),
-                            ],
-                          ),
-                        ),
-                        if (c.balance > 0) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            '${c.balance.toStringAsFixed(2)} DT',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.error,
                             ),
-                          ),
-                        ],
+                            Text('${c.score}',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: scoreColor)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          children: [
+                            Text(c.name,
+                                style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary),
+                                overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 4),
+                            Text(c.reason,
+                                style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color:
+                                    AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                      if (c.balance > 0) ...[
+                        const SizedBox(width: 8),
+                        Text('${c.balance.toStringAsFixed(2)} DT',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.danger)),
                       ],
-                    ),
+                    ],
                   ),
                 );
               },

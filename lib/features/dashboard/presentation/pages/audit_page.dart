@@ -1,8 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../providers/audit_provider.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_widgets.dart';
+import '../providers/audit_provider.dart';
 
 class AuditPage extends ConsumerStatefulWidget {
   const AuditPage({super.key});
@@ -34,49 +36,34 @@ class _AuditPageState extends ConsumerState<AuditPage> {
   }
 
   IconData _actionIcon(String action) {
-    switch (action) {
-      case 'login':
-        return Icons.login;
-      case 'create_sale':
-        return Icons.point_of_sale;
-      case 'create_purchase':
-        return Icons.shopping_cart;
-      case 'record_payment':
-        return Icons.payments;
-      case 'stock_movement':
-        return Icons.inventory;
-      case 'confirm_document':
-        return Icons.document_scanner;
-      case 'ai_query':
-        return Icons.smart_toy;
-      case 'generate_report':
-        return Icons.picture_as_pdf;
-      default:
-        return Icons.history;
-    }
+    if (action.contains('sale')) return Icons.point_of_sale;
+    if (action.contains('purchase')) return Icons.shopping_cart;
+    if (action.contains('payment')) return Icons.payments;
+    if (action.contains('product')) return Icons.inventory_2;
+    if (action.contains('customer')) return Icons.person;
+    if (action.contains('supplier')) return Icons.local_shipping;
+    if (action.contains('warehouse')) return Icons.warehouse;
+    if (action.contains('category')) return Icons.label;
+    if (action.contains('stock')) return Icons.inventory;
+    if (action.contains('document')) return Icons.document_scanner;
+    if (action.contains('ai')) return Icons.smart_toy;
+    if (action.contains('report')) return Icons.picture_as_pdf;
+    if (action == 'login') return Icons.login;
+    return Icons.history;
   }
 
-  Color _actionColor(String action, ThemeData theme) {
-    switch (action) {
-      case 'login':
-        return Colors.blueGrey;
-      case 'create_sale':
-        return Colors.green.shade700;
-      case 'create_purchase':
-        return theme.colorScheme.tertiary;
-      case 'record_payment':
-        return Colors.teal.shade700;
-      case 'stock_movement':
-        return Colors.indigo;
-      case 'confirm_document':
-        return Colors.deepOrange;
-      case 'ai_query':
-        return theme.colorScheme.primary;
-      case 'generate_report':
-        return Colors.brown;
-      default:
-        return theme.colorScheme.onSurfaceVariant;
+  Color _actionColor(String action) {
+    if (action.startsWith('delete')) return AppColors.danger;
+    if (action.startsWith('update')) return AppColors.warning;
+    if (action.contains('sale')) return AppColors.sales;
+    if (action.contains('purchase')) return AppColors.purchases;
+    if (action.contains('payment')) return AppColors.finance;
+    if (action.contains('stock') || action.contains('product')) {
+      return AppColors.stock;
     }
+    if (action.contains('ai')) return AppColors.primary;
+    if (action == 'login') return AppColors.textSecondary;
+    return AppColors.info;
   }
 
   String _actionLabel(String action, AppLocalizations l10n) {
@@ -98,7 +85,9 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       case 'generate_report':
         return l10n.reportGeneratedAction;
       default:
-        return action;
+      // Newer actions (create_product, delete_customer…) are shown
+      // readably without needing a translation for every one.
+        return action.replaceAll('_', ' ');
     }
   }
 
@@ -109,17 +98,16 @@ class _AuditPageState extends ConsumerState<AuditPage> {
         .replaceAll('}', '')
         .replaceAll('"', '')
         .replaceAll(':', ' : ')
-        .replaceAll(',', ' Â· ');
+        .replaceAll(',', ' · ');
   }
 
-  Widget _buildTimeline(
-      List<dynamic> logs, ThemeData theme, AppLocalizations l10n) {
+  Widget _timeline(List<dynamic> logs, AppLocalizations l10n) {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       itemCount: logs.length,
       itemBuilder: (context, index) {
         final log = logs[index];
-        final color = _actionColor(log.action, theme);
+        final color = _actionColor(log.action);
         final isLast = index == logs.length - 1;
         final details = _formatDetails(log.details);
 
@@ -130,82 +118,60 @@ class _AuditPageState extends ConsumerState<AuditPage> {
               Column(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
+                      gradient: AppColors.tintGradient(color),
                       shape: BoxShape.circle,
+                      border:
+                      Border.all(color: color.withValues(alpha: 0.25)),
                     ),
-                    child: Icon(_actionIcon(log.action), size: 18, color: color),
+                    child: Icon(_actionIcon(log.action), size: 17, color: color),
                   ),
                   if (!isLast)
                     Expanded(
-                      child: Container(
-                        width: 2,
-                        color: theme.colorScheme.outlineVariant,
-                      ),
+                      child: Container(width: 2, color: AppColors.border),
                     ),
                 ],
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : 22),
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
                       Text(
                         _actionLabel(log.action, l10n),
                         style: const TextStyle(
-                            fontSize: 14.5, fontWeight: FontWeight.w600),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline,
-                              size: 12,
-                              color: theme.colorScheme.onSurfaceVariant),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              log.userEmail ?? l10n.system,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(Icons.schedule,
-                              size: 12,
-                              color: theme.colorScheme.onSurfaceVariant),
-                          const SizedBox(width: 3),
-                          Text(
-                            log.createdAt,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
+                      AppMetaRow(items: [
+                        (
+                        icon: Icons.person_outline,
+                        text: log.userEmail ?? l10n.system
+                        ),
+                        (icon: Icons.schedule, text: log.createdAt),
+                      ]),
                       if (details.isNotEmpty) ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 7),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                              horizontal: 10, vertical: 7),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.surfaceAlt,
+                            borderRadius: BorderRadius.circular(9),
                           ),
                           child: Text(
                             details,
-                            style: TextStyle(
-                              fontSize: 11.5,
+                            style: const TextStyle(
+                              fontSize: 11,
                               fontFamily: 'monospace',
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -224,22 +190,22 @@ class _AuditPageState extends ConsumerState<AuditPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(auditProvider);
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final filterOptions = _filterOptions(l10n);
 
     final filteredLogs = selectedFilter == null
         ? state.logs
-        : state.logs.where((l) => l.action == selectedFilter).toList();
+        : state.logs.where((l) => l.action.contains(selectedFilter!)).toList();
 
     return Scaffold(
+      backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/audit'),
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text(l10n.auditLog),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: l10n.refresh,
             onPressed: () => ref.read(auditProvider.notifier).load(),
           ),
         ],
@@ -247,40 +213,18 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.error != null
-          ? Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock_outline,
-                  size: 56, color: theme.colorScheme.outlineVariant),
-              const SizedBox(height: 16),
-              Text(l10n.restrictedAccess,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w500)),
-              const SizedBox(height: 4),
-              Text(state.error!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant)),
-            ],
-          ),
-        ),
+          ? AppEmptyState(
+        icon: Icons.lock_outline,
+        title: l10n.restrictedAccess,
+        subtitle: state.error!,
+        color: AppColors.danger,
       )
           : state.logs.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history,
-                size: 64, color: theme.colorScheme.outlineVariant),
-            const SizedBox(height: 16),
-            Text(l10n.noActionsRecorded,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w500)),
-          ],
-        ),
+          ? AppEmptyState(
+        icon: Icons.history,
+        title: l10n.noActionsRecorded,
+        subtitle: '',
+        color: AppColors.info,
       )
           : Column(
         children: [
@@ -289,7 +233,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 7),
+                  horizontal: 16, vertical: 7),
               children: [
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -308,7 +252,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                         style: const TextStyle(fontSize: 12)),
                     selected: selectedFilter == e.key,
                     onSelected: (_) => setState(() =>
-                    selectedFilter = selectedFilter == e.key
+                    selectedFilter =
+                    selectedFilter == e.key
                         ? null
                         : e.key),
                   ),
@@ -319,27 +264,16 @@ class _AuditPageState extends ConsumerState<AuditPage> {
           const Divider(height: 1),
           Expanded(
             child: filteredLogs.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.filter_alt_off_outlined,
-                      size: 48,
-                      color:
-                      theme.colorScheme.outlineVariant),
-                  const SizedBox(height: 12),
-                  Text(l10n.noActionsOfThisType,
-                      style: TextStyle(
-                          color: theme.colorScheme
-                              .onSurfaceVariant)),
-                ],
-              ),
+                ? AppEmptyState(
+              icon: Icons.filter_alt_off_outlined,
+              title: l10n.noActionsOfThisType,
+              subtitle: '',
+              color: AppColors.textSecondary,
             )
                 : RefreshIndicator(
               onRefresh: () =>
                   ref.read(auditProvider.notifier).load(),
-              child:
-              _buildTimeline(filteredLogs, theme, l10n),
+              child: _timeline(filteredLogs, l10n),
             ),
           ),
         ],
