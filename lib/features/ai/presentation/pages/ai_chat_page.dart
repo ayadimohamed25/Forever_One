@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../providers/ai_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class AiChatPage extends ConsumerStatefulWidget {
   const AiChatPage({super.key});
@@ -73,39 +74,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/ai'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                gradient: AppColors.brandGradient,
-                borderRadius: BorderRadius.circular(11),
-                boxShadow: AppColors.softShadow(AppColors.primary),
-              ),
-              child: const Icon(Icons.smart_toy, size: 19, color: Colors.white),
-            ),
-            const SizedBox(width: 11),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(l10n.aiCopilot,
-                    style: const TextStyle(
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary)),
-                Text(l10n.aiAssistant,
-                    style: const TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.normal,
-                        color: AppColors.textSecondary)),
-              ],
-            ),
-          ],
-        ),
+      appBar: AppPageHeader(
+        title: l10n.aiCopilot,
+        subtitle: l10n.aiAssistant,
+        icon: Icons.smart_toy_rounded,
+        color: AppColors.primary,
       ),
       body: Column(
         children: [

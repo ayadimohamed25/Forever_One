@@ -5,7 +5,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../providers/user_provider.dart';
 import '../widgets/user_form_dialog.dart';
-
+import '../../../../shared/widgets/app_page_header.dart';
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
@@ -242,15 +242,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(l10n.myProfile),
+      appBar: AppPageHeader(
+        title: l10n.myProfile,
+        subtitle: user?.email,
+        icon: Icons.person_rounded,
+        color: AppColors.primary,
+        showMenuButton: false,
         actions: [
           if (user != null)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
+            AppHeaderAction(
+              icon: Icons.edit_rounded,
               tooltip: l10n.edit,
-              onPressed: () => _editProfile(l10n),
+              color: AppColors.primary,
+              onTap: () => _editProfile(l10n),
             ),
         ],
       ),

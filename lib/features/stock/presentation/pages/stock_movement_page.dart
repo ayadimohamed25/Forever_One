@@ -6,6 +6,7 @@ import '../../../../shared/widgets/app_drawer.dart';
 import '../providers/product_provider.dart';
 import '../providers/stock_movement_provider.dart';
 import '../providers/warehouse_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class StockMovementPage extends ConsumerStatefulWidget {
   const StockMovementPage({super.key});
@@ -98,9 +99,10 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/stock-movement'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(l10n.stockMovement),
+      appBar: AppPageHeader(
+        title: l10n.stockMovement,
+        icon: Icons.swap_vert_rounded,
+        color: AppColors.stock,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

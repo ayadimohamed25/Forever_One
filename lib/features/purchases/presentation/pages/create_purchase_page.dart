@@ -7,6 +7,7 @@ import '../../../stock/presentation/providers/warehouse_provider.dart';
 import '../../../suppliers/presentation/providers/supplier_provider.dart';
 import '../../domain/entities/purchase_line_entity.dart';
 import '../providers/purchase_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class CreatePurchasePage extends ConsumerStatefulWidget {
   /// When set, the page edits that purchase instead of creating a new one.
@@ -144,9 +145,14 @@ lines.addAll(detail.lines);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(isEditing ? l10n.editPurchase : l10n.newPurchase),
+      appBar: AppPageHeader(
+        title: isEditing ? l10n.editPurchase : l10n.newPurchase,
+        subtitle: lines.isEmpty
+            ? null
+            : '${l10n.linesCount(lines.length)} · ${totalTtc.toStringAsFixed(2)} DT',
+        icon: Icons.shopping_cart_rounded,
+        color: AppColors.purchases,
+        showMenuButton: false,
       ),
       body: Column(
         children: [

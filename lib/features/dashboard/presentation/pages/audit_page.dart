@@ -5,6 +5,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../providers/audit_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class AuditPage extends ConsumerStatefulWidget {
   const AuditPage({super.key});
@@ -200,13 +201,18 @@ class _AuditPageState extends ConsumerState<AuditPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/audit'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(l10n.auditLog),
+      appBar: AppPageHeader(
+        title: l10n.auditLog,
+        subtitle: state.logs.isEmpty
+            ? null
+            : '${filteredLogs.length} / ${state.logs.length}',
+        icon: Icons.history_rounded,
+        color: AppColors.info,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(auditProvider.notifier).load(),
+          AppHeaderAction(
+            icon: Icons.refresh_rounded,
+            tooltip: l10n.refresh,
+            onTap: () => ref.read(auditProvider.notifier).load(),
           ),
         ],
       ),

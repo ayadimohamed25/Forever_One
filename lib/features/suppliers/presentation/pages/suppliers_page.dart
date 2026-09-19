@@ -8,6 +8,8 @@ import '../../domain/entities/supplier_entity.dart';
 import '../providers/supplier_provider.dart';
 import '../widgets/supplier_form_dialog.dart';
 import 'supplier_detail_page.dart';
+import '../../../../shared/widgets/app_page_header.dart';
+
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -17,6 +19,14 @@ class SuppliersPage extends ConsumerStatefulWidget {
 }
 
 class _SuppliersPageState extends ConsumerState<SuppliersPage> {
+  String? _subtitle(SupplierListState state, AppLocalizations l10n) {
+    if (state.suppliers.isEmpty) return null;
+    final total = state.suppliers.fold<double>(0, (sum, s) => sum + s.balance);
+    if (total <= 0.009) {
+      return '${state.suppliers.length} ${l10n.suppliers.toLowerCase()}';
+    }
+    return '${state.suppliers.length} · ${total.toStringAsFixed(0)} DT ${l10n.amountOwed.toLowerCase()}';
+  }
   final searchController = TextEditingController();
   bool searchVisible = false;
 
@@ -100,41 +110,34 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/suppliers'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: searchVisible
-            ? TextField(
-          controller: searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.searchSuppliers,
-            filled: false,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          style: const TextStyle(fontSize: 16),
-          onChanged: (v) =>
-              ref.read(supplierListProvider.notifier).search(v),
-        )
-            : Text(l10n.suppliers),
+      appBar: searchVisible
+          ? AppSearchHeader(
+        controller: searchController,
+        hint: l10n.searchSuppliers,
+        onChanged: (v) =>
+            ref.read(supplierListProvider.notifier).search(v),
+        onClose: () {
+          setState(() => searchVisible = false);
+          searchController.clear();
+          ref.read(supplierListProvider.notifier).clearSearch();
+        },
+      )
+          : AppPageHeader(
+        title: l10n.suppliers,
+        subtitle: _subtitle(state, l10n),
+        icon: Icons.local_shipping_rounded,
+        color: AppColors.purchases,
         actions: [
-          IconButton(
-            icon: Icon(searchVisible ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() => searchVisible = !searchVisible);
-              if (!searchVisible) {
-                searchController.clear();
-                ref.read(supplierListProvider.notifier).clearSearch();
-              }
-            },
+          AppHeaderAction(
+            icon: Icons.search_rounded,
+            tooltip: l10n.search,
+            onTap: () => setState(() => searchVisible = true),
           ),
-          if (!searchVisible)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.read(supplierListProvider.notifier).load(),
-            ),
+          AppHeaderAction(
+            icon: Icons.refresh_rounded,
+            tooltip: l10n.refresh,
+            onTap: () => ref.read(supplierListProvider.notifier).load(),
+          ),
         ],
       ),
       body: state.isLoading

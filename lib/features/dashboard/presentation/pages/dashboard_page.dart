@@ -10,6 +10,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/dashboard_summary_entity.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/report_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -728,15 +729,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/dashboard'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        title: Text(l10n.dashboard),
+      appBar: AppPageHeader(
+        title: l10n.dashboard,
+        subtitle: summary == null
+            ? null
+            : '${summary.kpis.salesCountThisMonth} ${l10n.sales.toLowerCase()} · ${l10n.thisMonth.toLowerCase()}',
+        icon: Icons.dashboard_rounded,
+        color: AppColors.primary,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
+          AppHeaderAction(
+            icon: Icons.refresh_rounded,
             tooltip: l10n.refresh,
-            onPressed: () => ref.read(dashboardProvider.notifier).load(),
+            onTap: () => ref.read(dashboardProvider.notifier).load(),
           ),
         ],
       ),

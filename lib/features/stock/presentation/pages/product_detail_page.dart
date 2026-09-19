@@ -5,6 +5,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product_form_dialog.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class ProductDetailPage extends ConsumerStatefulWidget {
   final String productId;
@@ -112,21 +113,23 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(l10n.productDetails),
+      appBar: AppPageHeader(
+        title: l10n.productDetails,
+        subtitle: p?.name,
+        icon: Icons.inventory_2_rounded,
+        color: AppColors.stock,
+        showMenuButton: false,
         actions: [
           if (p != null)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
+            AppHeaderAction(
+              icon: Icons.edit_rounded,
               tooltip: l10n.edit,
-              onPressed: () async {
+              color: AppColors.primary,
+              onTap: () async {
                 final input =
                 await showProductFormDialog(context, ref, existing: p);
                 if (input == null) return;
-                await ref
-                    .read(productListProvider.notifier)
-                    .update(p.id, input);
+                await ref.read(productListProvider.notifier).update(p.id, input);
                 if (mounted) {
                   ref.read(productDetailProvider.notifier).load(p.id);
                 }

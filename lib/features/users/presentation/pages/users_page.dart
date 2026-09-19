@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_widgets.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../providers/user_provider.dart';
 import '../widgets/user_form_dialog.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
   const UsersPage({super.key});
@@ -205,40 +206,35 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/users'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: searchVisible
-            ? TextField(
-          controller: searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.searchUsers,
-            filled: false,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          style: const TextStyle(fontSize: 16),
-          onChanged: (v) => ref.read(userListProvider.notifier).search(v),
-        )
-            : Text(l10n.users),
+      appBar: searchVisible
+          ? AppSearchHeader(
+        controller: searchController,
+        hint: l10n.searchUsers,
+        onChanged: (v) => ref.read(userListProvider.notifier).search(v),
+        onClose: () {
+          setState(() => searchVisible = false);
+          searchController.clear();
+          ref.read(userListProvider.notifier).clearSearch();
+        },
+      )
+          : AppPageHeader(
+        title: l10n.users,
+        subtitle: state.users.isEmpty
+            ? null
+            : '${state.users.length} · ${state.users.where((u) => u.isActive).length} ${l10n.active.toLowerCase()}',
+        icon: Icons.group_rounded,
+        color: AppColors.primary,
         actions: [
-          IconButton(
-            icon: Icon(searchVisible ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() => searchVisible = !searchVisible);
-              if (!searchVisible) {
-                searchController.clear();
-                ref.read(userListProvider.notifier).clearSearch();
-              }
-            },
+          AppHeaderAction(
+            icon: Icons.search_rounded,
+            tooltip: l10n.search,
+            onTap: () => setState(() => searchVisible = true),
           ),
-          if (!searchVisible)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.read(userListProvider.notifier).load(),
-            ),
+          AppHeaderAction(
+            icon: Icons.refresh_rounded,
+            tooltip: l10n.refresh,
+            onTap: () => ref.read(userListProvider.notifier).load(),
+          ),
         ],
       ),
       body: state.isLoading

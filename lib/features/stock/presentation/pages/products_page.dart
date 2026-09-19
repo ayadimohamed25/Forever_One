@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/product_entity.dart';
 import '../providers/product_provider.dart';
@@ -103,64 +104,63 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       if (next.error != null) _showSnack(next.error!, isError: true);
     });
 
+    // A live subtitle tells the user what they're looking at.
+    final lowStockCount = state.products.where((p) => p.isLowStock).length;
+    final subtitle = state.products.isEmpty
+        ? null
+        : lowStockCount > 0
+        ? '${state.products.length} · $lowStockCount ${l10n.lowStockAlerts.toLowerCase()}'
+        : '${state.products.length} ${l10n.products.toLowerCase()}';
+
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/products'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: searchVisible
-            ? TextField(
-          controller: searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.searchProducts,
-            filled: false,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          style: const TextStyle(fontSize: 16),
-          onChanged: (value) =>
-              ref.read(productListProvider.notifier).search(value),
-        )
-            : Text(l10n.products),
+      appBar: searchVisible
+          ? AppSearchHeader(
+        controller: searchController,
+        hint: l10n.searchProducts,
+        onChanged: (v) =>
+            ref.read(productListProvider.notifier).search(v),
+        onClose: () {
+          setState(() => searchVisible = false);
+          searchController.clear();
+          ref.read(productListProvider.notifier).clearSearch();
+        },
+      )
+          : AppPageHeader(
+        title: l10n.products,
+        subtitle: subtitle,
+        icon: Icons.inventory_2_rounded,
+        color: AppColors.stock,
         actions: [
-          IconButton(
-            icon: Icon(searchVisible ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() => searchVisible = !searchVisible);
-              if (!searchVisible) {
-                searchController.clear();
-                ref.read(productListProvider.notifier).clearSearch();
+          AppHeaderAction(
+            icon: Icons.search_rounded,
+            tooltip: l10n.search,
+            onTap: () => setState(() => searchVisible = true),
+          ),
+          AppHeaderAction(
+            icon: Icons.category_rounded,
+            tooltip: l10n.categories,
+            onTap: () async {
+              await Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const CategoriesPage(),
+              ));
+              if (mounted) {
+                ref.read(categoryListProvider.notifier).load();
+                ref.read(productListProvider.notifier).load();
               }
             },
           ),
-          if (!searchVisible)
-            IconButton(
-              icon: const Icon(Icons.category_outlined),
-              tooltip: l10n.categories,
-              onPressed: () async {
-                await Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const CategoriesPage(),
-                ));
-                if (mounted) {
-                  ref.read(categoryListProvider.notifier).load();
-                  ref.read(productListProvider.notifier).load();
-                }
-              },
-            ),
         ],
       ),
       body: Column(
         children: [
-          // Category filter chips
-          if (categories.isNotEmpty)
+          if (categories.isNotEmpty && !searchVisible)
             SizedBox(
-              height: 46,
+              height: 44,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
@@ -182,8 +182,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                         decoration: BoxDecoration(
                             color: c.color, shape: BoxShape.circle),
                       ),
-                      label:
-                      Text(c.name, style: const TextStyle(fontSize: 12)),
+                      label: Text(c.name,
+                          style: const TextStyle(fontSize: 12)),
                       selected: state.categoryFilter == c.id,
                       onSelected: (_) => ref
                           .read(productListProvider.notifier)
@@ -257,9 +257,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                                     Expanded(
                                       child: Text(p.name,
                                           style: const TextStyle(
-                                              fontSize: 14.5,
+                                              fontSize: 15,
                                               fontWeight:
                                               FontWeight.w700,
+                                              letterSpacing: -0.2,
                                               color: AppColors
                                                   .textPrimary),
                                           overflow:
@@ -284,10 +285,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                                 const SizedBox(height: 5),
                                 AppMetaRow(items: [
                                   if (p.sku != null)
-                                    (
-                                    icon: Icons.tag,
-                                    text: p.sku!
-                                    ),
+                                    (icon: Icons.tag, text: p.sku!),
                                   (
                                   icon: Icons.inventory_2_outlined,
                                   text: '${p.currentStock} ${p.unit}'
@@ -303,8 +301,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                           ),
                           const SizedBox(width: 8),
                           AppTrailingStat(
-                            value:
-                            '${p.price.toStringAsFixed(2)} DT',
+                            value: '${p.price.toStringAsFixed(2)} DT',
                             label:
                             'TVA ${p.vatRate.toStringAsFixed(0)}%',
                             valueColor: AppColors.primary,

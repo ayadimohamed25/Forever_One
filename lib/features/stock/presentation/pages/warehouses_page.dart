@@ -7,6 +7,7 @@ import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/warehouse_entity.dart';
 import '../../domain/repositories/warehouse_repository.dart';
 import '../providers/warehouse_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class WarehousesPage extends ConsumerStatefulWidget {
   const WarehousesPage({super.key});
@@ -16,6 +17,12 @@ class WarehousesPage extends ConsumerStatefulWidget {
 }
 
 class _WarehousesPageState extends ConsumerState<WarehousesPage> {
+  String? _subtitle(WarehouseListState state, AppLocalizations l10n) {
+    if (state.warehouses.isEmpty) return null;
+    final value =
+    state.warehouses.fold<double>(0, (sum, w) => sum + w.stockValue);
+    return '${state.warehouses.length} · ${value.toStringAsFixed(0)} DT ${l10n.stockValue.toLowerCase()}';
+  }
   final searchController = TextEditingController();
   bool searchVisible = false;
 
@@ -221,41 +228,34 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/warehouses'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: searchVisible
-            ? TextField(
-          controller: searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.searchWarehouses,
-            filled: false,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          style: const TextStyle(fontSize: 16),
-          onChanged: (v) =>
-              ref.read(warehouseListProvider.notifier).search(v),
-        )
-            : Text(l10n.warehouses),
+      appBar: searchVisible
+          ? AppSearchHeader(
+        controller: searchController,
+        hint: l10n.searchWarehouses,
+        onChanged: (v) =>
+            ref.read(warehouseListProvider.notifier).search(v),
+        onClose: () {
+          setState(() => searchVisible = false);
+          searchController.clear();
+          ref.read(warehouseListProvider.notifier).clearSearch();
+        },
+      )
+          : AppPageHeader(
+        title: l10n.warehouses,
+        subtitle: _subtitle(state, l10n),
+        icon: Icons.warehouse_rounded,
+        color: AppColors.stock,
         actions: [
-          IconButton(
-            icon: Icon(searchVisible ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() => searchVisible = !searchVisible);
-              if (!searchVisible) {
-                searchController.clear();
-                ref.read(warehouseListProvider.notifier).clearSearch();
-              }
-            },
+          AppHeaderAction(
+            icon: Icons.search_rounded,
+            tooltip: l10n.search,
+            onTap: () => setState(() => searchVisible = true),
           ),
-          if (!searchVisible)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.read(warehouseListProvider.notifier).load(),
-            ),
+          AppHeaderAction(
+            icon: Icons.refresh_rounded,
+            tooltip: l10n.refresh,
+            onTap: () => ref.read(warehouseListProvider.notifier).load(),
+          ),
         ],
       ),
       body: state.isLoading

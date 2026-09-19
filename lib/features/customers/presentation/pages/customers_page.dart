@@ -8,6 +8,7 @@ import '../../domain/entities/customer_entity.dart';
 import '../providers/customer_provider.dart';
 import '../widgets/customer_form_dialog.dart';
 import 'customer_detail_page.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class CustomersPage extends ConsumerStatefulWidget {
   const CustomersPage({super.key});
@@ -17,6 +18,14 @@ class CustomersPage extends ConsumerStatefulWidget {
 }
 
 class _CustomersPageState extends ConsumerState<CustomersPage> {
+  /// Live context line: how many customers, and how much they owe.
+  String? _subtitle(CustomerListState state, AppLocalizations l10n) {
+    if (state.customers.isEmpty) return null;
+    final owing = state.customers.where((c) => c.owesMoney).length;
+    final total = state.customers.fold<double>(0, (sum, c) => sum + c.balance);
+    if (owing == 0) return '${state.customers.length} ${l10n.customers.toLowerCase()}';
+    return '${state.customers.length} · ${total.toStringAsFixed(0)} DT ${l10n.outstandingBalance.toLowerCase()}';
+  }
   final searchController = TextEditingController();
   bool searchVisible = false;
 
@@ -100,43 +109,36 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/customers'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: searchVisible
-            ? TextField(
+        appBar: searchVisible
+            ? AppSearchHeader(
           controller: searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.searchCustomers,
-            filled: false,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          style: const TextStyle(fontSize: 16),
+          hint: l10n.searchCustomers,
           onChanged: (v) =>
               ref.read(customerListProvider.notifier).search(v),
+          onClose: () {
+            setState(() => searchVisible = false);
+            searchController.clear();
+            ref.read(customerListProvider.notifier).clearSearch();
+          },
         )
-            : Text(l10n.customers),
-        actions: [
-          IconButton(
-            icon: Icon(searchVisible ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() => searchVisible = !searchVisible);
-              if (!searchVisible) {
-                searchController.clear();
-                ref.read(customerListProvider.notifier).clearSearch();
-              }
-            },
-          ),
-          if (!searchVisible)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.read(customerListProvider.notifier).load(),
+            : AppPageHeader(
+          title: l10n.customers,
+          subtitle: _subtitle(state, l10n),
+          icon: Icons.people_rounded,
+          color: AppColors.finance,
+          actions: [
+            AppHeaderAction(
+              icon: Icons.search_rounded,
+              tooltip: l10n.search,
+              onTap: () => setState(() => searchVisible = true),
             ),
-        ],
-      ),
+            AppHeaderAction(
+              icon: Icons.refresh_rounded,
+              tooltip: l10n.refresh,
+              onTap: () => ref.read(customerListProvider.notifier).load(),
+            ),
+          ],
+        ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.customers.isEmpty

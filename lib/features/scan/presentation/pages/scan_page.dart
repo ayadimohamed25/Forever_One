@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../providers/document_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class ScanPage extends ConsumerStatefulWidget {
   const ScanPage({super.key});
@@ -118,9 +119,10 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/scan'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(l10n.scanDocument),
+      appBar: AppPageHeader(
+        title: l10n.scanDocument,
+        icon: Icons.document_scanner_rounded,
+        color: AppColors.info,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

@@ -7,6 +7,7 @@ import '../../../stock/presentation/providers/product_provider.dart';
 import '../../../stock/presentation/providers/warehouse_provider.dart';
 import '../../domain/entities/sale_line_entity.dart';
 import '../providers/sale_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class CreateSalePage extends ConsumerStatefulWidget {
   /// When set, the page edits that sale instead of creating a new one.
@@ -142,9 +143,14 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(isEditing ? l10n.editSale : l10n.newSale),
+      appBar: AppPageHeader(
+        title: isEditing ? l10n.editSale : l10n.newSale,
+        subtitle: lines.isEmpty
+            ? null
+            : '${l10n.linesCount(lines.length)} · ${totalTtc.toStringAsFixed(2)} DT',
+        icon: Icons.point_of_sale_rounded,
+        color: AppColors.sales,
+        showMenuButton: false,
       ),
       body: Column(
         children: [

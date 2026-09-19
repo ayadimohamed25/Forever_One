@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/payment_provider.dart';
-
+import '../../../../shared/widgets/app_page_header.dart';
 class PaymentPage extends ConsumerStatefulWidget {
   final String? saleId;
   final String? purchaseId;
@@ -97,11 +97,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(widget.title,
-            style: const TextStyle(fontSize: 16.5),
-            overflow: TextOverflow.ellipsis),
+      appBar: AppPageHeader(
+        title: l10n.payment,
+        subtitle: widget.title,
+        icon: Icons.payments_rounded,
+        color: AppColors.finance,
+        showMenuButton: false,
       ),
       body: state.isLoading || balance == null
           ? const Center(child: CircularProgressIndicator())

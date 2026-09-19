@@ -5,6 +5,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/category_entity.dart';
 import '../providers/product_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 const _palette = [
   '#6C4BF4',
@@ -186,9 +187,14 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(l10n.categories),
+      appBar: AppPageHeader(
+        title: l10n.categories,
+        subtitle: state.categories.isEmpty
+            ? null
+            : '${state.categories.length} ${l10n.categories.toLowerCase()}',
+        icon: Icons.category_rounded,
+        color: AppColors.primary,
+        showMenuButton: false,
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())

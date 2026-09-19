@@ -8,6 +8,7 @@ import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/sale_entity.dart';
 import '../providers/sale_provider.dart';
 import 'create_sale_page.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class SalesPage extends ConsumerStatefulWidget {
   const SalesPage({super.key});
@@ -17,6 +18,15 @@ class SalesPage extends ConsumerStatefulWidget {
 }
 
 class _SalesPageState extends ConsumerState<SalesPage> {
+  String? _subtitle(SaleListState state, AppLocalizations l10n) {
+    if (state.sales.isEmpty) return null;
+    final unpaid = state.sales.where((s) => !s.isFullyPaid).length;
+    final total = state.sales.fold<double>(0, (sum, s) => sum + s.total);
+    if (unpaid == 0) {
+      return '${state.sales.length} · ${total.toStringAsFixed(0)} DT';
+    }
+    return '${state.sales.length} · $unpaid ${l10n.unpaid}';
+  }
   final searchController = TextEditingController();
   bool searchVisible = false;
 
@@ -100,40 +110,33 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/sales'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: searchVisible
-            ? TextField(
-          controller: searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.searchSales,
-            filled: false,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          style: const TextStyle(fontSize: 16),
-          onChanged: (v) => ref.read(saleListProvider.notifier).search(v),
-        )
-            : Text(l10n.sales),
+      appBar: searchVisible
+          ? AppSearchHeader(
+        controller: searchController,
+        hint: l10n.searchSales,
+        onChanged: (v) => ref.read(saleListProvider.notifier).search(v),
+        onClose: () {
+          setState(() => searchVisible = false);
+          searchController.clear();
+          ref.read(saleListProvider.notifier).clearSearch();
+        },
+      )
+          : AppPageHeader(
+        title: l10n.sales,
+        subtitle: _subtitle(state, l10n),
+        icon: Icons.point_of_sale_rounded,
+        color: AppColors.sales,
         actions: [
-          IconButton(
-            icon: Icon(searchVisible ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() => searchVisible = !searchVisible);
-              if (!searchVisible) {
-                searchController.clear();
-                ref.read(saleListProvider.notifier).clearSearch();
-              }
-            },
+          AppHeaderAction(
+            icon: Icons.search_rounded,
+            tooltip: l10n.search,
+            onTap: () => setState(() => searchVisible = true),
           ),
-          if (!searchVisible)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.read(saleListProvider.notifier).load(),
-            ),
+          AppHeaderAction(
+            icon: Icons.refresh_rounded,
+            tooltip: l10n.refresh,
+            onTap: () => ref.read(saleListProvider.notifier).load(),
+          ),
         ],
       ),
       body: state.isLoading

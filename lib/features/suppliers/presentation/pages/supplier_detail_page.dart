@@ -5,7 +5,8 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../finance/presentation/pages/payment_page.dart';
 import '../providers/supplier_provider.dart';
 import '../widgets/supplier_form_dialog.dart';
-
+import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../core/theme/app_colors.dart';
 class SupplierDetailPage extends ConsumerStatefulWidget {
   final String supplierId;
   const SupplierDetailPage({super.key, required this.supplierId});
@@ -82,14 +83,19 @@ class _SupplierDetailPageState extends ConsumerState<SupplierDetailPage> {
     final s = state.supplier;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.supplierDetails),
+      appBar: AppPageHeader(
+        title: l10n.supplierDetails,
+        subtitle: s?.name,
+        icon: Icons.local_shipping_rounded,
+        color: AppColors.purchases,
+        showMenuButton: false,
         actions: [
           if (s != null)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
+            AppHeaderAction(
+              icon: Icons.edit_rounded,
               tooltip: l10n.edit,
-              onPressed: () async {
+              color: AppColors.primary,
+              onTap: () async {
                 final input = await showSupplierFormDialog(context, existing: s);
                 if (input == null) return;
                 await ref.read(supplierListProvider.notifier).update(s.id, input);

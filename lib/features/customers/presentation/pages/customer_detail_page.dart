@@ -6,6 +6,8 @@ import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../providers/customer_provider.dart';
 import '../widgets/customer_form_dialog.dart';
+import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class CustomerDetailPage extends ConsumerStatefulWidget {
   final String customerId;
@@ -90,14 +92,19 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
     final c = state.customer;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.customerDetails),
+      appBar: AppPageHeader(
+        title: l10n.customerDetails,
+        subtitle: c?.name,
+        icon: Icons.person_rounded,
+        color: AppColors.finance,
+        showMenuButton: false,
         actions: [
           if (c != null)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
+            AppHeaderAction(
+              icon: Icons.edit_rounded,
               tooltip: l10n.edit,
-              onPressed: () async {
+              color: AppColors.primary,
+              onTap: () async {
                 final input = await showCustomerFormDialog(context, existing: c);
                 if (input == null) return;
                 await ref.read(customerListProvider.notifier).update(c.id, input);

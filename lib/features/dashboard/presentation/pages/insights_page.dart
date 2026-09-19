@@ -5,6 +5,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../providers/prediction_provider.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class InsightsPage extends ConsumerStatefulWidget {
   const InsightsPage({super.key});
@@ -52,30 +53,48 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       child: Scaffold(
         backgroundColor: AppColors.surfaceAlt,
         drawer: const AppDrawer(currentRoute: '/insights'),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          title: Text(l10n.insightsAndForecasts),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.read(predictionProvider.notifier).loadAll(),
-            ),
-          ],
-          bottom: TabBar(
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primary,
-            indicatorWeight: 2.5,
-            labelStyle:
-            const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-            tabs: [
-              Tab(icon: const Icon(Icons.trending_down, size: 19), text: l10n.stock),
-              Tab(
-                  icon: const Icon(Icons.hourglass_empty, size: 19),
-                  text: l10n.dormant),
-              Tab(
-                  icon: const Icon(Icons.phone_callback, size: 19),
-                  text: l10n.followUps),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(74 + 52),
+          child: Column(
+            children: [
+              AppPageHeader(
+                title: l10n.insightsAndForecasts,
+                subtitle: state.stockForecast.isEmpty
+                    ? null
+                    : '${state.stockForecast.where((f) => f.urgency == 'critical').length} ${l10n.rupture.toLowerCase()}',
+                icon: Icons.insights_rounded,
+                color: AppColors.primary,
+                actions: [
+                  AppHeaderAction(
+                    icon: Icons.refresh_rounded,
+                    tooltip: l10n.refresh,
+                    onTap: () =>
+                        ref.read(predictionProvider.notifier).loadAll(),
+                  ),
+                ],
+              ),
+              Container(
+                color: AppColors.surfaceAlt,
+                child: TabBar(
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  indicatorColor: AppColors.primary,
+                  indicatorWeight: 2.5,
+                  labelStyle: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w700),
+                  tabs: [
+                    Tab(
+                        icon: const Icon(Icons.trending_down, size: 19),
+                        text: l10n.stock),
+                    Tab(
+                        icon: const Icon(Icons.hourglass_empty, size: 19),
+                        text: l10n.dormant),
+                    Tab(
+                        icon: const Icon(Icons.phone_callback, size: 19),
+                        text: l10n.followUps),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

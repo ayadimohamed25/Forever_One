@@ -8,6 +8,7 @@ import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/purchase_entity.dart';
 import '../providers/purchase_provider.dart';
 import 'create_purchase_page.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 
 class PurchasesPage extends ConsumerStatefulWidget {
   const PurchasesPage({super.key});
@@ -17,6 +18,15 @@ class PurchasesPage extends ConsumerStatefulWidget {
 }
 
 class _PurchasesPageState extends ConsumerState<PurchasesPage> {
+  String? _subtitle(PurchaseListState state, AppLocalizations l10n) {
+    if (state.purchases.isEmpty) return null;
+    final pending = state.purchases.where((p) => p.isPending).length;
+    final total = state.purchases.fold<double>(0, (sum, p) => sum + p.total);
+    if (pending == 0) {
+      return '${state.purchases.length} · ${total.toStringAsFixed(0)} DT';
+    }
+    return '${state.purchases.length} · $pending ${l10n.pendingDelivery.toLowerCase()}';
+  }
   final searchController = TextEditingController();
   bool searchVisible = false;
 
@@ -111,41 +121,34 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
       drawer: const AppDrawer(currentRoute: '/purchases'),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: searchVisible
-            ? TextField(
-          controller: searchController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: l10n.searchPurchases,
-            filled: false,
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          style: const TextStyle(fontSize: 16),
-          onChanged: (v) =>
-              ref.read(purchaseListProvider.notifier).search(v),
-        )
-            : Text(l10n.purchases),
+      appBar: searchVisible
+          ? AppSearchHeader(
+        controller: searchController,
+        hint: l10n.searchPurchases,
+        onChanged: (v) =>
+            ref.read(purchaseListProvider.notifier).search(v),
+        onClose: () {
+          setState(() => searchVisible = false);
+          searchController.clear();
+          ref.read(purchaseListProvider.notifier).clearSearch();
+        },
+      )
+          : AppPageHeader(
+        title: l10n.purchases,
+        subtitle: _subtitle(state, l10n),
+        icon: Icons.shopping_cart_rounded,
+        color: AppColors.purchases,
         actions: [
-          IconButton(
-            icon: Icon(searchVisible ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() => searchVisible = !searchVisible);
-              if (!searchVisible) {
-                searchController.clear();
-                ref.read(purchaseListProvider.notifier).clearSearch();
-              }
-            },
+          AppHeaderAction(
+            icon: Icons.search_rounded,
+            tooltip: l10n.search,
+            onTap: () => setState(() => searchVisible = true),
           ),
-          if (!searchVisible)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.read(purchaseListProvider.notifier).load(),
-            ),
+          AppHeaderAction(
+            icon: Icons.refresh_rounded,
+            tooltip: l10n.refresh,
+            onTap: () => ref.read(purchaseListProvider.notifier).load(),
+          ),
         ],
       ),
       body: state.isLoading
