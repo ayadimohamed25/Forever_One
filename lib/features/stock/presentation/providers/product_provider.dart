@@ -169,11 +169,15 @@ class CategoryListState {
   final bool isLoading;
   final List<CategoryEntity> categories;
   final String? error;
+  final String searchQuery;
+  final bool hasSearched;
 
   const CategoryListState({
     this.isLoading = false,
     this.categories = const [],
     this.error,
+    this.searchQuery = '',
+    this.hasSearched = false,
   });
 }
 
@@ -181,14 +185,30 @@ class CategoryListNotifier extends StateNotifier<CategoryListState> {
   final CategoryRepositoryImpl repository;
   CategoryListNotifier(this.repository) : super(const CategoryListState());
 
-  Future<void> load() async {
-    state = const CategoryListState(isLoading: true);
-    final result = await repository.getCategories();
+  Future<void> load({String? search}) async {
+    final query = search ?? state.searchQuery;
+    state = CategoryListState(
+      isLoading: true,
+      categories: state.categories,
+      searchQuery: query,
+      hasSearched: query.isNotEmpty,
+    );
+
+    final result = await repository.getCategories(search: query);
     result.fold(
-          (failure) => state = CategoryListState(error: failure.message),
-          (categories) => state = CategoryListState(categories: categories),
+          (failure) => state = CategoryListState(
+          error: failure.message,
+          searchQuery: query,
+          hasSearched: query.isNotEmpty),
+          (categories) => state = CategoryListState(
+          categories: categories,
+          searchQuery: query,
+          hasSearched: query.isNotEmpty),
     );
   }
+
+  Future<void> search(String query) => load(search: query);
+  Future<void> clearSearch() => load(search: '');
 
   Future<void> add({
     required String name,
@@ -204,6 +224,7 @@ class CategoryListNotifier extends StateNotifier<CategoryListState> {
       state = CategoryListState(
         categories: state.categories,
         error: result.fold((f) => f.message, (_) => ''),
+        searchQuery: state.searchQuery,
       );
       return;
     }
@@ -226,6 +247,7 @@ class CategoryListNotifier extends StateNotifier<CategoryListState> {
       state = CategoryListState(
         categories: state.categories,
         error: result.fold((f) => f.message, (_) => ''),
+        searchQuery: state.searchQuery,
       );
       return;
     }

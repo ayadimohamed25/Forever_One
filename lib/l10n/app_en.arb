@@ -437,4 +437,5 @@
                          "companyInfo": "Your company",
                          "yourAccount": "Your account",
                          "signUpDisclaimer": "You will be the administrator of this company"
+                         ,"searchCategories": "Search categories..."
  }

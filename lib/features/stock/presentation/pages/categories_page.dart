@@ -26,10 +26,17 @@ class CategoriesPage extends ConsumerStatefulWidget {
 }
 
 class _CategoriesPageState extends ConsumerState<CategoriesPage> {
+  final searchController = TextEditingController();
+  bool searchVisible = false;
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(categoryListProvider.notifier).load());
+  }
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   void _showSnack(String message, {bool isError = false}) {
@@ -187,7 +194,19 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
-      appBar: AppPageHeader(
+      appBar: searchVisible
+          ? AppSearchHeader(
+        controller: searchController,
+        hint: l10n.searchCategories,
+        onChanged: (v) =>
+            ref.read(categoryListProvider.notifier).search(v),
+        onClose: () {
+          setState(() => searchVisible = false);
+          searchController.clear();
+          ref.read(categoryListProvider.notifier).clearSearch();
+        },
+      )
+          : AppPageHeader(
         title: l10n.categories,
         subtitle: state.categories.isEmpty
             ? null
@@ -195,14 +214,25 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
         icon: Icons.category_rounded,
         color: AppColors.primary,
         showMenuButton: false,
+        actions: [
+          AppHeaderAction(
+            icon: Icons.search_rounded,
+            tooltip: l10n.search,
+            onTap: () => setState(() => searchVisible = true),
+          ),
+        ],
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.categories.isEmpty
           ? AppEmptyState(
-        icon: Icons.category_outlined,
-        title: l10n.noCategories,
-        subtitle: l10n.tapPlusToAdd,
+        icon: state.hasSearched
+            ? Icons.search_off
+            : Icons.category_outlined,
+        title: state.hasSearched ? l10n.noResults : l10n.noCategories,
+        subtitle: state.hasSearched
+            ? l10n.tryDifferentSearch
+            : l10n.tapPlusToAdd,
         color: AppColors.primary,
       )
           : RefreshIndicator(

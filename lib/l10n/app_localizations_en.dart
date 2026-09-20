@@ -1260,4 +1260,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get signUpDisclaimer =>
       'You will be the administrator of this company';
+
+  @override
+  String get searchCategories => 'Search categories...';
 }

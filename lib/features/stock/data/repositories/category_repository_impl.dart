@@ -16,9 +16,9 @@ class CategoryRepositoryImpl {
     productCount: int.tryParse('${j['product_count'] ?? 0}') ?? 0,
   );
 
-  Future<Either<Failure, List<CategoryEntity>>> getCategories() async {
+  Future<Either<Failure, List<CategoryEntity>>> getCategories({String? search}) async {
     try {
-      final data = await remote.getCategories();
+      final data = await remote.getCategories(search: search);
       return Right(data
           .whereType<Map>()
           .map((j) => _map(Map<String, dynamic>.from(j)))

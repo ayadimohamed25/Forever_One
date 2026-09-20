@@ -2461,6 +2461,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You will be the administrator of this company'**
   String get signUpDisclaimer;
+
+  /// No description provided for @searchCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Search categories...'**
+  String get searchCategories;
 }
 
 class _AppLocalizationsDelegate

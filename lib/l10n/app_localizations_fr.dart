@@ -1266,4 +1266,7 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get signUpDisclaimer =>
       'Vous serez l\'administrateur de cette entreprise';
+
+  @override
+  String get searchCategories => 'Rechercher une catégorie...';
 }

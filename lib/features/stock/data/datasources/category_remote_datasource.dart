@@ -4,8 +4,12 @@ class CategoryRemoteDatasource {
   final Dio dio;
   CategoryRemoteDatasource(this.dio);
 
-  Future<List<dynamic>> getCategories() async {
-    final response = await dio.get('/categories');
+  Future<List<dynamic>> getCategories({String? search}) async {
+    final response = await dio.get(
+      '/categories',
+      queryParameters:
+      search != null && search.isNotEmpty ? {'search': search} : null,
+    );
     return response.data;
   }
 
