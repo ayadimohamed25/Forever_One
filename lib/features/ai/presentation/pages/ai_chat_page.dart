@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:markdown/markdown.dart' as md;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
@@ -12,36 +11,25 @@ import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/ai_message_entity.dart';
 import '../providers/ai_provider.dart';
 
-/// Status tags the model used to echo, e.g. [ALERTE RUPTURE] or
-/// [OUT OF STOCK]. Uppercase only, and never followed by "(", so markdown
-/// links like [text](url) are left alone.
-class _StatusTagSyntax extends md.InlineSyntax {
-  _StatusTagSyntax()
-      : super(r"\[([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ0-9 _'\-]{1,40})\](?!\()");
+/// Status tags the model sometimes emits, e.g. [ALERTE RUPTURE].
+/// They are pulled out of the text and drawn as pills, so a raw tag can
+/// never reach the screen.
+final _tagPattern =
+RegExp(r"\[([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ0-9 _'\-]{1,40})\](?!\()");
 
-  @override
-  bool onMatch(md.InlineParser parser, Match match) {
-    parser.addNode(md.Element.text('statustag', match[1]!));
-    return true;
-  }
-}
+({String text, List<String> tags}) _splitTags(String answer) {
+  final tags = <String>[];
+  final stripped = answer.replaceAllMapped(_tagPattern, (m) {
+    tags.add(m[1]!.trim());
+    return '';
+  });
 
-/// Draws a status tag as a danger pill instead of raw bracketed text.
-class _StatusTagBuilder extends MarkdownElementBuilder {
-  final String Function(String raw) labelFor;
+  final cleaned = stripped
+      .replaceAll(RegExp(r'[ \t]{2,}'), ' ')
+      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+      .trim();
 
-  _StatusTagBuilder(this.labelFor);
-
-  @override
-  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      child: AppBadge(
-        label: labelFor(element.textContent),
-        tone: BadgeTone.danger,
-      ),
-    );
-  }
+  return (text: cleaned, tags: tags.toSet().toList());
 }
 
 class AiChatPage extends ConsumerStatefulWidget {
@@ -88,12 +76,93 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     });
   }
 
+  /// Translates a tag into the language currently selected in the app.
   String _tagLabel(String raw, AppLocalizations l10n) {
     final t = raw.toUpperCase();
     if (t.contains('RUPTURE') || t.contains('OUT OF STOCK')) {
       return l10n.rupture;
     }
+    if (t.contains('STOCK BAS') || t.contains('LOW STOCK')) return l10n.soon;
+    if (t.contains('RETARD') || t.contains('OVERDUE')) return l10n.overdue;
+    if (t.contains('PLAFOND') || t.contains('CREDIT')) {
+      return l10n.creditLimitExceeded;
+    }
     return raw;
+  }
+
+  /// Backend error codes become a sentence in the app's language.
+  String _errorLabel(String code, AppLocalizations l10n) {
+    switch (code) {
+      case 'AI_NO_KEY':
+        return l10n.aiNoKey;
+      case 'AI_QUOTA':
+        return l10n.aiQuota;
+      case 'AI_NETWORK':
+        return l10n.aiNetwork;
+      case 'AI_BLOCKED':
+        return l10n.aiBlocked;
+      case 'AI_UNAVAILABLE':
+      case 'AI_MODEL_NOT_FOUND':
+        return l10n.aiUnavailable;
+      default:
+        return code;
+    }
+  }
+
+  /// Shown in place of a dead-end message: what happened, and a way out.
+  Widget _errorCard(AiState state, AppLocalizations l10n) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.dangerSoft,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, size: 20, color: AppColors.danger),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _errorLabel(state.error!, l10n),
+                  style: AppTheme.font(
+                      size: 13.5, height: 1.4, color: AppColors.danger),
+                ),
+                if (state.pendingQuestion != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => ref.read(aiProvider.notifier).retry(),
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: Text(l10n.retry),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.danger,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(aiProvider.notifier).dismissError(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                        child: Text(l10n.cancel),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   MarkdownStyleSheet _markdownStyle(BuildContext context) {
@@ -141,6 +210,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   }
 
   Widget _assistantBubble(AiMessageEntity m, AppLocalizations l10n) {
+    final parsed = _splitTags(m.answer);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -172,15 +243,28 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                   ),
                   boxShadow: AppColors.cardShadow,
                 ),
-                child: MarkdownBody(
-                  data: m.answer,
-                  styleSheet: _markdownStyle(context),
-                  extensionSet: md.ExtensionSet.gitHubFlavored,
-                  inlineSyntaxes: [_StatusTagSyntax()],
-                  builders: {
-                    'statustag':
-                    _StatusTagBuilder((raw) => _tagLabel(raw, l10n)),
-                  },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (parsed.tags.isNotEmpty) ...[
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final tag in parsed.tags)
+                            AppBadge(
+                              label: _tagLabel(tag, l10n),
+                              tone: BadgeTone.danger,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    MarkdownBody(
+                      data: parsed.text,
+                      styleSheet: _markdownStyle(context),
+                    ),
+                  ],
                 ),
               ),
               if (m.createdAt != null)
@@ -311,15 +395,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       l10n.suggestActivitySummary,
     ];
 
+    // Errors are shown in the card above the input, not as a snackbar.
     ref.listen(aiProvider, (previous, next) {
-      if (next.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
       if (next.messages.length > (previous?.messages.length ?? 0)) {
         _scrollToEnd();
       }
@@ -376,6 +453,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 ],
               ),
             ),
+
+          if (state.error != null) _errorCard(state, l10n),
 
           if (state.messages.isNotEmpty)
             SizedBox(

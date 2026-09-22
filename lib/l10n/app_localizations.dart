@@ -2551,6 +2551,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{entity} deleted'**
   String auditDeleted(String entity);
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @aiNoKey.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI assistant isn\'t configured yet. Ask your administrator to add the API key.'**
+  String get aiNoKey;
+
+  /// No description provided for @aiQuota.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI assistant has reached its usage limit. Please try again later.'**
+  String get aiQuota;
+
+  /// No description provided for @aiNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the AI assistant. Check the connection and try again.'**
+  String get aiNetwork;
+
+  /// No description provided for @aiBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'The assistant couldn\'t answer that question.'**
+  String get aiBlocked;
+
+  /// No description provided for @aiUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI assistant is temporarily unavailable.'**
+  String get aiUnavailable;
+
+  /// No description provided for @andOtherProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'and {count} other products'**
+  String andOtherProducts(int count);
 }
 
 class _AppLocalizationsDelegate

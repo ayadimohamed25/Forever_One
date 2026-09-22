@@ -149,10 +149,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   }
 
   Widget _card(CustomerEntity c, AppLocalizations l10n) {
-    final details = [
-      '${c.orderCount} ${l10n.orders.toLowerCase()}',
-      if (c.phone != null && c.phone!.trim().isNotEmpty) c.phone!,
-    ].join(' · ');
+    final hasPhone = c.phone != null && c.phone!.trim().isNotEmpty;
 
     return AppCard(
       onTap: () => _openDetail(c),
@@ -168,10 +165,34 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Wraps to two lines — never cut with "…".
                     Text(c.name, style: AppTheme.rowTitle, maxLines: 2),
                     const SizedBox(height: 4),
-                    Text(details, style: AppTheme.label, maxLines: 2),
+                    Text(
+                      '${c.orderCount} ${l10n.orders.toLowerCase()}',
+                      style: AppTheme.label,
+                    ),
+                    // The phone gets its own line — it is not a count.
+                    if (hasPhone) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.phone_outlined,
+                              size: 14, color: AppColors.iconMuted),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              c.phone!,
+                              maxLines: 1,
+                              style: AppTheme.font(
+                                size: 13,
+                                color: AppColors.textSecondary,
+                                tabularFigures: true,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 10),
                     _statusBadge(c, l10n),
                   ],

@@ -431,4 +431,18 @@
                              "auditCreated": "Création · {entity}",
                              "auditUpdated": "Modification · {entity}",
                              "auditDeleted": "Suppression · {entity}"
+                               ,"retry": "Réessayer",
+                               "aiNoKey": "L'assistant IA n'est pas encore configuré. Demandez à votre administrateur d'ajouter la clé API.",
+                               "aiQuota": "L'assistant IA a atteint sa limite d'utilisation. Réessayez plus tard.",
+                               "aiNetwork": "Impossible de joindre l'assistant IA. Vérifiez la connexion et réessayez.",
+                               "aiBlocked": "L'assistant n'a pas pu répondre à cette question.",
+                               "aiUnavailable": "L'assistant IA est momentanément indisponible.",
+                               "andOtherProducts": "et {count} autres produits"
+                                 ,"retry": "Réessayer",
+                                 "aiNoKey": "L'assistant IA n'est pas encore configuré. Demandez à votre administrateur d'ajouter la clé API.",
+                                 "aiQuota": "L'assistant IA a atteint sa limite d'utilisation. Réessayez plus tard.",
+                                 "aiNetwork": "Impossible de joindre l'assistant IA. Vérifiez la connexion et réessayez.",
+                                 "aiBlocked": "L'assistant n'a pas pu répondre à cette question.",
+                                 "aiUnavailable": "L'assistant IA est momentanément indisponible.",
+                                 "andOtherProducts": "et {count} autres produits"
  }

@@ -1,22 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/category_entity.dart';
 import '../providers/product_provider.dart';
-import '../../../../shared/widgets/app_page_header.dart';
-
-const _palette = [
-  '#6C4BF4',
-  '#10B981',
-  '#3B82F6',
-  '#F59E0B',
-  '#EF4444',
-  '#8B5CF6',
-  '#0EA5E9',
-  '#EC4899',
-];
+import 'category_form_page.dart';
 
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
@@ -28,11 +19,13 @@ class CategoriesPage extends ConsumerStatefulWidget {
 class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   final searchController = TextEditingController();
   bool searchVisible = false;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref.read(categoryListProvider.notifier).load());
   }
+
   @override
   void dispose() {
     searchController.dispose();
@@ -49,133 +42,49 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   }
 
   Future<void> _openForm({CategoryEntity? existing}) async {
-    final l10n = AppLocalizations.of(context)!;
-    final nameController = TextEditingController(text: existing?.name ?? '');
-    final descriptionController =
-    TextEditingController(text: existing?.description ?? '');
-    var colorHex = existing?.colorHex ?? _palette.first;
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(existing == null ? l10n.newCategory : l10n.editCategory),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: nameController,
-                  autofocus: existing == null,
-                  decoration: InputDecoration(labelText: l10n.name),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(labelText: l10n.description),
-                ),
-                const SizedBox(height: 16),
-                Text(l10n.color,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: _palette.map((hex) {
-                    final color = Color(
-                        0xFF000000 | int.parse(hex.substring(1), radix: 16));
-                    final selected = colorHex == hex;
-                    return GestureDetector(
-                      onTap: () => setState(() => colorHex = hex),
-                      child: Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: selected
-                                ? AppColors.textPrimary
-                                : Colors.transparent,
-                            width: 2.5,
-                          ),
-                        ),
-                        child: selected
-                            ? const Icon(Icons.check,
-                            size: 17, color: Colors.white)
-                            : null,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.trim().isEmpty) return;
-                Navigator.of(context).pop(true);
-              },
-              child: Text(l10n.save),
-            ),
-          ],
-        ),
-      ),
+    final result = await Navigator.of(context).push<CategoryFormResult>(
+      MaterialPageRoute(builder: (_) => CategoryFormPage(existing: existing)),
     );
-
-    if (saved != true) return;
-
-    final name = nameController.text.trim();
-    final description = descriptionController.text.trim().isEmpty
-        ? null
-        : descriptionController.text.trim();
+    if (result == null) return;
 
     if (existing == null) {
-      await ref
-          .read(categoryListProvider.notifier)
-          .add(name: name, description: description, colorHex: colorHex);
+      await ref.read(categoryListProvider.notifier).add(
+        name: result.name,
+        description: result.description,
+        colorHex: result.colorHex,
+      );
     } else {
       await ref.read(categoryListProvider.notifier).update(
         id: existing.id,
-        name: name,
-        description: description,
-        colorHex: colorHex,
+        name: result.name,
+        description: result.description,
+        colorHex: result.colorHex,
       );
     }
   }
 
-  Future<void> _delete(CategoryEntity category, AppLocalizations l10n) async {
+  Future<void> _delete(CategoryEntity c, AppLocalizations l10n) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.deleteConfirmTitle(category.name)),
+        title: Text(l10n.deleteConfirmTitle(c.name)),
         content: Text(l10n.deleteConfirmMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+          TextButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: Text(l10n.delete),
           ),
         ],
       ),
     );
-
     if (confirmed != true) return;
 
-    final error =
-    await ref.read(categoryListProvider.notifier).remove(category.id);
+    final error = await ref.read(categoryListProvider.notifier).remove(c.id);
     if (!mounted) return;
 
     if (error == null) {
@@ -187,13 +96,73 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     }
   }
 
+  Widget _card(CategoryEntity c, AppLocalizations l10n) {
+    final color = c.color;
+
+    return AppCard(
+      onTap: () => _openForm(existing: c),
+      padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // The category's own colour: soft background, same colour icon.
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.label_outline, size: 20, color: color),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(c.name, style: AppTheme.rowTitle, maxLines: 2),
+                if (c.description != null &&
+                    c.description!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(c.description!, style: AppTheme.label, maxLines: 2),
+                ],
+                const SizedBox(height: 10),
+                AppBadge(
+                  label: l10n.productCount(c.productCount),
+                  tone: BadgeTone.neutral,
+                ),
+              ],
+            ),
+          ),
+          AppRowMenu(actions: [
+            AppMenuAction(
+              label: l10n.edit,
+              icon: Icons.edit_outlined,
+              onTap: () => _openForm(existing: c),
+            ),
+            AppMenuAction(
+              label: l10n.delete,
+              icon: Icons.delete_outline,
+              destructive: true,
+              onTap: () => _delete(c, l10n),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(categoryListProvider);
     final l10n = AppLocalizations.of(context)!;
 
+    ref.listen(categoryListProvider, (previous, next) {
+      if (next.error != null) _showSnack(next.error!, isError: true);
+    });
+
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       appBar: searchVisible
           ? AppSearchHeader(
         controller: searchController,
@@ -211,12 +180,12 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
         subtitle: state.categories.isEmpty
             ? null
             : '${state.categories.length} ${l10n.categories.toLowerCase()}',
-        icon: Icons.category_rounded,
-        color: AppColors.primary,
+        icon: Icons.category_outlined,
+        color: AppColors.accent,
         showMenuButton: false,
         actions: [
           AppHeaderAction(
-            icon: Icons.search_rounded,
+            icon: Icons.search,
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
           ),
@@ -229,103 +198,26 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
         icon: state.hasSearched
             ? Icons.search_off
             : Icons.category_outlined,
-        title: state.hasSearched ? l10n.noResults : l10n.noCategories,
+        title:
+        state.hasSearched ? l10n.noResults : l10n.noCategories,
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
             : l10n.tapPlusToAdd,
-        color: AppColors.primary,
       )
           : RefreshIndicator(
+        color: AppColors.accent,
         onRefresh: () =>
             ref.read(categoryListProvider.notifier).load(),
         child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           itemCount: state.categories.length,
-          itemBuilder: (context, index) {
-            final c = state.categories[index];
-            return AppCard(
-              onTap: () => _openForm(existing: c),
-              padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: c.color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(
-                          color: c.color.withValues(alpha: 0.3)),
-                    ),
-                    child: Icon(Icons.label_outline,
-                        size: 20, color: c.color),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(c.name,
-                            style: const TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary)),
-                        const SizedBox(height: 3),
-                        Text(
-                          c.description ??
-                              l10n.productCount(c.productCount),
-                          style: const TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.textSecondary),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  AppStatusChip(
-                      label: '${c.productCount}', color: c.color),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert,
-                        size: 19, color: AppColors.textSecondary),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _openForm(existing: c);
-                      } else if (value == 'delete') {
-                        _delete(c, l10n);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Row(children: [
-                          const Icon(Icons.edit_outlined, size: 18),
-                          const SizedBox(width: 10),
-                          Text(l10n.edit),
-                        ]),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(children: [
-                          const Icon(Icons.delete_outline,
-                              size: 18, color: AppColors.danger),
-                          const SizedBox(width: 10),
-                          Text(l10n.delete,
-                              style: const TextStyle(
-                                  color: AppColors.danger)),
-                        ]),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
+          itemBuilder: (context, index) =>
+              _card(state.categories[index], l10n),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(),
+        backgroundColor: AppColors.black,
         icon: const Icon(Icons.add),
         label: Text(l10n.category),
       ),

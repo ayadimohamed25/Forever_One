@@ -1323,4 +1323,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String auditDeleted(String entity) {
     return '$entity deleted';
   }
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get aiNoKey =>
+      'The AI assistant isn\'t configured yet. Ask your administrator to add the API key.';
+
+  @override
+  String get aiQuota =>
+      'The AI assistant has reached its usage limit. Please try again later.';
+
+  @override
+  String get aiNetwork =>
+      'Couldn\'t reach the AI assistant. Check the connection and try again.';
+
+  @override
+  String get aiBlocked => 'The assistant couldn\'t answer that question.';
+
+  @override
+  String get aiUnavailable => 'The AI assistant is temporarily unavailable.';
+
+  @override
+  String andOtherProducts(int count) {
+    return 'and $count other products';
+  }
 }

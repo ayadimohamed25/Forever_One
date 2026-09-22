@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
+import '../../domain/entities/product_entity.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product_form_dialog.dart';
-import '../../../../shared/widgets/app_page_header.dart';
 
 class ProductDetailPage extends ConsumerStatefulWidget {
   final String productId;
+
   const ProductDetailPage({super.key, required this.productId});
 
   @override
@@ -23,87 +27,53 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
             () => ref.read(productDetailProvider.notifier).load(widget.productId));
   }
 
-  Widget _statTile(String label, String value, Color color) {
+  Future<void> _edit(ProductEntity p) async {
+    final input = await showProductFormDialog(context, ref, existing: p);
+    if (input == null) return;
+    await ref.read(productListProvider.notifier).update(p.id, input);
+    if (mounted) ref.read(productDetailProvider.notifier).load(p.id);
+  }
+
+  ({String label, BadgeTone tone}) _stockStatus(
+      ProductEntity p, AppLocalizations l10n) {
+    if (!p.isActive) return (label: l10n.inactive, tone: BadgeTone.neutral);
+    if (p.currentStock <= 0) {
+      return (label: l10n.rupture, tone: BadgeTone.danger);
+    }
+    if (p.isLowStock) return (label: l10n.soon, tone: BadgeTone.warning);
+    return (label: l10n.ok, tone: BadgeTone.success);
+  }
+
+  Widget _stat(String label, String value, Color color) {
     return Expanded(
       child: Column(
         children: [
-          Text(value,
-              style: TextStyle(
-                  fontSize: 17, fontWeight: FontWeight.w800, color: color)),
-          const SizedBox(height: 2),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 10.5, color: AppColors.textSecondary)),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 17, color: AppColors.textSecondary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textSecondary)),
-                const SizedBox(height: 2),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 13.5, color: AppColors.textPrimary)),
-              ],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: AppTheme.font(
+                size: 16,
+                weight: FontWeight.w700,
+                color: color,
+                tabularFigures: true,
+              ),
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: AppTheme.font(size: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
     );
   }
 
-  Widget _sectionTitle(String text, IconData icon, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 14, color: color),
-          ),
-          const SizedBox(width: 10),
-          Text(text,
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
-        ],
-      ),
-    );
-  }
-
-  Widget _panel({required Widget child, EdgeInsets? padding}) {
-    return Container(
-      width: double.infinity,
-      padding: padding ?? const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppColors.cardShadow,
-      ),
-      child: child,
-    );
-  }
+  Widget _statDivider() =>
+      Container(width: 1, height: 36, color: AppColors.track);
 
   @override
   Widget build(BuildContext context) {
@@ -112,257 +82,285 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
     final p = state.product;
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       appBar: AppPageHeader(
         title: l10n.productDetails,
         subtitle: p?.name,
-        icon: Icons.inventory_2_rounded,
+        icon: Icons.inventory_2_outlined,
         color: AppColors.stock,
         showMenuButton: false,
         actions: [
           if (p != null)
             AppHeaderAction(
-              icon: Icons.edit_rounded,
+              icon: Icons.edit_outlined,
               tooltip: l10n.edit,
-              color: AppColors.primary,
-              onTap: () async {
-                final input =
-                await showProductFormDialog(context, ref, existing: p);
-                if (input == null) return;
-                await ref.read(productListProvider.notifier).update(p.id, input);
-                if (mounted) {
-                  ref.read(productDetailProvider.notifier).load(p.id);
-                }
-              },
+              onTap: () => _edit(p),
             ),
         ],
       ),
-      body: state.isLoading || p == null
+      body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : p == null
+          ? AppEmptyState(
+        icon: Icons.error_outline,
+        title: state.error ?? l10n.noProducts,
+        subtitle: '',
+      )
           : RefreshIndicator(
-        onRefresh: () =>
-            ref.read(productDetailProvider.notifier).load(p.id),
+        color: AppColors.accent,
+        onRefresh: () => ref
+            .read(productDetailProvider.notifier)
+            .load(widget.productId),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
-            // Header
-            Row(
-              children: [
-                AppValueBadge(
-                  value: '${p.currentStock}',
-                  color:
-                  p.isLowStock ? AppColors.danger : AppColors.sales,
-                  size: 60,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p.name,
-                          style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary)),
-                      const SizedBox(height: 5),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          if (p.categoryName != null)
-                            AppStatusChip(
-                                label: p.categoryName!,
-                                color: AppColors.primary),
-                          AppStatusChip(
-                            label: p.isActive
-                                ? l10n.active
-                                : l10n.inactive,
-                            color: p.isActive
-                                ? AppColors.success
-                                : AppColors.textSecondary,
-                          ),
-                          if (p.isLowStock)
-                            AppStatusChip(
-                                label: p.currentStock <= 0
-                                    ? l10n.rupture
-                                    : l10n.soon,
-                                color: AppColors.danger),
-                        ],
-                      ),
-                    ],
+            // ── Identity ──
+            AppCard(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppLeadingTile.value(
+                    '${p.currentStock}',
+                    tone: _stockStatus(p, l10n).tone,
+                    size: 52,
                   ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p.name,
+                          maxLines: 2,
+                          style: AppTheme.font(
+                              size: 18, weight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${p.currentStock} ${p.unit}',
+                          style: AppTheme.label,
+                        ),
+                        const SizedBox(height: 10),
+                        AppBadge(
+                          label: _stockStatus(p, l10n).label,
+                          tone: _stockStatus(p, l10n).tone,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Prices ──
+            AppCard(
+              child: Row(
+                children: [
+                  _stat(l10n.priceHt, formatDT(p.price),
+                      AppColors.textPrimary),
+                  _statDivider(),
+                  _stat(l10n.priceTtc, formatDT(p.priceTtc),
+                      AppColors.textPrimary),
+                  _statDivider(),
+                  _stat(
+                    l10n.marginAmount,
+                    formatDT(p.price - p.cost),
+                    p.price - p.cost >= 0
+                        ? AppColors.success
+                        : AppColors.danger,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // ── General ──
+            AppFormSection(
+              title: l10n.generalInfo,
+              spacing: 0,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 6),
+              children: [
+                if (p.sku != null && p.sku!.trim().isNotEmpty)
+                  AppInfoRow(
+                    icon: Icons.tag,
+                    label: l10n.sku,
+                    value: p.sku!,
+                  ),
+                if (p.barcode != null &&
+                    p.barcode!.trim().isNotEmpty)
+                  AppInfoRow(
+                    icon: Icons.qr_code_2,
+                    label: l10n.barcode,
+                    value: p.barcode!,
+                  ),
+                AppInfoRow(
+                  icon: Icons.category_outlined,
+                  label: l10n.category,
+                  value: p.categoryName ?? l10n.noCategory,
+                ),
+                if (p.supplierName != null)
+                  AppInfoRow(
+                    icon: Icons.local_shipping_outlined,
+                    label: l10n.defaultSupplier,
+                    value: p.supplierName!,
+                  ),
+                if (p.description != null &&
+                    p.description!.trim().isNotEmpty)
+                  AppInfoRow(
+                    icon: Icons.notes_outlined,
+                    label: l10n.description,
+                    value: p.description!,
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // ── Pricing ──
+            AppFormSection(
+              title: l10n.pricingAndVat,
+              spacing: 0,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 6),
+              children: [
+                AppInfoRow(
+                  icon: Icons.sell_outlined,
+                  label: l10n.priceHt,
+                  value: formatDT(p.price),
+                ),
+                AppInfoRow(
+                  icon: Icons.shopping_bag_outlined,
+                  label: l10n.cost,
+                  value: formatDT(p.cost),
+                ),
+                AppInfoRow(
+                  icon: Icons.percent,
+                  label: l10n.vatRate,
+                  value: '${p.vatRate.toStringAsFixed(0)} %',
                 ),
               ],
             ),
 
-            if (p.description != null) ...[
-              const SizedBox(height: 14),
-              Text(p.description!,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textSecondary)),
-            ],
+            const SizedBox(height: 24),
 
-            const SizedBox(height: 20),
-
-            // Key figures
-            _panel(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Row(
-                children: [
-                  _statTile(l10n.priceHt,
-                      p.price.toStringAsFixed(2), AppColors.primary),
-                  _statTile(l10n.priceTtc,
-                      p.priceTtc.toStringAsFixed(2), AppColors.finance),
-                  _statTile(
-                    l10n.marginAmount,
-                    '${p.marginPercent.toStringAsFixed(0)}%',
-                    p.margin > 0 ? AppColors.success : AppColors.danger,
+            // ── Stock settings ──
+            AppFormSection(
+              title: l10n.stockSettings,
+              spacing: 0,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 6),
+              children: [
+                AppInfoRow(
+                  icon: Icons.south,
+                  label: l10n.minThreshold,
+                  value: '${p.minThreshold}',
+                ),
+                if (p.maxThreshold != null)
+                  AppInfoRow(
+                    icon: Icons.north,
+                    label: l10n.maxThreshold,
+                    value: '${p.maxThreshold}',
                   ),
-                ],
-              ),
+                if (p.shelfLocation != null &&
+                    p.shelfLocation!.trim().isNotEmpty)
+                  AppInfoRow(
+                    icon: Icons.place_outlined,
+                    label: l10n.shelfLocation,
+                    value: p.shelfLocation!,
+                  ),
+                AppInfoRow(
+                  icon: Icons.straighten,
+                  label: l10n.saleUnit,
+                  value: p.unit,
+                ),
+                if (p.purchaseUnit != null &&
+                    p.purchaseUnit!.trim().isNotEmpty)
+                  AppInfoRow(
+                    icon: Icons.all_inbox_outlined,
+                    label: l10n.purchaseUnit,
+                    value:
+                    '${p.purchaseUnit} · ${p.unitsPerPurchase}',
+                  ),
+              ],
             ),
 
-            const SizedBox(height: 20),
-
-            _sectionTitle(l10n.generalInfo, Icons.info_outline,
-                AppColors.primary),
-            _panel(
-              child: Column(
-                children: [
-                  if (p.sku != null)
-                    _infoRow(Icons.tag, l10n.sku, p.sku!),
-                  if (p.barcode != null)
-                    _infoRow(Icons.qr_code_2, l10n.barcode, p.barcode!),
-                  _infoRow(Icons.category_outlined, l10n.category,
-                      p.categoryName ?? l10n.noCategory),
-                  if (p.supplierName != null)
-                    _infoRow(Icons.local_shipping_outlined,
-                        l10n.defaultSupplier, p.supplierName!),
-                ],
+            // ── Stock history: warehouse, date, quantity ──
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 10),
+              child: Text(
+                l10n.stockHistory,
+                style:
+                AppTheme.font(size: 16, weight: FontWeight.w600),
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            _sectionTitle(l10n.pricingAndVat, Icons.payments_outlined,
-                AppColors.sales),
-            _panel(
-              child: Column(
-                children: [
-                  _infoRow(Icons.sell_outlined, l10n.priceHt,
-                      '${p.price.toStringAsFixed(3)} DT'),
-                  _infoRow(Icons.shopping_bag_outlined, l10n.cost,
-                      '${p.cost.toStringAsFixed(3)} DT'),
-                  _infoRow(Icons.percent, l10n.vatRate,
-                      '${p.vatRate.toStringAsFixed(0)} %'),
-                  _infoRow(Icons.trending_up, l10n.marginAmount,
-                      '${p.margin.toStringAsFixed(3)} DT'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            _sectionTitle(l10n.stockSettings, Icons.inventory_2_outlined,
-                AppColors.stock),
-            _panel(
-              child: Column(
-                children: [
-                  _infoRow(Icons.warning_amber_rounded, l10n.minThreshold,
-                      '${p.minThreshold} ${p.unit}'),
-                  if (p.maxThreshold != null)
-                    _infoRow(Icons.vertical_align_top, l10n.maxThreshold,
-                        '${p.maxThreshold} ${p.unit}'),
-                  if (p.shelfLocation != null)
-                    _infoRow(Icons.place_outlined, l10n.shelfLocation,
-                        p.shelfLocation!),
-                  _infoRow(Icons.straighten, l10n.saleUnit, p.unit),
-                  if (p.purchaseUnit != null)
-                    _infoRow(Icons.all_inbox_outlined, l10n.purchaseUnit,
-                        '${p.purchaseUnit} (${p.unitsPerPurchase} ${p.unit})'),
-                  if (p.notes != null)
-                    _infoRow(Icons.notes, l10n.notes, p.notes!),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            _sectionTitle(
-                l10n.stockHistory, Icons.history, AppColors.info),
             if (state.history.isEmpty)
-              _panel(
-                padding: const EdgeInsets.symmetric(vertical: 26),
-                child: Center(
-                  child: Text(l10n.noStockHistory,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary)),
+              AppCard(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: Text(l10n.noStockHistory,
+                        style: AppTheme.label),
+                  ),
                 ),
               )
             else
-              ...state.history.map((h) {
-                final color = h.isIncoming
-                    ? AppColors.success
-                    : AppColors.danger;
-                final d = h.createdAt;
-                final dateLabel =
-                    '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
-                return AppCard(
-                  padding: const EdgeInsets.all(12),
+              for (final h in state.history)
+                AppCard(
+                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(11),
-                        ),
-                        child: Icon(
-                            h.isIncoming
-                                ? Icons.arrow_downward
-                                : Icons.arrow_upward,
-                            size: 15,
-                            color: color),
+                      AppLeadingTile.icon(
+                        h.isIncoming
+                            ? Icons.south_west_outlined
+                            : Icons.north_east_outlined,
+                        tone: h.isIncoming
+                            ? BadgeTone.success
+                            : BadgeTone.warning,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
                           children: [
                             Text(
                               h.warehouseName ?? '—',
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary),
+                              maxLines: 2,
+                              style: AppTheme.font(
+                                  size: 14,
+                                  weight: FontWeight.w500),
                             ),
-                            const SizedBox(height: 1),
+                            const SizedBox(height: 3),
                             Text(
-                              h.note != null
-                                  ? '$dateLabel · ${h.note}'
-                                  : dateLabel,
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary),
-                              overflow: TextOverflow.ellipsis,
+                              formatDate(h.createdAt),
+                              style: AppTheme.font(
+                                size: 12,
+                                color: AppColors.textSecondary,
+                                tabularFigures: true,
+                              ),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 10),
                       Text(
-                          '${h.isIncoming ? '+' : '−'}${h.quantity}',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: color)),
+                        '${h.isIncoming ? '+' : '−'}${h.quantity}',
+                        style: AppTheme.font(
+                          size: 15,
+                          weight: FontWeight.w700,
+                          color: h.isIncoming
+                              ? AppColors.success
+                              : AppColors.warning,
+                          tabularFigures: true,
+                        ),
+                      ),
                     ],
                   ),
-                );
-              }),
-
-            const SizedBox(height: 24),
+                ),
           ],
         ),
       ),

@@ -461,4 +461,20 @@
                              "@auditUpdated": { "placeholders": { "entity": { "type": "String" } } },
                              "auditDeleted": "{entity} deleted",
                              "@auditDeleted": { "placeholders": { "entity": { "type": "String" } } }
+                               ,"retry": "Retry",
+                               "aiNoKey": "The AI assistant isn't configured yet. Ask your administrator to add the API key.",
+                               "aiQuota": "The AI assistant has reached its usage limit. Please try again later.",
+                               "aiNetwork": "Couldn't reach the AI assistant. Check the connection and try again.",
+                               "aiBlocked": "The assistant couldn't answer that question.",
+                               "aiUnavailable": "The AI assistant is temporarily unavailable.",
+                               "andOtherProducts": "and {count} other products",
+                               "@andOtherProducts": { "placeholders": { "count": { "type": "int" } } }
+                                 ,"retry": "Retry",
+                                 "aiNoKey": "The AI assistant isn't configured yet. Ask your administrator to add the API key.",
+                                 "aiQuota": "The AI assistant has reached its usage limit. Please try again later.",
+                                 "aiNetwork": "Couldn't reach the AI assistant. Check the connection and try again.",
+                                 "aiBlocked": "The assistant couldn't answer that question.",
+                                 "aiUnavailable": "The AI assistant is temporarily unavailable.",
+                                 "andOtherProducts": "and {count} other products",
+                                 "@andOtherProducts": { "placeholders": { "count": { "type": "int" } } }
  }

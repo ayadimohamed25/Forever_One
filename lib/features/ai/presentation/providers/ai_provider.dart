@@ -12,8 +12,21 @@ final aiRepositoryProvider = Provider((ref) {
 class AiState {
   final bool isLoading;
   final List<AiMessageEntity> messages;
+
+  /// The backend's error code (AI_QUOTA, AI_NO_KEY…) or a plain message.
   final String? error;
-  const AiState({this.isLoading = false, this.messages = const [], this.error});
+
+  /// Kept so the user can retry the question that failed.
+  final String? pendingQuestion;
+  final String pendingLocale;
+
+  const AiState({
+    this.isLoading = false,
+    this.messages = const [],
+    this.error,
+    this.pendingQuestion,
+    this.pendingLocale = 'en',
+  });
 }
 
 class AiNotifier extends StateNotifier<AiState> {
@@ -30,11 +43,28 @@ class AiNotifier extends StateNotifier<AiState> {
 
   Future<void> ask(String question, {String locale = 'en'}) async {
     state = AiState(isLoading: true, messages: state.messages);
+
     final result = await repository.ask(question, locale: locale);
     result.fold(
-          (failure) => state = AiState(messages: state.messages, error: failure.message),
+          (failure) => state = AiState(
+        messages: state.messages,
+        error: failure.message,
+        pendingQuestion: question,
+        pendingLocale: locale,
+      ),
           (message) => state = AiState(messages: [...state.messages, message]),
     );
+  }
+
+  /// Re-sends the question that failed.
+  Future<void> retry() async {
+    final question = state.pendingQuestion;
+    if (question == null) return;
+    await ask(question, locale: state.pendingLocale);
+  }
+
+  void dismissError() {
+    state = AiState(messages: state.messages, isLoading: state.isLoading);
   }
 }
 

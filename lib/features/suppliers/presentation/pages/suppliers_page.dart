@@ -1,15 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/supplier_entity.dart';
 import '../providers/supplier_provider.dart';
 import '../widgets/supplier_form_dialog.dart';
 import 'supplier_detail_page.dart';
-import '../../../../shared/widgets/app_page_header.dart';
-
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -19,14 +20,6 @@ class SuppliersPage extends ConsumerStatefulWidget {
 }
 
 class _SuppliersPageState extends ConsumerState<SuppliersPage> {
-  String? _subtitle(SupplierListState state, AppLocalizations l10n) {
-    if (state.suppliers.isEmpty) return null;
-    final total = state.suppliers.fold<double>(0, (sum, s) => sum + s.balance);
-    if (total <= 0.009) {
-      return '${state.suppliers.length} ${l10n.suppliers.toLowerCase()}';
-    }
-    return '${state.suppliers.length} · ${total.toStringAsFixed(0)} DT ${l10n.amountOwed.toLowerCase()}';
-  }
   final searchController = TextEditingController();
   bool searchVisible = false;
 
@@ -75,15 +68,14 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+          TextButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: Text(l10n.delete),
           ),
         ],
       ),
     );
-
     if (confirmed != true) return;
 
     final error = await ref.read(supplierListProvider.notifier).remove(s.id);
@@ -98,6 +90,124 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     }
   }
 
+  Future<void> _openDetail(SupplierEntity s) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => SupplierDetailPage(supplierId: s.id),
+    ));
+    if (mounted) ref.read(supplierListProvider.notifier).load();
+  }
+
+  /// Only shown when deliveries actually have expected and received dates;
+  /// with no data there is nothing honest to display.
+  Widget? _reliabilityBadge(SupplierEntity s, AppLocalizations l10n) {
+    final tracked = s.trackedDeliveries;
+    if (tracked <= 0) return null;
+
+    final rate = s.onTimeDeliveries / tracked;
+    final tone = rate > 0.8
+        ? BadgeTone.success
+        : rate >= 0.5
+        ? BadgeTone.warning
+        : BadgeTone.danger;
+
+    return AppBadge(
+      label: '${(rate * 100).toStringAsFixed(0)}% '
+          '${l10n.onTimeDeliveries(s.onTimeDeliveries, tracked)}',
+      tone: tone,
+    );
+  }
+
+  Widget _card(SupplierEntity s, AppLocalizations l10n) {
+    final owes = s.balance > 0.009;
+    final reliability = _reliabilityBadge(s, l10n);
+    final hasPhone = s.phone != null && s.phone!.trim().isNotEmpty;
+
+    return AppCard(
+      onTap: () => _openDetail(s),
+      padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppLeadingTile.icon(Icons.local_shipping_outlined),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s.name, style: AppTheme.rowTitle, maxLines: 2),
+                if (s.contactPerson != null &&
+                    s.contactPerson!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(s.contactPerson!, style: AppTheme.label, maxLines: 2),
+                ],
+                if (hasPhone) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone_outlined,
+                          size: 14, color: AppColors.iconMuted),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          s.phone!,
+                          maxLines: 1,
+                          style: AppTheme.font(
+                            size: 13,
+                            color: AppColors.textSecondary,
+                            tabularFigures: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    AppBadge(
+                      label: owes ? l10n.unpaid : l10n.paid,
+                      tone: owes ? BadgeTone.warning : BadgeTone.success,
+                    ),
+                    ?reliability,
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (owes) ...[
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  formatDT(s.balance),
+                  style: AppTheme.money.copyWith(color: AppColors.danger),
+                ),
+                const SizedBox(height: 3),
+                Text(l10n.amountOwed, style: AppTheme.label),
+              ],
+            ),
+          ],
+          AppRowMenu(actions: [
+            AppMenuAction(
+              label: l10n.edit,
+              icon: Icons.edit_outlined,
+              onTap: () => _edit(s, l10n),
+            ),
+            AppMenuAction(
+              label: l10n.delete,
+              icon: Icons.delete_outline,
+              destructive: true,
+              onTap: () => _delete(s, l10n),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(supplierListProvider);
@@ -107,8 +217,16 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
       if (next.error != null) _showSnack(next.error!, isError: true);
     });
 
+    final owed =
+    state.suppliers.fold<double>(0, (sum, s) => sum + (s.balance > 0 ? s.balance : 0));
+    final subtitle = state.suppliers.isEmpty
+        ? null
+        : owed > 0.009
+        ? '${state.suppliers.length} · ${formatDT(owed)} ${l10n.amountOwed.toLowerCase()}'
+        : '${state.suppliers.length} ${l10n.suppliers.toLowerCase()}';
+
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       drawer: const AppDrawer(currentRoute: '/suppliers'),
       appBar: searchVisible
           ? AppSearchHeader(
@@ -124,19 +242,14 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
       )
           : AppPageHeader(
         title: l10n.suppliers,
-        subtitle: _subtitle(state, l10n),
-        icon: Icons.local_shipping_rounded,
+        subtitle: subtitle,
+        icon: Icons.local_shipping_outlined,
         color: AppColors.purchases,
         actions: [
           AppHeaderAction(
-            icon: Icons.search_rounded,
+            icon: Icons.search,
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
-          ),
-          AppHeaderAction(
-            icon: Icons.refresh_rounded,
-            tooltip: l10n.refresh,
-            onTap: () => ref.read(supplierListProvider.notifier).load(),
           ),
         ],
       ),
@@ -147,147 +260,26 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
         icon: state.hasSearched
             ? Icons.search_off
             : Icons.local_shipping_outlined,
-        title: state.hasSearched ? l10n.noResults : l10n.noSuppliers,
+        title:
+        state.hasSearched ? l10n.noResults : l10n.noSuppliers,
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
             : l10n.tapPlusToAdd,
-        color: AppColors.purchases,
       )
           : RefreshIndicator(
+        color: AppColors.accent,
         onRefresh: () =>
             ref.read(supplierListProvider.notifier).load(),
         child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           itemCount: state.suppliers.length,
-          itemBuilder: (context, index) {
-            final s = state.suppliers[index];
-            final reliability = s.reliabilityRate;
-
-            return AppCard(
-              padding: const EdgeInsets.fromLTRB(14, 14, 4, 12),
-              onTap: () async {
-                await Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => SupplierDetailPage(supplierId: s.id),
-                ));
-                if (mounted) {
-                  ref.read(supplierListProvider.notifier).load();
-                }
-              },
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      AppIconBadge(
-                          icon: Icons.local_shipping_outlined,
-                          color: AppColors.purchases),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Text(s.name,
-                                style: const TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary),
-                                overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 4),
-                            AppMetaRow(items: [
-                              if (s.contactPerson != null)
-                                (
-                                icon: Icons.person_outline,
-                                text: s.contactPerson!
-                                ),
-                              (
-                              icon: Icons.schedule,
-                              text: '${s.leadTimeDays} ${l10n.days}'
-                              ),
-                            ]),
-                          ],
-                        ),
-                      ),
-                      AppTrailingStat(
-                        value: s.owesMoney
-                            ? '${s.balance.toStringAsFixed(2)} DT'
-                            : '—',
-                        label: l10n.amountOwed,
-                        valueColor: s.owesMoney
-                            ? AppColors.danger
-                            : AppColors.textSecondary,
-                      ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert,
-                            size: 19,
-                            color: AppColors.textSecondary),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _edit(s, l10n);
-                          } else if (value == 'delete') {
-                            _delete(s, l10n);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Row(children: [
-                              const Icon(Icons.edit_outlined,
-                                  size: 18),
-                              const SizedBox(width: 10),
-                              Text(l10n.edit),
-                            ]),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(children: [
-                              const Icon(Icons.delete_outline,
-                                  size: 18, color: AppColors.danger),
-                              const SizedBox(width: 10),
-                              Text(l10n.delete,
-                                  style: const TextStyle(
-                                      color: AppColors.danger)),
-                            ]),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  if (reliability != null) ...[
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: Row(
-                        children: [
-                          AppStatusChip(
-                            label:
-                            '${(reliability * 100).toStringAsFixed(0)}% ${l10n.onTimeDeliveries(s.onTimeDeliveries, s.trackedDeliveries)}',
-                            color: reliability >= 0.8
-                                ? AppColors.success
-                                : reliability >= 0.5
-                                ? AppColors.warning
-                                : AppColors.danger,
-                          ),
-                          const Spacer(),
-                          Text(
-                              '${s.orderCount} ${l10n.orders.toLowerCase()}',
-                              style: const TextStyle(
-                                  fontSize: 10.5,
-                                  color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
+          itemBuilder: (context, index) =>
+              _card(state.suppliers[index], l10n),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.purchases,
         onPressed: _create,
+        backgroundColor: AppColors.black,
         icon: const Icon(Icons.add),
         label: Text(l10n.supplier),
       ),

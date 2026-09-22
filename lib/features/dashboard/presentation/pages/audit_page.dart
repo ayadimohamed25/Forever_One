@@ -237,12 +237,13 @@ class _AuditPageState extends ConsumerState<AuditPage> {
   Widget _entry(AuditLogEntity log, bool isLast, AppLocalizations l10n) {
     final date = DateTime.tryParse(log.createdAt);
     final pills = _detailPills(log.details);
+    // A login carries no detail worth a full block — email and date fit on one line.
+    final compact = log.action == 'login';
 
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline rail
           Column(
             children: [
               AppLeadingTile.icon(_icon(log.action), tone: _tone(log.action)),
@@ -262,13 +263,40 @@ class _AuditPageState extends ConsumerState<AuditPage> {
               padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(compact ? 12 : 14),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: AppColors.cardShadow,
                 ),
-                child: Column(
+                child: compact
+                    ? Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        log.userEmail ?? l10n.system,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.fade,
+                        style: AppTheme.font(
+                            size: 14, weight: FontWeight.w500),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    if (date != null)
+                      Text(
+                        formatDateTime(date),
+                        maxLines: 1,
+                        softWrap: false,
+                        style: AppTheme.font(
+                          size: 12,
+                          color: AppColors.textMuted,
+                          tabularFigures: true,
+                        ),
+                      ),
+                  ],
+                )
+                    : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -284,7 +312,6 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                     ),
                     if (date != null) ...[
                       const SizedBox(height: 2),
-                      // Always a single line under the email.
                       Text(
                         formatDateTime(date),
                         maxLines: 1,
@@ -301,7 +328,9 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
-                        children: [for (final p in pills) _detailPill(p)],
+                        children: [
+                          for (final p in pills) _detailPill(p)
+                        ],
                       ),
                     ],
                   ],

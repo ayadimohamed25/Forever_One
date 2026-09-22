@@ -1329,4 +1329,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String auditDeleted(String entity) {
     return 'Suppression · $entity';
   }
+
+  @override
+  String get retry => 'Réessayer';
+
+  @override
+  String get aiNoKey =>
+      'L\'assistant IA n\'est pas encore configuré. Demandez à votre administrateur d\'ajouter la clé API.';
+
+  @override
+  String get aiQuota =>
+      'L\'assistant IA a atteint sa limite d\'utilisation. Réessayez plus tard.';
+
+  @override
+  String get aiNetwork =>
+      'Impossible de joindre l\'assistant IA. Vérifiez la connexion et réessayez.';
+
+  @override
+  String get aiBlocked => 'L\'assistant n\'a pas pu répondre à cette question.';
+
+  @override
+  String get aiUnavailable => 'L\'assistant IA est momentanément indisponible.';
+
+  @override
+  String andOtherProducts(int count) {
+    return 'et $count autres produits';
+  }
 }
