@@ -1,14 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/sale_entity.dart';
 import '../providers/sale_provider.dart';
 import 'create_sale_page.dart';
-import '../../../../shared/widgets/app_page_header.dart';
 
 class SalesPage extends ConsumerStatefulWidget {
   const SalesPage({super.key});
@@ -18,15 +20,6 @@ class SalesPage extends ConsumerStatefulWidget {
 }
 
 class _SalesPageState extends ConsumerState<SalesPage> {
-  String? _subtitle(SaleListState state, AppLocalizations l10n) {
-    if (state.sales.isEmpty) return null;
-    final unpaid = state.sales.where((s) => !s.isFullyPaid).length;
-    final total = state.sales.fold<double>(0, (sum, s) => sum + s.total);
-    if (unpaid == 0) {
-      return '${state.sales.length} · ${total.toStringAsFixed(0)} DT';
-    }
-    return '${state.sales.length} · $unpaid ${l10n.unpaid}';
-  }
   final searchController = TextEditingController();
   bool searchVisible = false;
 
@@ -51,11 +44,21 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     );
   }
 
-  String _dueLabel(int? days, AppLocalizations l10n) {
-    if (days == null) return '';
-    if (days < 0) return l10n.overdue;
-    if (days == 0) return l10n.dueToday;
-    return l10n.dueIn(days);
+  Future<void> _openPayment(SaleEntity s, AppLocalizations l10n) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => PaymentPage(
+        saleId: s.id,
+        title: '${l10n.payment} — ${s.customerName}',
+      ),
+    ));
+    if (mounted) ref.read(saleListProvider.notifier).load();
+  }
+
+  Future<void> _create() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const CreateSalePage()),
+    );
+    if (mounted) ref.read(saleListProvider.notifier).load();
   }
 
   Future<void> _edit(SaleEntity s, AppLocalizations l10n) async {
@@ -73,21 +76,21 @@ class _SalesPageState extends ConsumerState<SalesPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.deleteConfirmTitle(s.customerName)),
-        content: Text('${l10n.deleteConfirmMessage} ${l10n.stockWillBeRestored}'),
+        content:
+        Text('${l10n.deleteConfirmMessage} ${l10n.stockWillBeRestored}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+          TextButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: Text(l10n.delete),
           ),
         ],
       ),
     );
-
     if (confirmed != true) return;
 
     final error = await ref.read(saleListProvider.notifier).remove(s.id);
@@ -102,13 +105,141 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     }
   }
 
+  ({String label, BadgeTone tone}) _paymentStatus(
+      SaleEntity s, AppLocalizations l10n) {
+    if (s.isFullyPaid) return (label: l10n.paid, tone: BadgeTone.success);
+    if (s.paid > 0.009) {
+      return (label: l10n.partiallyPaid, tone: BadgeTone.warning);
+    }
+    return (label: l10n.unpaid, tone: BadgeTone.warning);
+  }
+
+  Widget _card(SaleEntity s, AppLocalizations l10n) {
+    final status = _paymentStatus(s, l10n);
+
+    // Sales from before VAT was introduced have no breakdown stored;
+    // for those the line is hidden rather than guessed.
+    final hasVatBreakdown = s.subtotalHt > 0.009 || s.totalVat > 0.009;
+
+    final details = [
+      if (s.reference != null && s.reference!.trim().isNotEmpty) s.reference!,
+      formatDate(s.createdAt),
+    ].join(' · ');
+
+    return AppCard(
+      onTap: () => _openPayment(s, l10n),
+      padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppLeadingTile.initials(s.customerName),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.customerName,
+                        style: AppTheme.rowTitle, maxLines: 2),
+                    const SizedBox(height: 4),
+                    Text(details, style: AppTheme.label, maxLines: 2),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        AppBadge(label: status.label, tone: status.tone),
+                        if (s.isOverdue)
+                          AppBadge(
+                              label: l10n.overdue, tone: BadgeTone.danger)
+                        else if (!s.isFullyPaid && s.dueDate != null)
+                          AppBadge(
+                            label: l10n.dueOn(formatDate(s.dueDate!)),
+                            tone: BadgeTone.warning,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(formatDT(s.total), style: AppTheme.money),
+                  if (!s.isFullyPaid) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      formatDT(s.balance),
+                      style: AppTheme.font(
+                        size: 13,
+                        weight: FontWeight.w600,
+                        color: AppColors.danger,
+                        tabularFigures: true,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              AppRowMenu(actions: [
+                AppMenuAction(
+                  label: l10n.edit,
+                  icon: Icons.edit_outlined,
+                  onTap: () => _edit(s, l10n),
+                ),
+                AppMenuAction(
+                  label: l10n.delete,
+                  icon: Icons.delete_outline,
+                  destructive: true,
+                  onTap: () => _delete(s, l10n),
+                ),
+              ]),
+            ],
+          ),
+          if (hasVatBreakdown)
+            AppCardFooter(
+              color: AppColors.textSecondary,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${formatDT(s.subtotalHt)} ${l10n.exclVatShort}  ·  '
+                        '${l10n.totalVat} ${formatDT(s.totalVat)}',
+                    maxLines: 2,
+                    style: AppTheme.font(
+                      size: 12,
+                      color: AppColors.textSecondary,
+                      tabularFigures: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(saleListProvider);
     final l10n = AppLocalizations.of(context)!;
 
+    ref.listen(saleListProvider, (previous, next) {
+      if (next.error != null) _showSnack(next.error!, isError: true);
+    });
+
+    final outstanding = state.sales
+        .where((s) => !s.isFullyPaid)
+        .fold<double>(0, (sum, s) => sum + s.balance);
+    final subtitle = state.sales.isEmpty
+        ? null
+        : outstanding > 0.009
+        ? '${state.sales.length} · ${formatDT(outstanding)} ${l10n.unpaid.toLowerCase()}'
+        : '${state.sales.length} ${l10n.sales.toLowerCase()}';
+
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       drawer: const AppDrawer(currentRoute: '/sales'),
       appBar: searchVisible
           ? AppSearchHeader(
@@ -123,19 +254,14 @@ class _SalesPageState extends ConsumerState<SalesPage> {
       )
           : AppPageHeader(
         title: l10n.sales,
-        subtitle: _subtitle(state, l10n),
-        icon: Icons.point_of_sale_rounded,
+        subtitle: subtitle,
+        icon: Icons.point_of_sale_outlined,
         color: AppColors.sales,
         actions: [
           AppHeaderAction(
-            icon: Icons.search_rounded,
+            icon: Icons.search,
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
-          ),
-          AppHeaderAction(
-            icon: Icons.refresh_rounded,
-            tooltip: l10n.refresh,
-            onTap: () => ref.read(saleListProvider.notifier).load(),
           ),
         ],
       ),
@@ -150,160 +276,20 @@ class _SalesPageState extends ConsumerState<SalesPage> {
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
             : l10n.tapPlusToCreate,
-        color: AppColors.sales,
       )
           : RefreshIndicator(
+        color: AppColors.accent,
         onRefresh: () => ref.read(saleListProvider.notifier).load(),
         child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           itemCount: state.sales.length,
-          itemBuilder: (context, index) {
-            final s = state.sales[index];
-            final d = s.createdAt;
-            final dateLabel =
-                '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
-            return AppCard(
-              accentColor: s.isOverdue ? AppColors.danger : null,
-              padding: const EdgeInsets.fromLTRB(14, 14, 4, 12),
-              onTap: () async {
-                await Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => PaymentPage(
-                    saleId: s.id,
-                    title: '${l10n.payment} — ${s.customerName}',
-                  ),
-                ));
-                if (mounted) {
-                  ref.read(saleListProvider.notifier).load();
-                }
-              },
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      AppInitialsBadge(
-                          name: s.customerName,
-                          color: AppColors.sales),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Text(s.customerName,
-                                style: const TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary),
-                                overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 4),
-                            AppMetaRow(items: [
-                              if (s.reference != null)
-                                (icon: Icons.tag, text: s.reference!),
-                              (
-                              icon: Icons.calendar_today_outlined,
-                              text: dateLabel
-                              ),
-                            ]),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('${s.total.toStringAsFixed(3)} DT',
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.sales)),
-                          Text(
-                              '${s.subtotalHt.toStringAsFixed(3)} HT',
-                              style: const TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.textSecondary)),
-                        ],
-                      ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert,
-                            size: 19,
-                            color: AppColors.textSecondary),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _edit(s, l10n);
-                          } else if (value == 'delete') {
-                            _delete(s, l10n);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Row(children: [
-                              const Icon(Icons.edit_outlined,
-                                  size: 18),
-                              const SizedBox(width: 10),
-                              Text(l10n.edit),
-                            ]),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(children: [
-                              const Icon(Icons.delete_outline,
-                                  size: 18, color: AppColors.danger),
-                              const SizedBox(width: 10),
-                              Text(l10n.delete,
-                                  style: const TextStyle(
-                                      color: AppColors.danger)),
-                            ]),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: Row(
-                      children: [
-                        AppStatusChip(
-                          label: s.isFullyPaid
-                              ? l10n.paid
-                              : '${s.balance.toStringAsFixed(3)} DT ${l10n.unpaid}',
-                          color: s.isFullyPaid
-                              ? AppColors.success
-                              : AppColors.danger,
-                        ),
-                        if (s.dueDate != null && !s.isFullyPaid) ...[
-                          const SizedBox(width: 6),
-                          AppStatusChip(
-                            label: _dueLabel(s.daysUntilDue, l10n),
-                            color: s.isOverdue
-                                ? AppColors.danger
-                                : AppColors.warning,
-                          ),
-                        ],
-                        const Spacer(),
-                        Text(
-                            '${l10n.totalVat} ${s.totalVat.toStringAsFixed(3)}',
-                            style: const TextStyle(
-                                fontSize: 10.5,
-                                color: AppColors.textSecondary)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+          itemBuilder: (context, index) =>
+              _card(state.sales[index], l10n),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const CreateSalePage()),
-          );
-          ref.read(saleListProvider.notifier).load();
-        },
+        onPressed: _create,
+        backgroundColor: AppColors.black,
         icon: const Icon(Icons.add),
         label: Text(l10n.newSale),
       ),

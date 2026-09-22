@@ -1,12 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_widgets.dart';
 import '../providers/product_provider.dart';
 import '../providers/stock_movement_provider.dart';
 import '../providers/warehouse_provider.dart';
-import '../../../../shared/widgets/app_page_header.dart';
+
+typedef _MovementType = ({String label, IconData icon, Color color});
 
 class StockMovementPage extends ConsumerStatefulWidget {
   const StockMovementPage({super.key});
@@ -16,9 +20,9 @@ class StockMovementPage extends ConsumerStatefulWidget {
 }
 
 class _StockMovementPageState extends ConsumerState<StockMovementPage> {
-  String? selectedProductId;
-  String? selectedWarehouseId;
-  String selectedType = 'in';
+  String? productId;
+  String? warehouseId;
+  String type = 'in';
   final quantityController = TextEditingController();
   final noteController = TextEditingController();
 
@@ -38,38 +42,107 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
     super.dispose();
   }
 
-  Map<String, ({String label, IconData icon, Color color})> _types(
-      AppLocalizations l10n) {
-    return {
-      'in': (
-      label: l10n.stockIn,
-      icon: Icons.arrow_downward,
-      color: AppColors.success
+  /// Each movement type carries its own meaning colour.
+  Map<String, _MovementType> _types(AppLocalizations l10n) => {
+    'in': (
+    label: l10n.stockIn,
+    icon: Icons.south_west,
+    color: AppColors.success
+    ),
+    'out': (
+    label: l10n.stockOut,
+    icon: Icons.north_east,
+    color: AppColors.danger
+    ),
+    'transfer': (
+    label: l10n.transfer,
+    icon: Icons.swap_horiz,
+    color: AppColors.accent
+    ),
+    'correction': (
+    label: l10n.correction,
+    icon: Icons.tune,
+    color: AppColors.warning
+    ),
+  };
+
+  bool get _canSubmit =>
+      productId != null &&
+          warehouseId != null &&
+          (int.tryParse(quantityController.text.trim()) ?? 0) > 0;
+
+  void _submit() {
+    if (!_canSubmit) return;
+    FocusScope.of(context).unfocus();
+    ref.read(stockMovementProvider.notifier).record(
+      productId: productId!,
+      warehouseId: warehouseId!,
+      type: type,
+      quantity: int.parse(quantityController.text.trim()),
+      note: noteController.text.trim().isEmpty
+          ? null
+          : noteController.text.trim(),
+    );
+  }
+
+  /// Selected: 1.5px border and soft background in the type's own colour.
+  Widget _typeCard(String key, _MovementType t) {
+    final selected = type == key;
+
+    return Material(
+      color: selected ? AppColors.soft(t.color) : AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: selected ? t.color : AppColors.track,
+          width: selected ? 1.5 : 1,
+        ),
       ),
-      'out': (
-      label: l10n.stockOut,
-      icon: Icons.arrow_upward,
-      color: AppColors.danger
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => setState(() => type = key),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.surface : AppColors.soft(t.color),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(t.icon, size: 18, color: t.color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  t.label,
+                  maxLines: 2,
+                  style: AppTheme.font(
+                    size: 14,
+                    weight: FontWeight.w600,
+                    color: selected ? t.color : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      'transfer': (
-      label: l10n.transfer,
-      icon: Icons.swap_horiz,
-      color: AppColors.stock
-      ),
-      'correction': (
-      label: l10n.correction,
-      icon: Icons.tune,
-      color: AppColors.warning
-      ),
-    };
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final products = ref.watch(productListProvider).products;
-    final warehouses = ref.watch(warehouseListProvider).warehouses;
-    final movementState = ref.watch(stockMovementProvider);
     final l10n = AppLocalizations.of(context)!;
+    final products = ref
+        .watch(productListProvider)
+        .products
+        .where((p) => p.isActive)
+        .toList();
+    final warehouses = ref.watch(warehouseListProvider).warehouses;
+    final state = ref.watch(stockMovementProvider);
     final types = _types(l10n);
 
     ref.listen(stockMovementProvider, (previous, next) {
@@ -83,220 +156,136 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
         );
         quantityController.clear();
         noteController.clear();
+        // Refresh so the stock shown in the product list is current.
+        ref.read(productListProvider.notifier).load();
+        setState(() {});
       }
       if (next.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(next.error!), backgroundColor: AppColors.danger),
+            content: Text(next.error!),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     });
 
-    final canSubmit = selectedProductId != null &&
-        selectedWarehouseId != null &&
-        (int.tryParse(quantityController.text) ?? 0) > 0;
-
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       drawer: const AppDrawer(currentRoute: '/stock-movement'),
       appBar: AppPageHeader(
         title: l10n.stockMovement,
-        icon: Icons.swap_vert_rounded,
+        icon: Icons.swap_vert_outlined,
         color: AppColors.stock,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          Text(l10n.movementType,
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
-          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 10),
+            child: Text(
+              l10n.movementType,
+              style: AppTheme.font(size: 16, weight: FontWeight.w600),
+            ),
+          ),
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            childAspectRatio: 2.4,
-            children: types.entries.map((e) {
-              final selected = selectedType == e.key;
-              return InkWell(
-                onTap: () => setState(() => selectedType = e.key),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: selected
-                        ? AppColors.tintGradient(e.value.color)
-                        : null,
-                    color: selected ? null : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: selected ? e.value.color : AppColors.border,
-                      width: selected ? 1.6 : 1,
-                    ),
-                    boxShadow: selected ? null : AppColors.cardShadow,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? e.value.color
-                              : e.value.color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Icon(e.value.icon,
-                            size: 16,
-                            color: selected ? Colors.white : e.value.color),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        e.value.label,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
-                          color: selected
-                              ? e.value.color
-                              : AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+            childAspectRatio: 2.5,
+            children: [
+              for (final e in types.entries) _typeCard(e.key, e.value),
+            ],
           ),
 
-          const SizedBox(height: 22),
-
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.border),
-              boxShadow: AppColors.cardShadow,
-            ),
-            child: Column(
-              children: [
-                DropdownButtonFormField<String>(
-                  initialValue: selectedProductId,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.product,
-                    prefixIcon: const Icon(Icons.inventory_2_outlined),
-                  ),
-                  items: products
-                      .where((p) => p.isActive)
-                      .map((p) => DropdownMenuItem(
-                    value: p.id,
-                    child: Text(
+          const SizedBox(height: 24),
+          AppFormSection(
+            title: l10n.details,
+            children: [
+              AppDropdown<String>(
+                key: ValueKey('products-${products.length}'),
+                label: l10n.product,
+                icon: Icons.inventory_2_outlined,
+                value: products.any((p) => p.id == productId) ? productId : null,
+                items: [
+                  for (final p in products)
+                    DropdownMenuItem<String>(
+                      value: p.id,
+                      child: Text(
                         '${p.name} · ${p.currentStock} ${p.unit}',
-                        overflow: TextOverflow.ellipsis),
-                  ))
-                      .toList(),
-                  onChanged: (v) => setState(() => selectedProductId = v),
-                ),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedWarehouseId,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.warehouse,
-                    prefixIcon: const Icon(Icons.warehouse_outlined),
-                  ),
-                  items: warehouses
-                      .map((w) =>
-                      DropdownMenuItem(value: w.id, child: Text(w.name)))
-                      .toList(),
-                  onChanged: (v) => setState(() => selectedWarehouseId = v),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: quantityController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    labelText: l10n.quantity,
-                    prefixIcon: const Icon(Icons.numbers),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: noteController,
-                  decoration: InputDecoration(
-                    labelText: l10n.noteOptional,
-                    prefixIcon: const Icon(Icons.notes),
-                  ),
-                ),
-              ],
-            ),
+                        maxLines: 1,
+                      ),
+                    ),
+                ],
+                onChanged: (v) => setState(() => productId = v),
+              ),
+              AppDropdown<String>(
+                key: ValueKey('warehouses-${warehouses.length}'),
+                label: l10n.warehouse,
+                icon: Icons.warehouse_outlined,
+                value: warehouses.any((w) => w.id == warehouseId)
+                    ? warehouseId
+                    : null,
+                items: [
+                  for (final w in warehouses)
+                    DropdownMenuItem<String>(
+                      value: w.id,
+                      child: Text(w.name, maxLines: 1),
+                    ),
+                ],
+                onChanged: (v) => setState(() => warehouseId = v),
+              ),
+              AppTextField(
+                controller: quantityController,
+                label: l10n.quantity,
+                icon: Icons.numbers,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+              ),
+              AppTextField(
+                controller: noteController,
+                label: l10n.noteOptional,
+                icon: Icons.notes,
+              ),
+            ],
           ),
 
-          const SizedBox(height: 22),
-
-          SizedBox(
-            height: 52,
-            child: movementState.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : FilledButton.icon(
-              style: FilledButton.styleFrom(
-                  backgroundColor: types[selectedType]!.color),
-              onPressed: !canSubmit
-                  ? null
-                  : () {
-                final qty =
-                    int.tryParse(quantityController.text) ?? 0;
-                ref.read(stockMovementProvider.notifier).record(
-                  productId: selectedProductId!,
-                  warehouseId: selectedWarehouseId!,
-                  type: selectedType,
-                  quantity: qty,
-                  note: noteController.text.trim().isEmpty
-                      ? null
-                      : noteController.text.trim(),
-                );
-              },
-              icon: const Icon(Icons.check),
-              label: Text(l10n.recordMovement,
-                  style: const TextStyle(fontSize: 15)),
-            ),
+          const SizedBox(height: 24),
+          state.isLoading
+              ? const SizedBox(
+            height: 56,
+            child: Center(child: CircularProgressIndicator()),
+          )
+              : FilledButton(
+            onPressed: _canSubmit ? _submit : null,
+            child: Text(l10n.recordMovement),
           ),
 
-          if (movementState.lastCurrentStock != null) ...[
-            const SizedBox(height: 20),
+          if (state.lastCurrentStock != null) ...[
+            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: AppColors.tintGradient(AppColors.success),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.25)),
+                color: AppColors.successSoft,
+                borderRadius: BorderRadius.circular(22),
               ),
               child: Row(
                 children: [
                   const Icon(Icons.check_circle_outline,
-                      color: AppColors.success, size: 22),
+                      size: 22, color: AppColors.success),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      l10n.currentStockAfter(movementState.lastCurrentStock!),
-                      style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary),
+                      l10n.currentStockAfter(state.lastCurrentStock!),
+                      style: AppTheme.font(size: 14, weight: FontWeight.w600),
                     ),
                   ),
                 ],
               ),
             ),
           ],
-          const SizedBox(height: 24),
         ],
       ),
     );

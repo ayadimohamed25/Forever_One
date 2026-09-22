@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/di/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../features/auth/domain/entities/user_entity.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
 
 class AppDrawer extends ConsumerWidget {
-  /// The route of the screen currently shown, so its entry can be highlighted.
+  /// The route currently shown, so its entry reads as selected.
   final String currentRoute;
 
   const AppDrawer({super.key, required this.currentRoute});
@@ -34,14 +35,14 @@ class AppDrawer extends ConsumerWidget {
 
   Widget _sectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(26, 18, 16, 6),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w800,
+        style: AppTheme.font(
+          size: 12,
+          weight: FontWeight.w500,
           letterSpacing: 0.8,
-          color: AppColors.textSecondary,
+          color: AppColors.textMuted,
         ),
       ),
     );
@@ -52,45 +53,39 @@ class AppDrawer extends ConsumerWidget {
         required IconData icon,
         required String label,
         required String route,
-        required Color color,
       }) {
     final selected = currentRoute == route;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
       child: Material(
-        color: selected ? color.withValues(alpha: 0.10) : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        color: selected ? AppColors.fill : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
           onTap: () {
-            Navigator.of(context).pop(); // close the drawer first
+            Navigator.of(context).pop();
             if (!selected) context.push(route);
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? color
-                        : color.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Icon(icon,
-                      size: 16, color: selected ? Colors.white : color),
+                Icon(
+                  icon,
+                  size: 22,
+                  color: selected ? AppColors.textPrimary : AppColors.icon,
                 ),
-                const SizedBox(width: 13),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     label,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? color : AppColors.textPrimary,
+                    style: AppTheme.font(
+                      size: 15,
+                      weight: selected ? FontWeight.w600 : FontWeight.w400,
                     ),
+                    maxLines: 2,
                   ),
                 ),
               ],
@@ -113,8 +108,9 @@ class AppDrawer extends ConsumerWidget {
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
+          TextButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: Text(l10n.logout),
           ),
         ],
@@ -133,7 +129,6 @@ class AppDrawer extends ConsumerWidget {
     final UserEntity? user = ref.watch(authNotifierProvider).user;
     final locale = ref.watch(localeProvider);
 
-    // Only show what this role is actually allowed to reach.
     bool can(String permission) => user?.can(permission) ?? false;
 
     final businessItems = <Widget>[
@@ -141,65 +136,55 @@ class AppDrawer extends ConsumerWidget {
         _navItem(context,
             icon: Icons.inventory_2_outlined,
             label: l10n.products,
-            route: '/products',
-            color: AppColors.stock),
+            route: '/products'),
       if (can('view_warehouses'))
         _navItem(context,
             icon: Icons.warehouse_outlined,
             label: l10n.warehouses,
-            route: '/warehouses',
-            color: AppColors.stock),
+            route: '/warehouses'),
       if (can('manage_stock'))
         _navItem(context,
-            icon: Icons.swap_vert,
+            icon: Icons.swap_vert_outlined,
             label: l10n.movements,
-            route: '/stock-movement',
-            color: AppColors.stock),
+            route: '/stock-movement'),
       if (can('view_customers'))
         _navItem(context,
             icon: Icons.people_outline,
             label: l10n.customers,
-            route: '/customers',
-            color: AppColors.finance),
+            route: '/customers'),
       if (can('view_suppliers'))
         _navItem(context,
             icon: Icons.local_shipping_outlined,
             label: l10n.suppliers,
-            route: '/suppliers',
-            color: AppColors.purchases),
+            route: '/suppliers'),
       if (can('view_sales'))
         _navItem(context,
             icon: Icons.point_of_sale_outlined,
             label: l10n.sales,
-            route: '/sales',
-            color: AppColors.sales),
+            route: '/sales'),
       if (can('view_purchases'))
         _navItem(context,
             icon: Icons.shopping_cart_outlined,
             label: l10n.purchases,
-            route: '/purchases',
-            color: AppColors.purchases),
+            route: '/purchases'),
     ];
 
     final intelligenceItems = <Widget>[
       if (can('use_ai'))
         _navItem(context,
-            icon: Icons.smart_toy_outlined,
+            icon: Icons.auto_awesome_outlined,
             label: l10n.aiCopilot,
-            route: '/ai',
-            color: AppColors.primary),
+            route: '/ai'),
       if (can('view_insights'))
         _navItem(context,
             icon: Icons.insights_outlined,
             label: l10n.insights,
-            route: '/insights',
-            color: AppColors.primary),
+            route: '/insights'),
       if (can('scan_documents'))
         _navItem(context,
             icon: Icons.document_scanner_outlined,
             label: l10n.scanner,
-            route: '/scan',
-            color: AppColors.info),
+            route: '/scan'),
     ];
 
     final systemItems = <Widget>[
@@ -207,179 +192,205 @@ class AppDrawer extends ConsumerWidget {
         _navItem(context,
             icon: Icons.group_outlined,
             label: l10n.users,
-            route: '/users',
-            color: AppColors.primary),
+            route: '/users'),
       if (can('view_audit'))
         _navItem(context,
-            icon: Icons.history,
+            icon: Icons.history_outlined,
             label: l10n.auditLog,
-            route: '/audit',
-            color: AppColors.info),
+            route: '/audit'),
       _navItem(context,
           icon: Icons.person_outline,
           label: l10n.myProfile,
-          route: '/profile',
-          color: AppColors.textSecondary),
+          route: '/profile'),
     ];
 
     return Drawer(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.canvas,
+      elevation: 0,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+      ),
       child: Column(
         children: [
-          // User header
-          Container(
-            width: double.infinity,
+          // Identity
+          Padding(
             padding: EdgeInsets.fromLTRB(
-                20, MediaQuery.of(context).padding.top + 24, 20, 24),
-            decoration: const BoxDecoration(gradient: AppColors.brandGradient),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+                20, MediaQuery.of(context).padding.top + 28, 20, 20),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: Colors.white,
-                      child: Text(
-                        user?.initials ?? '?',
-                        style: const TextStyle(
-                          fontSize: 21,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _roleLabel(user?.role ?? '', l10n),
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  user?.displayName ?? '',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: AppColors.fill,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    user?.initials ?? '?',
+                    style:
+                    AppTheme.font(size: 16, weight: FontWeight.w600),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  user?.email ?? '',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (user != null && user.companyName.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Row(
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.business,
-                          size: 12,
-                          color: Colors.white.withValues(alpha: 0.85)),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          user.companyName,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: Colors.white.withValues(alpha: 0.85),
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        user?.displayName ?? '',
+                        style: AppTheme.font(
+                          size: 17,
+                          weight: FontWeight.w600,
+                          letterSpacing: -0.3,
                         ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _roleLabel(user?.role ?? '', l10n),
+                        style: AppTheme.label,
+                        maxLines: 1,
                       ),
                     ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
 
+          if (user != null && user.companyName.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.business_outlined,
+                      size: 16, color: AppColors.iconMuted),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(user.companyName,
+                        style: AppTheme.label, maxLines: 2),
+                  ),
+                ],
+              ),
+            ),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Divider(height: 1),
+          ),
+
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(top: 12, bottom: 12),
               children: [
-                const SizedBox(height: 10),
                 if (can('view_dashboard'))
                   _navItem(context,
-                      icon: Icons.dashboard_outlined,
+                      icon: Icons.grid_view_outlined,
                       label: l10n.dashboard,
-                      route: '/dashboard',
-                      color: AppColors.primary),
-
+                      route: '/dashboard'),
                 if (businessItems.isNotEmpty) ...[
                   _sectionLabel(l10n.business),
                   ...businessItems,
                 ],
-
                 if (intelligenceItems.isNotEmpty) ...[
                   _sectionLabel(l10n.intelligence),
                   ...intelligenceItems,
                 ],
-
                 _sectionLabel(l10n.system),
                 ...systemItems,
               ],
             ),
           ),
 
-          const Divider(height: 1),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Divider(height: 1),
+          ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             child: Column(
               children: [
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.language,
-                      size: 20, color: AppColors.textSecondary),
-                  title: Text(l10n.language,
-                      style: const TextStyle(fontSize: 13.5)),
-                  trailing: SegmentedButton<String>(
-                    style: const ButtonStyle(
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                Row(
+                  children: [
+                    const Icon(Icons.language_outlined,
+                        size: 22, color: AppColors.icon),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(l10n.language,
+                          style: AppTheme.font(size: 15)),
                     ),
-                    segments: const [
-                      ButtonSegment(value: 'en', label: Text('EN')),
-                      ButtonSegment(value: 'fr', label: Text('FR')),
-                    ],
-                    selected: {locale.languageCode},
-                    showSelectedIcon: false,
-                    onSelectionChanged: (s) => ref
-                        .read(localeProvider.notifier)
-                        .setLocale(Locale(s.first)),
-                  ),
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: AppColors.fill,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Row(
+                        children: [
+                          _langChip(ref, 'en', 'EN', locale.languageCode),
+                          _langChip(ref, 'fr', 'FR', locale.languageCode),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.logout,
-                      size: 20, color: AppColors.danger),
-                  title: Text(l10n.logout,
-                      style: const TextStyle(
-                          fontSize: 13.5, color: AppColors.danger)),
-                  onTap: () => _confirmLogout(context, ref, l10n),
+                const SizedBox(height: 8),
+                Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => _confirmLogout(context, ref, l10n),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.logout_outlined,
+                              size: 22, color: AppColors.danger),
+                          const SizedBox(width: 16),
+                          Text(
+                            l10n.logout,
+                            style: AppTheme.font(
+                              size: 15,
+                              weight: FontWeight.w500,
+                              color: AppColors.danger,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _langChip(
+      WidgetRef ref, String code, String label, String current) {
+    final selected = current == code;
+    return GestureDetector(
+      onTap: () => ref.read(localeProvider.notifier).setLocale(Locale(code)),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.black : Colors.transparent,
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: Text(
+          label,
+          style: AppTheme.font(
+            size: 12,
+            weight: FontWeight.w500,
+            color: selected ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
       ),
     );
   }

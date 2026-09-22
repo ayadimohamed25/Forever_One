@@ -1263,4 +1263,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchCategories => 'Search categories...';
+
+  @override
+  String get partiallyPaid => 'Partially paid';
+
+  @override
+  String get exclVatShort => 'excl. VAT';
+
+  @override
+  String reasonOwes(String amount) {
+    return 'Owes $amount';
+  }
+
+  @override
+  String reasonNoPurchase(int days) {
+    return 'No purchase for $days days';
+  }
+
+  @override
+  String get reasonUpToDate => 'Up to date';
+
+  @override
+  String get followUpScore => 'Follow-up score';
+
+  @override
+  String dueOn(String date) {
+    return 'Due $date';
+  }
+
+  @override
+  String expectedOn(String date) {
+    return 'Expected $date';
+  }
+
+  @override
+  String receivedOn(String date) {
+    return 'Received $date';
+  }
+
+  @override
+  String unitsInStock(int count) {
+    return '$count units in stock';
+  }
+
+  @override
+  String get reasonNeverPurchased => 'No purchase recorded';
+
+  @override
+  String auditCreated(String entity) {
+    return '$entity created';
+  }
+
+  @override
+  String auditUpdated(String entity) {
+    return '$entity updated';
+  }
+
+  @override
+  String auditDeleted(String entity) {
+    return '$entity deleted';
+  }
 }

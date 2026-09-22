@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_widgets.dart';
-import '../providers/user_provider.dart';
-import '../widgets/user_form_dialog.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_widgets.dart';
+import '../../../auth/domain/entities/user_entity.dart';
+import '../providers/user_provider.dart';
+import '../widgets/user_roles.dart';
+import 'profile_edit_page.dart';
+
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
@@ -31,96 +35,22 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   String _translateError(String code, AppLocalizations l10n) {
     switch (code) {
-      case 'EMAIL_TAKEN':
-        return l10n.emailTaken;
       case 'WRONG_PASSWORD':
         return l10n.wrongPassword;
       case 'PASSWORD_TOO_SHORT':
         return l10n.passwordTooShort;
+      case 'EMAIL_TAKEN':
+        return l10n.emailTaken;
       default:
         return code;
     }
   }
 
-  Future<void> _editProfile(AppLocalizations l10n) async {
-    final user = ref.read(profileProvider).user;
-    if (user == null) return;
-
-    final emailController = TextEditingController(text: user.email);
-    final nameController = TextEditingController(text: user.fullName ?? '');
-    final phoneController = TextEditingController(text: user.phone ?? '');
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.myProfile),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: l10n.fullName,
-                  prefixIcon: const Icon(Icons.badge_outlined),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: l10n.email,
-                  prefixIcon: const Icon(Icons.mail_outline),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: l10n.phone,
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (emailController.text.trim().isEmpty) return;
-              Navigator.of(context).pop(true);
-            },
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
+  Future<void> _edit(UserEntity user, AppLocalizations l10n) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => ProfileEditPage(user: user)),
     );
-
-    if (saved != true) return;
-
-    final error = await ref.read(profileProvider.notifier).updateProfile(
-      email: emailController.text.trim(),
-      fullName: nameController.text.trim().isEmpty
-          ? null
-          : nameController.text.trim(),
-      phone: phoneController.text.trim().isEmpty
-          ? null
-          : phoneController.text.trim(),
-    );
-
-    if (!mounted) return;
-    if (error == null) {
-      _showSnack(l10n.userUpdated);
-    } else {
-      _showSnack(_translateError(error, l10n), isError: true);
-    }
+    if (changed == true && mounted) _showSnack(l10n.userUpdated);
   }
 
   Future<void> _changePassword(AppLocalizations l10n) async {
@@ -143,6 +73,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   controller: currentController,
                   obscureText: true,
                   autofocus: true,
+                  style: AppTheme.font(size: 15),
                   decoration: InputDecoration(
                     labelText: l10n.currentPassword,
                     prefixIcon: const Icon(Icons.lock_outline),
@@ -152,6 +83,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 TextField(
                   controller: newController,
                   obscureText: true,
+                  style: AppTheme.font(size: 15),
                   decoration: InputDecoration(
                     labelText: l10n.newPassword,
                     prefixIcon: const Icon(Icons.lock_reset),
@@ -161,6 +93,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 TextField(
                   controller: confirmController,
                   obscureText: true,
+                  style: AppTheme.font(size: 15),
                   decoration: InputDecoration(
                     labelText: l10n.confirmPassword,
                     prefixIcon: const Icon(Icons.check),
@@ -175,7 +108,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               onPressed: () => Navigator.of(context).pop(false),
               child: Text(l10n.cancel),
             ),
-            FilledButton(
+            TextButton(
               onPressed: () {
                 if (newController.text.length < 8) {
                   setState(() => localError = l10n.passwordTooShort);
@@ -187,6 +120,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 }
                 Navigator.of(context).pop(true);
               },
+              style: TextButton.styleFrom(foregroundColor: AppColors.accent),
               child: Text(l10n.save),
             ),
           ],
@@ -199,39 +133,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final error = await ref
         .read(profileProvider.notifier)
         .changePassword(currentController.text, newController.text);
-
     if (!mounted) return;
+
     if (error == null) {
       _showSnack(l10n.passwordChanged);
     } else {
       _showSnack(_translateError(error, l10n), isError: true);
     }
-  }
-
-  Widget _infoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
-      child: Row(
-        children: [
-          Icon(icon, size: 17, color: AppColors.textSecondary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textSecondary)),
-                const SizedBox(height: 2),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 13.5, color: AppColors.textPrimary)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -241,79 +149,56 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final user = state.user;
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       appBar: AppPageHeader(
         title: l10n.myProfile,
         subtitle: user?.email,
-        icon: Icons.person_rounded,
+        icon: Icons.person_outline,
         color: AppColors.primary,
         showMenuButton: false,
         actions: [
           if (user != null)
             AppHeaderAction(
-              icon: Icons.edit_rounded,
+              icon: Icons.edit_outlined,
               tooltip: l10n.edit,
-              color: AppColors.primary,
-              onTap: () => _editProfile(l10n),
+              onTap: () => _edit(user, l10n),
             ),
         ],
       ),
       body: state.isLoading || user == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
+        color: AppColors.accent,
         onRefresh: () => ref.read(profileProvider.notifier).load(),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                gradient: AppColors.brandGradient,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: AppColors.softShadow(AppColors.primary),
-              ),
-              child: Column(
+            // ── Identity ──
+            AppCard(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 34,
-                    backgroundColor: Colors.white,
-                    child: Text(user.initials,
-                        style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primary)),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(user.displayName,
-                      style: const TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white)),
-                  const SizedBox(height: 3),
-                  Text(user.email,
-                      style: TextStyle(
-                          fontSize: 12.5,
-                          color: Colors.white.withValues(alpha: 0.85))),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.22),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  AppLeadingTile.initials(user.displayName, size: 56),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(roleIcon(user.role),
-                            size: 13, color: Colors.white),
-                        const SizedBox(width: 6),
-                        Text(roleLabel(user.role, l10n),
-                            style: const TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white)),
+                        Text(
+                          user.displayName,
+                          maxLines: 2,
+                          style: AppTheme.font(
+                              size: 18, weight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(user.email,
+                            style: AppTheme.label, maxLines: 2),
+                        const SizedBox(height: 10),
+                        AppBadge(
+                          label: roleLabel(user.role, l10n),
+                          tone: roleTone(user.role),
+                          icon: roleIcon(user.role),
+                        ),
                       ],
                     ),
                   ),
@@ -321,65 +206,64 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
             ),
 
-            const SizedBox(height: 22),
+            const SizedBox(height: 12),
 
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border),
-                boxShadow: AppColors.cardShadow,
-              ),
-              child: Column(
-                children: [
-                  _infoRow(Icons.mail_outline, l10n.email, user.email),
-                  if (user.phone != null)
-                    _infoRow(
-                        Icons.phone_outlined, l10n.phone, user.phone!),
-                  _infoRow(Icons.business, l10n.company,
-                      user.companyName.isEmpty ? '—' : user.companyName),
-                  _infoRow(
-                      Icons.verified_user_outlined,
-                      l10n.accessRights,
-                      l10n.permissionsCount(user.permissions.length)),
-                  const SizedBox(height: 6),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 22),
-
-            Text(l10n.accountSecurity,
-                style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary)),
-            const SizedBox(height: 10),
-
-            AppCard(
-              onTap: () => _changePassword(l10n),
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  AppIconBadge(
-                      icon: Icons.key_outlined,
-                      color: AppColors.warning,
-                      size: 42),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(l10n.changePassword,
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary)),
+            // ── Details ──
+            AppFormSection(
+              title: l10n.generalInfo,
+              spacing: 0,
+              padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              children: [
+                AppInfoRow(
+                  icon: Icons.mail_outline,
+                  label: l10n.email,
+                  value: user.email,
+                ),
+                if (user.phone != null && user.phone!.trim().isNotEmpty)
+                  AppInfoRow(
+                    icon: Icons.phone_outlined,
+                    label: l10n.phone,
+                    value: user.phone!,
                   ),
-                  const Icon(Icons.chevron_right,
-                      size: 18, color: AppColors.textSecondary),
-                ],
-              ),
+                AppInfoRow(
+                  icon: Icons.business_outlined,
+                  label: l10n.company,
+                  value: user.companyName.isEmpty ? '—' : user.companyName,
+                ),
+                AppInfoRow(
+                  icon: Icons.verified_user_outlined,
+                  label: l10n.accessRights,
+                  value: l10n.permissionsCount(user.permissions.length),
+                ),
+              ],
             ),
 
             const SizedBox(height: 24),
+
+            // ── Security ──
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 10),
+              child: Text(
+                l10n.accountSecurity,
+                style: AppTheme.font(size: 16, weight: FontWeight.w600),
+              ),
+            ),
+            AppCard(
+              onTap: () => _changePassword(l10n),
+              child: Row(
+                children: [
+                  const AppLeadingTile.icon(Icons.key_outlined),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(l10n.changePassword,
+                        style: AppTheme.rowTitle),
+                  ),
+                  const Icon(Icons.chevron_right,
+                      size: 22, color: AppColors.textMuted),
+                ],
+              ),
+            ),
           ],
         ),
       ),

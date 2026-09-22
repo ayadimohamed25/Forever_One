@@ -1,11 +1,48 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:markdown/markdown.dart' as md;
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
-import '../providers/ai_provider.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_widgets.dart';
+import '../../domain/entities/ai_message_entity.dart';
+import '../providers/ai_provider.dart';
+
+/// Status tags the model used to echo, e.g. [ALERTE RUPTURE] or
+/// [OUT OF STOCK]. Uppercase only, and never followed by "(", so markdown
+/// links like [text](url) are left alone.
+class _StatusTagSyntax extends md.InlineSyntax {
+  _StatusTagSyntax()
+      : super(r"\[([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ0-9 _'\-]{1,40})\](?!\()");
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element.text('statustag', match[1]!));
+    return true;
+  }
+}
+
+/// Draws a status tag as a danger pill instead of raw bracketed text.
+class _StatusTagBuilder extends MarkdownElementBuilder {
+  final String Function(String raw) labelFor;
+
+  _StatusTagBuilder(this.labelFor);
+
+  @override
+  Widget? visitElementAfter(md.Element element, TextStyle? preferredStyle) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+      child: AppBadge(
+        label: labelFor(element.textContent),
+        tone: BadgeTone.danger,
+      ),
+    );
+  }
+}
 
 class AiChatPage extends ConsumerStatefulWidget {
   const AiChatPage({super.key});
@@ -33,16 +70,239 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
 
   void _send(String question) {
     if (question.trim().isEmpty) return;
+    // The assistant answers in the language currently selected in the app.
     final locale = Localizations.localeOf(context).languageCode;
     ref.read(aiProvider.notifier).ask(question.trim(), locale: locale);
     questionController.clear();
     FocusScope.of(context).unfocus();
   }
 
+  void _scrollToEnd() {
+    Future.delayed(const Duration(milliseconds: 120), () {
+      if (!scrollController.hasClients) return;
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  String _tagLabel(String raw, AppLocalizations l10n) {
+    final t = raw.toUpperCase();
+    if (t.contains('RUPTURE') || t.contains('OUT OF STOCK')) {
+      return l10n.rupture;
+    }
+    return raw;
+  }
+
+  MarkdownStyleSheet _markdownStyle(BuildContext context) {
+    final base = AppTheme.font(size: 15, height: 1.5);
+    return MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+      p: base,
+      listBullet: base,
+      strong: AppTheme.font(size: 15, weight: FontWeight.w700, height: 1.5),
+      em: base.copyWith(fontStyle: FontStyle.italic),
+      h1: AppTheme.font(size: 18, weight: FontWeight.w700),
+      h2: AppTheme.font(size: 17, weight: FontWeight.w700),
+      h3: AppTheme.font(size: 16, weight: FontWeight.w600),
+      tableHead: AppTheme.font(size: 13, weight: FontWeight.w600),
+      tableBody: AppTheme.font(size: 13),
+      code: AppTheme.font(size: 13).copyWith(backgroundColor: AppColors.fill),
+      blockSpacing: 10,
+      listIndent: 22,
+    );
+  }
+
+  Widget _userBubble(String text) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+        ),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: const BoxDecoration(
+          color: AppColors.black,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(6),
+          ),
+        ),
+        child: Text(
+          text,
+          style: AppTheme.font(size: 15, height: 1.4, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  Widget _assistantBubble(AiMessageEntity m, AppLocalizations l10n) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          margin: const EdgeInsets.only(top: 2),
+          decoration: const BoxDecoration(
+            color: AppColors.accentSoft,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.auto_awesome_outlined,
+              size: 16, color: AppColors.accent),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(6),
+                    topRight: Radius.circular(20),
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                  boxShadow: AppColors.cardShadow,
+                ),
+                child: MarkdownBody(
+                  data: m.answer,
+                  styleSheet: _markdownStyle(context),
+                  extensionSet: md.ExtensionSet.gitHubFlavored,
+                  inlineSyntaxes: [_StatusTagSyntax()],
+                  builders: {
+                    'statustag':
+                    _StatusTagBuilder((raw) => _tagLabel(raw, l10n)),
+                  },
+                ),
+              ),
+              if (m.createdAt != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Text(
+                    formatDateTime(m.createdAt!),
+                    style: AppTheme.font(size: 12, color: AppColors.textMuted),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _suggestionChip(String text, bool disabled) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: AppColors.surface,
+        shape: const StadiumBorder(side: BorderSide(color: AppColors.track)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: disabled ? null : () => _send(text),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.auto_awesome_outlined,
+                    size: 14, color: AppColors.accent),
+                const SizedBox(width: 6),
+                Text(text,
+                    style: AppTheme.font(size: 13, weight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState(List<String> suggestions, AppLocalizations l10n) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.accentSoft,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(Icons.auto_awesome_outlined,
+                  size: 30, color: AppColors.accent),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              l10n.askYourBusiness,
+              textAlign: TextAlign.center,
+              style: AppTheme.font(size: 20, weight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.askQuestionSubtitle,
+              textAlign: TextAlign.center,
+              style: AppTheme.label,
+            ),
+            const SizedBox(height: 28),
+            for (final s in suggestions)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Material(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => _send(s),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.accentSoft,
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                            child: const Icon(Icons.auto_awesome_outlined,
+                                size: 17, color: AppColors.accent),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              s,
+                              maxLines: 2,
+                              style: AppTheme.font(
+                                  size: 14, weight: FontWeight.w500),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right,
+                              size: 20, color: AppColors.textMuted),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(aiProvider);
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
     final suggestions = [
@@ -55,221 +315,45 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       if (next.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(next.error!), backgroundColor: AppColors.danger),
+            content: Text(next.error!),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
       if (next.messages.length > (previous?.messages.length ?? 0)) {
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (scrollController.hasClients) {
-            scrollController.animateTo(
-              scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          }
-        });
+        _scrollToEnd();
       }
     });
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       drawer: const AppDrawer(currentRoute: '/ai'),
       appBar: AppPageHeader(
         title: l10n.aiCopilot,
         subtitle: l10n.aiAssistant,
-        icon: Icons.smart_toy_rounded,
-        color: AppColors.primary,
+        icon: Icons.auto_awesome_outlined,
+        color: AppColors.accent,
       ),
       body: Column(
         children: [
           Expanded(
             child: state.messages.isEmpty && !state.isLoading
-                ? Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 88,
-                      height: 88,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.brandGradient,
-                        shape: BoxShape.circle,
-                        boxShadow:
-                        AppColors.softShadow(AppColors.primary),
-                      ),
-                      child: const Icon(Icons.smart_toy_outlined,
-                          size: 42, color: Colors.white),
-                    ),
-                    const SizedBox(height: 22),
-                    Text(l10n.askYourBusiness,
-                        style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary)),
-                    const SizedBox(height: 6),
-                    Text(l10n.askQuestionSubtitle,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary)),
-                    const SizedBox(height: 28),
-                    ...suggestions.map((s) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border:
-                          Border.all(color: AppColors.border),
-                          boxShadow: AppColors.cardShadow,
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _send(s),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 14),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.auto_awesome,
-                                      size: 16,
-                                      color: AppColors.primary),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(s,
-                                        style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight:
-                                            FontWeight.w500,
-                                            color: AppColors
-                                                .textPrimary)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    )),
-                  ],
-                ),
-              ),
-            )
+                ? _emptyState(suggestions, l10n)
                 : ListView.builder(
               controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               itemCount: state.messages.length,
               itemBuilder: (context, index) {
                 final m = state.messages[index];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Question
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Container(
-                        constraints: BoxConstraints(
-                          maxWidth:
-                          MediaQuery.of(context).size.width * 0.78,
-                        ),
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 15, vertical: 11),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.brandGradient,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(18),
-                            topRight: Radius.circular(18),
-                            bottomLeft: Radius.circular(18),
-                            bottomRight: Radius.circular(5),
-                          ),
-                          boxShadow:
-                          AppColors.softShadow(AppColors.primary),
-                        ),
-                        child: Text(m.question,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.5,
-                                height: 1.35)),
-                      ),
-                    ),
-                    // Answer
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 30,
-                          height: 30,
-                          margin: const EdgeInsets.only(top: 2, right: 9),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.tintGradient(
-                                AppColors.primary),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: AppColors.primary
-                                    .withValues(alpha: 0.2)),
-                          ),
-                          child: const Icon(Icons.smart_toy,
-                              size: 15, color: AppColors.primary),
-                        ),
-                        Flexible(
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 15, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(5),
-                                topRight: Radius.circular(18),
-                                bottomLeft: Radius.circular(18),
-                                bottomRight: Radius.circular(18),
-                              ),
-                              border: Border.all(color: AppColors.border),
-                              boxShadow: AppColors.cardShadow,
-                            ),
-                            child: MarkdownBody(
-                              data: m.answer,
-                              styleSheet:
-                              MarkdownStyleSheet.fromTheme(theme)
-                                  .copyWith(
-                                p: const TextStyle(
-                                    fontSize: 13.5,
-                                    height: 1.5,
-                                    color: AppColors.textPrimary),
-                                listBullet: const TextStyle(
-                                    fontSize: 13.5,
-                                    height: 1.5,
-                                    color: AppColors.textPrimary),
-                                strong: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13.5,
-                                    color: AppColors.textPrimary),
-                                code: const TextStyle(
-                                    fontSize: 12,
-                                    backgroundColor:
-                                    AppColors.surfaceAlt),
-                                h1: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800),
-                                h2: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800),
-                                h3: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _userBubble(m.question),
+                      _assistantBubble(m, l10n),
+                    ],
+                  ),
                 );
               },
             ),
@@ -285,90 +369,79 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     width: 15,
                     height: 15,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.primary),
+                        strokeWidth: 2, color: AppColors.accent),
                   ),
                   const SizedBox(width: 12),
-                  Text(l10n.analyzingData,
-                      style: const TextStyle(
-                          fontSize: 12.5, color: AppColors.textSecondary)),
+                  Text(l10n.analyzingData, style: AppTheme.label),
                 ],
               ),
             ),
 
-          SizedBox(
-            height: 44,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: suggestions
-                  .map((s) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ActionChip(
-                  avatar: const Icon(Icons.auto_awesome,
-                      size: 14, color: AppColors.primary),
-                  label:
-                  Text(s, style: const TextStyle(fontSize: 11.5)),
-                  onPressed: state.isLoading ? null : () => _send(s),
-                ),
-              ))
-                  .toList(),
+          if (state.messages.isNotEmpty)
+            SizedBox(
+              height: 44,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                children: [
+                  for (final s in suggestions)
+                    _suggestionChip(s, state.isLoading),
+                ],
+              ),
             ),
-          ),
 
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: AppColors.border)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: questionController,
-                    textInputAction: TextInputAction.send,
-                    decoration: InputDecoration(
-                      hintText: l10n.askYourQuestion,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 13),
-                      border: OutlineInputBorder(
+            color: AppColors.canvas,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(26),
-                        borderSide: BorderSide.none,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(26),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(26),
-                        borderSide: const BorderSide(
-                            color: AppColors.primary, width: 1.5),
+                      child: TextField(
+                        controller: questionController,
+                        textInputAction: TextInputAction.send,
+                        minLines: 1,
+                        maxLines: 4,
+                        onSubmitted: _send,
+                        style: AppTheme.font(size: 15),
+                        decoration: InputDecoration(
+                          hintText: l10n.askYourQuestion,
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 14),
+                          hintStyle: AppTheme.font(
+                              size: 15, color: AppColors.textMuted),
+                        ),
                       ),
                     ),
-                    onSubmitted: _send,
                   ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: state.isLoading ? null : AppColors.brandGradient,
-                    color: state.isLoading ? AppColors.border : null,
-                    shape: BoxShape.circle,
-                    boxShadow: state.isLoading
-                        ? null
-                        : AppColors.softShadow(AppColors.primary),
+                  const SizedBox(width: 10),
+                  Material(
+                    color: state.isLoading ? AppColors.track : AppColors.black,
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: state.isLoading
+                          ? null
+                          : () => _send(questionController.text),
+                      child: const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: Icon(Icons.arrow_upward,
+                            size: 20, color: Colors.white),
+                      ),
+                    ),
                   ),
-                  child: IconButton(
-                    onPressed: state.isLoading
-                        ? null
-                        : () => _send(questionController.text),
-                    icon: const Icon(Icons.arrow_upward,
-                        color: Colors.white, size: 20),
-                    padding: const EdgeInsets.all(13),
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

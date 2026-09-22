@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_widgets.dart';
 import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../providers/customer_provider.dart';
 import '../widgets/customer_form_dialog.dart';
-import '../../../../shared/widgets/app_page_header.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class CustomerDetailPage extends ConsumerStatefulWidget {
   final String customerId;
+
   const CustomerDetailPage({super.key, required this.customerId});
 
   @override
@@ -21,205 +25,192 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-            () => ref.read(customerDetailProvider.notifier).load(widget.customerId));
+    Future.microtask(() =>
+        ref.read(customerDetailProvider.notifier).load(widget.customerId));
   }
 
-  Future<void> _launch(String scheme, String value) async {
-    final uri = Uri(scheme: scheme, path: value);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
+  Future<void> _launch(Uri uri) async {
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  String _lastOrderLabel(int? days, AppLocalizations l10n) {
+  Future<void> _edit(CustomerEntity c) async {
+    final input = await showCustomerFormDialog(context, existing: c);
+    if (input == null) return;
+    await ref.read(customerListProvider.notifier).update(c.id, input);
+    if (mounted) ref.read(customerDetailProvider.notifier).load(c.id);
+  }
+
+  String _lastOrder(CustomerEntity c, AppLocalizations l10n) {
+    final days = c.daysSinceLastPurchase;
     if (days == null) return l10n.never;
     if (days == 0) return l10n.today;
     return l10n.daysAgo(days);
   }
 
-  String _paymentTermsLabel(int days, AppLocalizations l10n) {
-    return days <= 0 ? l10n.paymentTermsCash : l10n.paymentTermsDays(days);
+  String _paymentTerms(CustomerEntity c, AppLocalizations l10n) {
+    return c.paymentTermsDays <= 0
+        ? l10n.paymentTermsCash
+        : l10n.paymentTermsDays(c.paymentTermsDays);
   }
 
-  Widget _statTile(String label, String value, ThemeData theme, {Color? color}) {
+  Widget _stat(String label, String value, Color color) {
     return Expanded(
       child: Column(
         children: [
-          Text(value,
-              style: TextStyle(
-                  fontSize: 17, fontWeight: FontWeight.bold, color: color)),
-          const SizedBox(height: 2),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 10.5, color: theme.colorScheme.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, String value, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 2),
-                Text(value, style: const TextStyle(fontSize: 13.5)),
-              ],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: AppTheme.font(
+                size: 16,
+                weight: FontWeight.w700,
+                color: color,
+                tabularFigures: true,
+              ),
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: AppTheme.font(size: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
     );
   }
 
+  Widget _statDivider() =>
+      Container(width: 1, height: 36, color: AppColors.track);
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(customerDetailProvider);
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final c = state.customer;
 
     return Scaffold(
+      backgroundColor: AppColors.canvas,
       appBar: AppPageHeader(
         title: l10n.customerDetails,
         subtitle: c?.name,
-        icon: Icons.person_rounded,
+        icon: Icons.person_outline,
         color: AppColors.finance,
         showMenuButton: false,
         actions: [
           if (c != null)
             AppHeaderAction(
-              icon: Icons.edit_rounded,
+              icon: Icons.edit_outlined,
               tooltip: l10n.edit,
-              color: AppColors.primary,
-              onTap: () async {
-                final input = await showCustomerFormDialog(context, existing: c);
-                if (input == null) return;
-                await ref.read(customerListProvider.notifier).update(c.id, input);
-                if (mounted) {
-                  ref.read(customerDetailProvider.notifier).load(c.id);
-                }
-              },
+              onTap: () => _edit(c),
             ),
         ],
       ),
-      body: state.isLoading || c == null
+      body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : c == null
+          ? AppEmptyState(
+        icon: Icons.error_outline,
+        title: state.error ?? l10n.noCustomers,
+        subtitle: '',
+      )
           : RefreshIndicator(
-        onRefresh: () =>
-            ref.read(customerDetailProvider.notifier).load(c.id),
+        color: AppColors.accent,
+        onRefresh: () => ref
+            .read(customerDetailProvider.notifier)
+            .load(widget.customerId),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           children: [
-            // Header
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Text(
-                    c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimaryContainer,
+            // ── Identity ──
+            AppCard(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppLeadingTile.initials(c.name, size: 52),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          c.name,
+                          maxLines: 2,
+                          style: AppTheme.font(
+                              size: 18, weight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${l10n.lastOrder}: ${_lastOrder(c, l10n)}',
+                          style: AppTheme.label,
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            AppBadge(
+                              label: c.customerType ==
+                                  CustomerType.company
+                                  ? l10n.company
+                                  : l10n.individual,
+                              tone: BadgeTone.neutral,
+                            ),
+                            if (c.isOverCreditLimit)
+                              AppBadge(
+                                  label: l10n.creditLimitExceeded,
+                                  tone: BadgeTone.danger)
+                            else if (c.owesMoney)
+                              AppBadge(
+                                  label: l10n.unpaid,
+                                  tone: BadgeTone.warning)
+                            else
+                              AppBadge(
+                                  label: l10n.reasonUpToDate,
+                                  tone: BadgeTone.success),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(c.name,
-                          style: const TextStyle(
-                              fontSize: 19, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              c.customerType == CustomerType.individual
-                                  ? l10n.individual
-                                  : l10n.company,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                color:
-                                theme.colorScheme.onSecondaryContainer,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              '${l10n.lastOrder}: ${_lastOrderLabel(c.daysSinceLastPurchase, l10n)}',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color:
-                                  theme.colorScheme.onSurfaceVariant),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
 
-            const SizedBox(height: 20),
-
-            // Credit warning
+            // ── Credit warning ──
             if (c.isOverCreditLimit || c.isNearCreditLimit)
               Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: (c.isOverCreditLimit
-                      ? theme.colorScheme.error
-                      : Colors.orange)
-                      .withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: c.isOverCreditLimit
+                      ? AppColors.dangerSoft
+                      : AppColors.warningSoft,
+                  borderRadius: BorderRadius.circular(22),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded,
-                        size: 20,
-                        color: c.isOverCreditLimit
-                            ? theme.colorScheme.error
-                            : Colors.orange.shade800),
-                    const SizedBox(width: 10),
+                    Icon(
+                      Icons.warning_amber_outlined,
+                      size: 22,
+                      color: c.isOverCreditLimit
+                          ? AppColors.danger
+                          : AppColors.warning,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         c.isOverCreditLimit
                             ? l10n.creditLimitExceeded
                             : l10n.creditLimitNearlyReached,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                        style: AppTheme.font(
+                          size: 14,
+                          weight: FontWeight.w600,
                           color: c.isOverCreditLimit
-                              ? theme.colorScheme.error
-                              : Colors.orange.shade900,
+                              ? AppColors.danger
+                              : AppColors.warning,
                         ),
                       ),
                     ),
@@ -227,210 +218,260 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                 ),
               ),
 
-            // Stats
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
+            // ── Figures ──
+            AppCard(
+              child: Row(
+                children: [
+                  _stat(l10n.orders, '${c.orderCount}',
+                      AppColors.textPrimary),
+                  _statDivider(),
+                  _stat(l10n.totalPurchases,
+                      formatDT(c.totalPurchases),
+                      AppColors.textPrimary),
+                  _statDivider(),
+                  _stat(
+                    l10n.outstandingBalance,
+                    formatDT(c.balance > 0 ? c.balance : 0),
+                    c.owesMoney
+                        ? AppColors.danger
+                        : AppColors.success,
+                  ),
+                ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Row(
+            ),
+
+            // ── Credit usage ──
+            if (c.creditLimit > 0)
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _statTile(l10n.orders, '${c.orderCount}', theme),
-                    _statTile(l10n.totalPurchases,
-                        c.totalPurchases.toStringAsFixed(2), theme),
-                    _statTile(
-                      l10n.outstandingBalance,
-                      c.balance.toStringAsFixed(2),
-                      theme,
-                      color: c.owesMoney
-                          ? theme.colorScheme.error
-                          : Colors.green.shade700,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.creditUsage,
+                            style: AppTheme.font(
+                                size: 14, weight: FontWeight.w600),
+                          ),
+                        ),
+                        Text(
+                          '${(c.creditUsage * 100).clamp(0, 999).toStringAsFixed(0)}%',
+                          style: AppTheme.font(
+                            size: 14,
+                            weight: FontWeight.w600,
+                            tabularFigures: true,
+                            color: c.isOverCreditLimit
+                                ? AppColors.danger
+                                : c.isNearCreditLimit
+                                ? AppColors.warning
+                                : AppColors.success,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: LinearProgressIndicator(
+                        value: c.creditUsage.clamp(0.0, 1.0),
+                        minHeight: 8,
+                        backgroundColor: AppColors.track,
+                        valueColor: AlwaysStoppedAnimation(
+                          c.isOverCreditLimit
+                              ? AppColors.danger
+                              : c.isNearCreditLimit
+                              ? AppColors.warning
+                              : AppColors.success,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${formatDT(c.balance > 0 ? c.balance : 0)} / ${formatDT(c.creditLimit)}',
+                      style: AppTheme.font(
+                        size: 12,
+                        color: AppColors.textSecondary,
+                        tabularFigures: true,
+                      ),
                     ),
                   ],
                 ),
               ),
+
+            const SizedBox(height: 12),
+
+            // ── Commercial info ──
+            AppFormSection(
+              title: l10n.commercialInfo,
+              spacing: 0,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 6),
+              children: [
+                if (c.taxId != null && c.taxId!.trim().isNotEmpty)
+                  AppInfoRow(
+                    icon: Icons.badge_outlined,
+                    label: l10n.taxId,
+                    value: c.taxId!,
+                  ),
+                AppInfoRow(
+                  icon: Icons.payments_outlined,
+                  label: l10n.paymentTerms,
+                  value: _paymentTerms(c, l10n),
+                ),
+                AppInfoRow(
+                  icon: Icons.credit_card_outlined,
+                  label: l10n.creditLimit,
+                  value: formatDT(c.creditLimit),
+                ),
+                if (c.notes != null && c.notes!.trim().isNotEmpty)
+                  AppInfoRow(
+                    icon: Icons.notes_outlined,
+                    label: l10n.notes,
+                    value: c.notes!,
+                  ),
+              ],
             ),
 
-            const SizedBox(height: 16),
-
-            // Credit usage bar
-            if (c.creditLimit > 0) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // ── Contact ──
+            if ((c.phone ?? '').isNotEmpty ||
+                (c.email ?? '').isNotEmpty ||
+                (c.address ?? '').isNotEmpty) ...[
+              const SizedBox(height: 24),
+              AppFormSection(
+                title: l10n.contact,
+                spacing: 0,
+                padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
                 children: [
-                  Text(l10n.creditUsage,
-                      style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600)),
-                  Text(
-                    '${c.balance.toStringAsFixed(0)} / ${c.creditLimit.toStringAsFixed(0)} DT',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurfaceVariant),
-                  ),
+                  if ((c.phone ?? '').isNotEmpty)
+                    AppInfoRow(
+                      icon: Icons.phone_outlined,
+                      label: l10n.phone,
+                      value: c.phone!,
+                      trailing: IconButton(
+                        tooltip: l10n.callCustomer,
+                        icon: const Icon(Icons.call_outlined,
+                            color: AppColors.success),
+                        onPressed: () => _launch(
+                            Uri(scheme: 'tel', path: c.phone)),
+                      ),
+                    ),
+                  if ((c.email ?? '').isNotEmpty)
+                    AppInfoRow(
+                      icon: Icons.mail_outline,
+                      label: l10n.email,
+                      value: c.email!,
+                      trailing: IconButton(
+                        tooltip: l10n.sendEmail,
+                        icon: const Icon(Icons.send_outlined,
+                            color: AppColors.accent),
+                        onPressed: () => _launch(
+                            Uri(scheme: 'mailto', path: c.email)),
+                      ),
+                    ),
+                  if ((c.address ?? '').isNotEmpty)
+                    AppInfoRow(
+                      icon: Icons.place_outlined,
+                      label: l10n.address,
+                      value: c.address!,
+                    ),
                 ],
               ),
-              const SizedBox(height: 6),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: c.creditUsage.clamp(0.0, 1.0),
-                  minHeight: 8,
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation(
-                    c.isOverCreditLimit
-                        ? theme.colorScheme.error
-                        : c.isNearCreditLimit
-                        ? Colors.orange
-                        : Colors.green.shade600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
             ],
 
-            // Commercial info
-            Text(l10n.commercialInfo,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              child: Column(
-                children: [
-                  if (c.taxId != null && c.taxId!.isNotEmpty)
-                    _infoRow(
-                        Icons.badge_outlined, l10n.taxId, c.taxId!, theme),
-                  _infoRow(Icons.payments_outlined, l10n.paymentTerms,
-                      _paymentTermsLabel(c.paymentTermsDays, l10n), theme),
-                  _infoRow(Icons.credit_card_outlined, l10n.creditLimit,
-                      '${c.creditLimit.toStringAsFixed(0)} DT', theme),
-                  if (c.notes != null && c.notes!.isNotEmpty)
-                    _infoRow(Icons.notes, l10n.notes, c.notes!, theme),
-                  const SizedBox(height: 6),
-                ],
+            // ── Purchase history ──
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 10),
+              child: Text(
+                l10n.purchaseHistory,
+                style:
+                AppTheme.font(size: 16, weight: FontWeight.w600),
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            // Contact
-            Text(l10n.contact,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              child: Column(
-                children: [
-                  if (c.phone != null && c.phone!.isNotEmpty)
-                    ListTile(
-                      leading: const Icon(Icons.phone_outlined),
-                      title: Text(c.phone!),
-                      trailing: IconButton(
-                        icon: Icon(Icons.call, color: Colors.green.shade700),
-                        tooltip: l10n.callCustomer,
-                        onPressed: () => _launch('tel', c.phone!),
-                      ),
-                    ),
-                  if (c.email != null && c.email!.isNotEmpty)
-                    ListTile(
-                      leading: const Icon(Icons.mail_outline),
-                      title: Text(c.email!),
-                      trailing: IconButton(
-                        icon: Icon(Icons.send,
-                            color: theme.colorScheme.primary),
-                        tooltip: l10n.sendEmail,
-                        onPressed: () => _launch('mailto', c.email!),
-                      ),
-                    ),
-                  if (c.address != null && c.address!.isNotEmpty)
-                    ListTile(
-                      leading: const Icon(Icons.place_outlined),
-                      title: Text(c.address!),
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Purchase history
-            Text(l10n.purchaseHistory,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
             if (state.sales.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(l10n.noPurchaseHistory,
-                      style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant)),
+              AppCard(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: Text(l10n.noPurchaseHistory,
+                        style: AppTheme.label),
+                  ),
                 ),
               )
             else
-              ...state.sales.map((s) {
-                final dateLabel =
-                    '${s.createdAt.day.toString().padLeft(2, '0')}/${s.createdAt.month.toString().padLeft(2, '0')}/${s.createdAt.year}';
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  elevation: 0,
-                  clipBehavior: Clip.antiAlias,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side:
-                    BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
-                  child: InkWell(
-                    onTap: () async {
-                      await Navigator.of(context).push(MaterialPageRoute(
+              for (final s in state.sales)
+                AppCard(
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
                         builder: (_) => PaymentPage(
                           saleId: s.id,
                           title: '${l10n.payment} — ${c.name}',
                         ),
-                      ));
-                      if (mounted) {
-                        ref
-                            .read(customerDetailProvider.notifier)
-                            .load(c.id);
-                      }
-                    },
-                    child: ListTile(
-                      leading: Icon(
-                        s.isFullyPaid
-                            ? Icons.check_circle_outline
-                            : Icons.pending_outlined,
-                        color: s.isFullyPaid
-                            ? Colors.green.shade700
-                            : theme.colorScheme.error,
                       ),
-                      title: Text('${s.total.toStringAsFixed(2)} DT',
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600)),
-                      subtitle: Text(
-                        s.isFullyPaid
-                            ? '$dateLabel · ${l10n.paid}'
-                            : '$dateLabel · ${s.balance.toStringAsFixed(2)} DT ${l10n.unpaid}',
-                        style: const TextStyle(fontSize: 12),
+                    );
+                    if (mounted) {
+                      ref
+                          .read(customerDetailProvider.notifier)
+                          .load(widget.customerId);
+                    }
+                  },
+                  padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const AppLeadingTile.icon(
+                          Icons.receipt_long_outlined),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          children: [
+                            Text(formatDate(s.createdAt),
+                                style: AppTheme.rowTitle),
+                            const SizedBox(height: 4),
+                            Text(formatDT(s.total),
+                                style: AppTheme.label),
+                            const SizedBox(height: 10),
+                            if (s.isFullyPaid)
+                              AppBadge(
+                                  label: l10n.paid,
+                                  tone: BadgeTone.success)
+                            else if (s.paid > 0.009)
+                              AppBadge(
+                                  label: l10n.partiallyPaid,
+                                  tone: BadgeTone.warning)
+                            else
+                              AppBadge(
+                                  label: l10n.unpaid,
+                                  tone: BadgeTone.warning),
+                          ],
+                        ),
                       ),
-                      trailing: Icon(Icons.chevron_right,
-                          color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                      if (!s.isFullyPaid) ...[
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              formatDT(s.balance),
+                              style: AppTheme.money.copyWith(
+                                  color: AppColors.danger),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(l10n.outstandingBalance,
+                                style: AppTheme.label),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(width: 6),
+                      const Icon(Icons.chevron_right,
+                          size: 22, color: AppColors.textMuted),
+                    ],
                   ),
-                );
-              }),
-            const SizedBox(height: 24),
+                ),
           ],
         ),
       ),

@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 
-/// A page header that replaces the plain AppBar title.
-/// Gives each screen a visual anchor: coloured icon, strong title,
-/// and a live subtitle showing what's actually on the page.
+/// Page header: leading control, title, optional gray subtitle, actions.
+/// [icon] and [color] are accepted for compatibility but not drawn.
 class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String? subtitle;
   final IconData icon;
   final Color color;
   final List<Widget> actions;
-  final Widget? leading;
   final bool showMenuButton;
 
   const AppPageHeader({
@@ -20,56 +19,36 @@ class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
     required this.color,
     this.subtitle,
     this.actions = const [],
-    this.leading,
     this.showMenuButton = true,
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(74);
+  Size get preferredSize => const Size.fromHeight(76);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surfaceAlt,
+      color: AppColors.canvas,
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
       child: SizedBox(
-        height: 74,
+        height: 76,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
-              if (leading != null)
-                leading!
-              else if (showMenuButton)
+              if (showMenuButton)
                 Builder(
-                  builder: (context) => IconButton(
-                    icon: const Icon(Icons.menu_rounded,
-                        color: AppColors.textPrimary),
-                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  builder: (context) => AppIconButton(
+                    icon: Icons.menu,
+                    onTap: () => Scaffold.of(context).openDrawer(),
                   ),
                 )
               else
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded,
-                      color: AppColors.textPrimary),
-                  onPressed: () => Navigator.of(context).maybePop(),
+                AppIconButton(
+                  icon: Icons.arrow_back,
+                  onTap: () => Navigator.of(context).maybePop(),
                 ),
-
-              const SizedBox(width: 2),
-
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  gradient: AppColors.tintGradient(color),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withValues(alpha: 0.22)),
-                ),
-                child: Icon(icon, size: 19, color: color),
-              ),
-
-              const SizedBox(width: 12),
-
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,34 +56,34 @@ class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.3,
-                        height: 1.1,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.fade,
+                      style: AppTheme.font(
+                        size: 20,
+                        weight: FontWeight.w600,
+                        letterSpacing: -0.4,
+                        height: 1.2,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                     if (subtitle != null && subtitle!.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         subtitle!,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.fade,
+                        style: AppTheme.font(
+                          size: 13,
+                          height: 1.2,
                           color: AppColors.textSecondary,
-                          height: 1.1,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
                 ),
               ),
-
               ...actions,
-              const SizedBox(width: 4),
             ],
           ),
         ),
@@ -113,7 +92,37 @@ class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-/// A compact circular action button for page headers.
+/// A bare outline icon button — no chip, no fill.
+class AppIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const AppIconButton({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, size: 24, color: color ?? AppColors.icon),
+        ),
+      ),
+    );
+  }
+}
+
+/// Header action button.
 class AppHeaderAction extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -130,31 +139,21 @@ class AppHeaderAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? AppColors.textSecondary;
     return Padding(
-      padding: const EdgeInsets.only(left: 6),
+      padding: const EdgeInsets.only(left: 2),
       child: Tooltip(
         message: tooltip ?? '',
-        child: Material(
-          color: Colors.white,
-          shape: const CircleBorder(
-            side: BorderSide(color: AppColors.border),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(9),
-              child: Icon(icon, size: 19, color: c),
-            ),
-          ),
+        child: AppIconButton(
+          icon: icon,
+          onTap: onTap,
+          color: color == AppColors.accent ? AppColors.accent : null,
         ),
       ),
     );
   }
 }
 
-/// A search field that slides into the header area.
+/// Search field that replaces the header while searching.
 class AppSearchHeader extends StatelessWidget implements PreferredSizeWidget {
   final TextEditingController controller;
   final String hint;
@@ -170,57 +169,58 @@ class AppSearchHeader extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(74);
+  Size get preferredSize => const Size.fromHeight(76);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surfaceAlt,
+      color: AppColors.canvas,
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
       child: SizedBox(
-        height: 74,
+        height: 76,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 10, 0),
+          padding: const EdgeInsets.fromLTRB(20, 0, 12, 0),
           child: Row(
             children: [
               Expanded(
                 child: Container(
-                  height: 46,
+                  height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: AppColors.cardShadow,
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(24),
                   ),
-                  child: TextField(
-                    controller: controller,
-                    autofocus: true,
-                    onChanged: onChanged,
-                    decoration: InputDecoration(
-                      hintText: hint,
-                      filled: false,
-                      prefixIcon: const Icon(Icons.search,
-                          size: 20, color: AppColors.textSecondary),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding:
-                      const EdgeInsets.symmetric(vertical: 13),
-                      hintStyle: const TextStyle(
-                          fontSize: 14, color: AppColors.textSecondary),
-                    ),
-                    style: const TextStyle(fontSize: 14),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 16),
+                      const Icon(Icons.search,
+                          size: 20, color: AppColors.iconMuted),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          autofocus: true,
+                          onChanged: onChanged,
+                          style: AppTheme.font(size: 15),
+                          decoration: InputDecoration(
+                            hintText: hint,
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            hintStyle: AppTheme.font(
+                                size: 15, color: AppColors.textMuted),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: onClose,
-                child: const Text('✕',
-                    style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary)),
-              ),
+              const SizedBox(width: 4),
+              AppIconButton(icon: Icons.close, onTap: onClose),
             ],
           ),
         ),

@@ -1,11 +1,15 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
-import '../../../../shared/widgets/app_widgets.dart';
-import '../providers/audit_provider.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_widgets.dart';
+import '../../domain/entities/audit_log_entity.dart';
+import '../providers/audit_provider.dart';
 
 class AuditPage extends ConsumerStatefulWidget {
   const AuditPage({super.key});
@@ -23,50 +27,49 @@ class _AuditPageState extends ConsumerState<AuditPage> {
     Future.microtask(() => ref.read(auditProvider.notifier).load());
   }
 
-  Map<String, String> _filterOptions(AppLocalizations l10n) {
-    return {
-      'create_sale': l10n.sales,
-      'create_purchase': l10n.purchases,
-      'record_payment': l10n.payments,
-      'stock_movement': l10n.stock,
-      'ai_query': l10n.ai,
-      'confirm_document': l10n.documents,
-      'login': l10n.logins,
-      'generate_report': l10n.reports,
-    };
-  }
+  /// Filters match on part of the action name, so "sale" catches
+  /// create_sale, update_sale and delete_sale together.
+  List<({String key, String label})> _filters(AppLocalizations l10n) => [
+    (key: 'sale', label: l10n.sales),
+    (key: 'purchase', label: l10n.purchases),
+    (key: 'payment', label: l10n.payments),
+    (key: 'product', label: l10n.products),
+    (key: 'stock', label: l10n.stock),
+    (key: 'customer', label: l10n.customers),
+    (key: 'supplier', label: l10n.suppliers),
+    (key: 'user', label: l10n.users),
+    (key: 'ai_', label: l10n.ai),
+    (key: 'document', label: l10n.documents),
+    (key: 'login', label: l10n.logins),
+    (key: 'report', label: l10n.reports),
+  ];
 
-  IconData _actionIcon(String action) {
-    if (action.contains('sale')) return Icons.point_of_sale;
-    if (action.contains('purchase')) return Icons.shopping_cart;
-    if (action.contains('payment')) return Icons.payments;
-    if (action.contains('product')) return Icons.inventory_2;
-    if (action.contains('customer')) return Icons.person;
-    if (action.contains('supplier')) return Icons.local_shipping;
-    if (action.contains('warehouse')) return Icons.warehouse;
-    if (action.contains('category')) return Icons.label;
-    if (action.contains('stock')) return Icons.inventory;
-    if (action.contains('document')) return Icons.document_scanner;
-    if (action.contains('ai')) return Icons.smart_toy;
-    if (action.contains('report')) return Icons.picture_as_pdf;
-    if (action == 'login') return Icons.login;
-    return Icons.history;
-  }
-
-  Color _actionColor(String action) {
-    if (action.startsWith('delete')) return AppColors.danger;
-    if (action.startsWith('update')) return AppColors.warning;
-    if (action.contains('sale')) return AppColors.sales;
-    if (action.contains('purchase')) return AppColors.purchases;
-    if (action.contains('payment')) return AppColors.finance;
-    if (action.contains('stock') || action.contains('product')) {
-      return AppColors.stock;
+  String? _entityLabel(String key, AppLocalizations l10n) {
+    switch (key) {
+      case 'product':
+        return l10n.product;
+      case 'category':
+        return l10n.category;
+      case 'customer':
+        return l10n.customer;
+      case 'supplier':
+        return l10n.supplier;
+      case 'warehouse':
+        return l10n.warehouse;
+      case 'user':
+        return l10n.user;
+      case 'sale':
+        return l10n.sale;
+      case 'purchase':
+        return l10n.purchase;
+      case 'profile':
+        return l10n.myProfile;
+      default:
+        return null;
     }
-    if (action.contains('ai')) return AppColors.primary;
-    if (action == 'login') return AppColors.textSecondary;
-    return AppColors.info;
   }
 
+  /// Every action label comes from the ARB files.
   String _actionLabel(String action, AppLocalizations l10n) {
     switch (action) {
       case 'login':
@@ -85,106 +88,229 @@ class _AuditPageState extends ConsumerState<AuditPage> {
         return l10n.aiQueryAction;
       case 'generate_report':
         return l10n.reportGeneratedAction;
-      default:
-      // Newer actions (create_product, delete_customer…) are shown
-      // readably without needing a translation for every one.
-        return action.replaceAll('_', ' ');
+      case 'receive_purchase':
+        return l10n.purchaseReceived;
+      case 'reset_password':
+        return l10n.passwordReset;
+      case 'change_password':
+        return l10n.passwordChanged;
+      case 'register_company':
+        return l10n.auditCreated(l10n.company);
     }
+
+    final sep = action.indexOf('_');
+    if (sep > 0) {
+      final entity = _entityLabel(action.substring(sep + 1), l10n);
+      if (entity != null) {
+        switch (action.substring(0, sep)) {
+          case 'create':
+            return l10n.auditCreated(entity);
+          case 'update':
+            return l10n.auditUpdated(entity);
+          case 'delete':
+            return l10n.auditDeleted(entity);
+        }
+      }
+    }
+    return action.replaceAll('_', ' ');
   }
 
-  String _formatDetails(String? details) {
-    if (details == null || details.isEmpty) return '';
-    return details
-        .replaceAll('{', '')
-        .replaceAll('}', '')
-        .replaceAll('"', '')
-        .replaceAll(':', ' : ')
-        .replaceAll(',', ' · ');
+  /// Colour carries meaning: created → success, changed → warning,
+  /// deleted → danger, AI → accent, everything else neutral.
+  BadgeTone _tone(String action) {
+    if (action.startsWith('delete')) return BadgeTone.danger;
+    if (action.startsWith('update') ||
+        action == 'reset_password' ||
+        action == 'change_password') {
+      return BadgeTone.warning;
+    }
+    if (action.startsWith('create') ||
+        action == 'record_payment' ||
+        action == 'receive_purchase' ||
+        action == 'confirm_document' ||
+        action == 'register_company') {
+      return BadgeTone.success;
+    }
+    if (action == 'ai_query') return BadgeTone.accent;
+    return BadgeTone.neutral;
   }
 
-  Widget _timeline(List<dynamic> logs, AppLocalizations l10n) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      itemCount: logs.length,
-      itemBuilder: (context, index) {
-        final log = logs[index];
-        final color = _actionColor(log.action);
-        final isLast = index == logs.length - 1;
-        final details = _formatDetails(log.details);
+  IconData _icon(String action) {
+    if (action.contains('sale')) return Icons.point_of_sale_outlined;
+    if (action.contains('purchase')) return Icons.shopping_cart_outlined;
+    if (action.contains('payment')) return Icons.payments_outlined;
+    if (action.contains('product')) return Icons.inventory_2_outlined;
+    if (action.contains('category')) return Icons.label_outline;
+    if (action.contains('customer')) return Icons.person_outline;
+    if (action.contains('supplier')) return Icons.local_shipping_outlined;
+    if (action.contains('warehouse')) return Icons.warehouse_outlined;
+    if (action.contains('stock')) return Icons.swap_vert_outlined;
+    if (action.contains('document')) return Icons.document_scanner_outlined;
+    if (action.contains('ai')) return Icons.auto_awesome_outlined;
+    if (action.contains('report')) return Icons.picture_as_pdf_outlined;
+    if (action.contains('password')) return Icons.key_outlined;
+    if (action.contains('user') || action.contains('profile')) {
+      return Icons.group_outlined;
+    }
+    if (action == 'login') return Icons.login;
+    return Icons.history;
+  }
 
-        return IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.tintGradient(color),
-                      shape: BoxShape.circle,
-                      border:
-                      Border.all(color: color.withValues(alpha: 0.25)),
-                    ),
-                    child: Icon(_actionIcon(log.action), size: 17, color: color),
-                  ),
-                  if (!isLast)
-                    Expanded(
-                      child: Container(width: 2, color: AppColors.border),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 5),
-                      Text(
-                        _actionLabel(log.action, l10n),
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary),
-                      ),
-                      const SizedBox(height: 3),
-                      AppMetaRow(items: [
-                        (
-                        icon: Icons.person_outline,
-                        text: log.userEmail ?? l10n.system
-                        ),
-                        (icon: Icons.schedule, text: log.createdAt),
-                      ]),
-                      if (details.isNotEmpty) ...[
-                        const SizedBox(height: 7),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceAlt,
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                          child: Text(
-                            details,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontFamily: 'monospace',
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+  /// Turns the JSON details into "key: value" pills, e.g. "type: director".
+  List<String> _detailPills(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.entries
+            .map((e) => '${e.key}: ${_detailValue('${e.key}', e.value)}')
+            .toList();
+      }
+    } catch (_) {
+      // Not JSON — show it as a single pill below.
+    }
+    return [raw];
+  }
+
+  String _detailValue(String key, dynamic value) {
+    final amount = double.tryParse('$value');
+    if (amount != null && (key == 'total' || key == 'amount')) {
+      return formatDT(amount);
+    }
+    return '$value';
+  }
+
+  /// Neutral pill that can wrap onto several lines for long values
+  /// (an AI question, for instance).
+  Widget _detailPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.neutralSoft,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: AppTheme.font(
+            size: 12, weight: FontWeight.w500, color: AppColors.black),
+      ),
+    );
+  }
+
+  Widget _filterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: selected ? AppColors.black : AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(100),
+          side: BorderSide(
+            color: selected ? AppColors.black : AppColors.track,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Center(
+            widthFactor: 1,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                label,
+                style: AppTheme.font(
+                  size: 13,
+                  weight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? Colors.white : AppColors.textPrimary,
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _entry(AuditLogEntity log, bool isLast, AppLocalizations l10n) {
+    final date = DateTime.tryParse(log.createdAt);
+    final pills = _detailPills(log.details);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeline rail
+          Column(
+            children: [
+              AppLeadingTile.icon(_icon(log.action), tone: _tone(log.action)),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    color: AppColors.track,
+                  ),
+                ),
             ],
           ),
-        );
-      },
+          const SizedBox(width: 14),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: AppColors.cardShadow,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _actionLabel(log.action, l10n),
+                      style: AppTheme.rowTitle,
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      log.userEmail ?? l10n.system,
+                      style: AppTheme.label,
+                      maxLines: 2,
+                    ),
+                    if (date != null) ...[
+                      const SizedBox(height: 2),
+                      // Always a single line under the email.
+                      Text(
+                        formatDateTime(date),
+                        maxLines: 1,
+                        softWrap: false,
+                        style: AppTheme.font(
+                          size: 12,
+                          color: AppColors.textMuted,
+                          tabularFigures: true,
+                        ),
+                      ),
+                    ],
+                    if (pills.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [for (final p in pills) _detailPill(p)],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -192,25 +318,23 @@ class _AuditPageState extends ConsumerState<AuditPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(auditProvider);
     final l10n = AppLocalizations.of(context)!;
-    final filterOptions = _filterOptions(l10n);
+    final filters = _filters(l10n);
 
-    final filteredLogs = selectedFilter == null
+    final logs = selectedFilter == null
         ? state.logs
         : state.logs.where((l) => l.action.contains(selectedFilter!)).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       drawer: const AppDrawer(currentRoute: '/audit'),
       appBar: AppPageHeader(
         title: l10n.auditLog,
-        subtitle: state.logs.isEmpty
-            ? null
-            : '${filteredLogs.length} / ${state.logs.length}',
-        icon: Icons.history_rounded,
+        subtitle: state.logs.isEmpty ? null : '${logs.length} / ${state.logs.length}',
+        icon: Icons.history,
         color: AppColors.info,
         actions: [
           AppHeaderAction(
-            icon: Icons.refresh_rounded,
+            icon: Icons.refresh,
             tooltip: l10n.refresh,
             onTap: () => ref.read(auditProvider.notifier).load(),
           ),
@@ -223,63 +347,58 @@ class _AuditPageState extends ConsumerState<AuditPage> {
         icon: Icons.lock_outline,
         title: l10n.restrictedAccess,
         subtitle: state.error!,
-        color: AppColors.danger,
       )
           : state.logs.isEmpty
           ? AppEmptyState(
         icon: Icons.history,
         title: l10n.noActionsRecorded,
         subtitle: '',
-        color: AppColors.info,
       )
           : Column(
         children: [
           SizedBox(
-            height: 50,
+            height: 54,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 7),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(l10n.all,
-                        style: const TextStyle(fontSize: 12)),
-                    selected: selectedFilter == null,
-                    onSelected: (_) =>
-                        setState(() => selectedFilter = null),
-                  ),
+                _filterChip(
+                  label: l10n.all,
+                  selected: selectedFilter == null,
+                  onTap: () =>
+                      setState(() => selectedFilter = null),
                 ),
-                ...filterOptions.entries.map((e) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(e.value,
-                        style: const TextStyle(fontSize: 12)),
-                    selected: selectedFilter == e.key,
-                    onSelected: (_) => setState(() =>
-                    selectedFilter =
-                    selectedFilter == e.key
-                        ? null
-                        : e.key),
+                for (final f in filters)
+                  _filterChip(
+                    label: f.label,
+                    selected: selectedFilter == f.key,
+                    onTap: () => setState(() => selectedFilter =
+                    selectedFilter == f.key ? null : f.key),
                   ),
-                )),
               ],
             ),
           ),
-          const Divider(height: 1),
           Expanded(
-            child: filteredLogs.isEmpty
+            child: logs.isEmpty
                 ? AppEmptyState(
               icon: Icons.filter_alt_off_outlined,
               title: l10n.noActionsOfThisType,
               subtitle: '',
-              color: AppColors.textSecondary,
             )
                 : RefreshIndicator(
+              color: AppColors.accent,
               onRefresh: () =>
                   ref.read(auditProvider.notifier).load(),
-              child: _timeline(filteredLogs, l10n),
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(
+                    20, 4, 20, 28),
+                itemCount: logs.length,
+                itemBuilder: (context, index) => _entry(
+                  logs[index],
+                  index == logs.length - 1,
+                  l10n,
+                ),
+              ),
             ),
           ),
         ],

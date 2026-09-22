@@ -2467,6 +2467,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search categories...'**
   String get searchCategories;
+
+  /// No description provided for @partiallyPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially paid'**
+  String get partiallyPaid;
+
+  /// No description provided for @exclVatShort.
+  ///
+  /// In en, this message translates to:
+  /// **'excl. VAT'**
+  String get exclVatShort;
+
+  /// No description provided for @reasonOwes.
+  ///
+  /// In en, this message translates to:
+  /// **'Owes {amount}'**
+  String reasonOwes(String amount);
+
+  /// No description provided for @reasonNoPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchase for {days} days'**
+  String reasonNoPurchase(int days);
+
+  /// No description provided for @reasonUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get reasonUpToDate;
+
+  /// No description provided for @followUpScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up score'**
+  String get followUpScore;
+
+  /// No description provided for @dueOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String dueOn(String date);
+
+  /// No description provided for @expectedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected {date}'**
+  String expectedOn(String date);
+
+  /// No description provided for @receivedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Received {date}'**
+  String receivedOn(String date);
+
+  /// No description provided for @unitsInStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units in stock'**
+  String unitsInStock(int count);
+
+  /// No description provided for @reasonNeverPurchased.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchase recorded'**
+  String get reasonNeverPurchased;
+
+  /// No description provided for @auditCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'{entity} created'**
+  String auditCreated(String entity);
+
+  /// No description provided for @auditUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'{entity} updated'**
+  String auditUpdated(String entity);
+
+  /// No description provided for @auditDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{entity} deleted'**
+  String auditDeleted(String entity);
 }
 
 class _AppLocalizationsDelegate

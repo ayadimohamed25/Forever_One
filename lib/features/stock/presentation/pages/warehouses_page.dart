@@ -1,13 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/warehouse_entity.dart';
 import '../../domain/repositories/warehouse_repository.dart';
 import '../providers/warehouse_provider.dart';
-import '../../../../shared/widgets/app_page_header.dart';
+import 'warehouse_form_page.dart';
 
 class WarehousesPage extends ConsumerStatefulWidget {
   const WarehousesPage({super.key});
@@ -17,12 +20,6 @@ class WarehousesPage extends ConsumerStatefulWidget {
 }
 
 class _WarehousesPageState extends ConsumerState<WarehousesPage> {
-  String? _subtitle(WarehouseListState state, AppLocalizations l10n) {
-    if (state.warehouses.isEmpty) return null;
-    final value =
-    state.warehouses.fold<double>(0, (sum, w) => sum + w.stockValue);
-    return '${state.warehouses.length} · ${value.toStringAsFixed(0)} DT ${l10n.stockValue.toLowerCase()}';
-  }
   final searchController = TextEditingController();
   bool searchVisible = false;
 
@@ -47,137 +44,20 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     );
   }
 
-  Future<void> _openForm({WarehouseEntity? existing}) async {
-    final l10n = AppLocalizations.of(context)!;
-
-    final codeController = TextEditingController(text: existing?.code ?? '');
-    final nameController = TextEditingController(text: existing?.name ?? '');
-    final locationController =
-    TextEditingController(text: existing?.location ?? '');
-    final addressController =
-    TextEditingController(text: existing?.address ?? '');
-    final managerController =
-    TextEditingController(text: existing?.managerName ?? '');
-    final phoneController = TextEditingController(text: existing?.phone ?? '');
-    final notesController = TextEditingController(text: existing?.notes ?? '');
-    var isActive = existing?.isActive ?? true;
-
-    final input = await showDialog<WarehouseInput>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title:
-          Text(existing == null ? l10n.newWarehouse : l10n.editWarehouse),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: TextField(
-                          controller: codeController,
-                          decoration: InputDecoration(labelText: l10n.code),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 3,
-                        child: TextField(
-                          controller: nameController,
-                          autofocus: existing == null,
-                          decoration: InputDecoration(labelText: l10n.name),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: locationController,
-                    decoration: InputDecoration(
-                      labelText: l10n.location,
-                      prefixIcon: const Icon(Icons.place_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: addressController,
-                    maxLines: 2,
-                    decoration: InputDecoration(labelText: l10n.address),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: managerController,
-                    decoration: InputDecoration(
-                      labelText: l10n.manager,
-                      prefixIcon: const Icon(Icons.person_outline),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: l10n.phone,
-                      prefixIcon: const Icon(Icons.phone_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: notesController,
-                    maxLines: 2,
-                    decoration: InputDecoration(labelText: l10n.notes),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: isActive,
-                    title: Text(l10n.warehouseActive,
-                        style: const TextStyle(fontSize: 13.5)),
-                    onChanged: (v) => setState(() => isActive = v),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.trim().isEmpty) return;
-
-                String? orNull(TextEditingController c) =>
-                    c.text.trim().isEmpty ? null : c.text.trim();
-
-                Navigator.of(context).pop(WarehouseInput(
-                  code: orNull(codeController),
-                  name: nameController.text.trim(),
-                  location: orNull(locationController),
-                  address: orNull(addressController),
-                  managerName: orNull(managerController),
-                  phone: orNull(phoneController),
-                  isActive: isActive,
-                  notes: orNull(notesController),
-                ));
-              },
-              child: Text(l10n.save),
-            ),
-          ],
-        ),
-      ),
+  Future<void> _openForm(AppLocalizations l10n,
+      {WarehouseEntity? existing}) async {
+    final input = await Navigator.of(context).push<WarehouseInput>(
+      MaterialPageRoute(
+          builder: (_) => WarehouseFormPage(existing: existing)),
     );
-
     if (input == null) return;
 
     if (existing == null) {
       await ref.read(warehouseListProvider.notifier).add(input);
     } else {
-      await ref.read(warehouseListProvider.notifier).update(existing.id, input);
+      await ref
+          .read(warehouseListProvider.notifier)
+          .update(existing.id, input);
       if (mounted) _showSnack(l10n.warehouseUpdated);
     }
   }
@@ -193,18 +73,18 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+          TextButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: Text(l10n.delete),
           ),
         ],
       ),
     );
-
     if (confirmed != true) return;
 
-    final error = await ref.read(warehouseListProvider.notifier).remove(w.id);
+    final error =
+    await ref.read(warehouseListProvider.notifier).remove(w.id);
     if (!mounted) return;
 
     if (error == null) {
@@ -216,6 +96,74 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     }
   }
 
+  Widget _card(WarehouseEntity w, AppLocalizations l10n) {
+    final details = [w.code, w.location, w.managerName]
+        .whereType<String>()
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+
+    return Opacity(
+      opacity: w.isActive ? 1 : 0.6,
+      child: AppCard(
+        onTap: () => _openForm(l10n, existing: w),
+        padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppLeadingTile.icon(Icons.warehouse_outlined),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(w.name, style: AppTheme.rowTitle, maxLines: 2),
+                  if (details.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(details.join(' · '),
+                        style: AppTheme.label, maxLines: 2),
+                  ],
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.unitsInStock(w.totalUnits)} · ${l10n.productCount(w.productCount)}',
+                    style: AppTheme.label,
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 10),
+                  AppBadge(
+                    label: w.isActive ? l10n.active : l10n.inactive,
+                    tone: w.isActive ? BadgeTone.success : BadgeTone.neutral,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(formatDT(w.stockValue), style: AppTheme.money),
+                const SizedBox(height: 3),
+                Text(l10n.stockValue, style: AppTheme.label),
+              ],
+            ),
+            AppRowMenu(actions: [
+              AppMenuAction(
+                label: l10n.edit,
+                icon: Icons.edit_outlined,
+                onTap: () => _openForm(l10n, existing: w),
+              ),
+              AppMenuAction(
+                label: l10n.delete,
+                icon: Icons.delete_outline,
+                destructive: true,
+                onTap: () => _delete(w, l10n),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(warehouseListProvider);
@@ -225,8 +173,14 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
       if (next.error != null) _showSnack(next.error!, isError: true);
     });
 
+    final totalValue =
+    state.warehouses.fold<double>(0, (sum, w) => sum + w.stockValue);
+    final subtitle = state.warehouses.isEmpty
+        ? null
+        : '${state.warehouses.length} · ${formatDT(totalValue)}';
+
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       drawer: const AppDrawer(currentRoute: '/warehouses'),
       appBar: searchVisible
           ? AppSearchHeader(
@@ -242,19 +196,14 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
       )
           : AppPageHeader(
         title: l10n.warehouses,
-        subtitle: _subtitle(state, l10n),
-        icon: Icons.warehouse_rounded,
+        subtitle: subtitle,
+        icon: Icons.warehouse_outlined,
         color: AppColors.stock,
         actions: [
           AppHeaderAction(
-            icon: Icons.search_rounded,
+            icon: Icons.search,
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
-          ),
-          AppHeaderAction(
-            icon: Icons.refresh_rounded,
-            tooltip: l10n.refresh,
-            onTap: () => ref.read(warehouseListProvider.notifier).load(),
           ),
         ],
       ),
@@ -265,171 +214,30 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
         icon: state.hasSearched
             ? Icons.search_off
             : Icons.warehouse_outlined,
-        title:
-        state.hasSearched ? l10n.noResults : l10n.noWarehouses,
+        title: state.hasSearched
+            ? l10n.noResults
+            : l10n.noWarehouses,
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
             : l10n.tapPlusToAdd,
-        color: AppColors.stock,
       )
           : RefreshIndicator(
+        color: AppColors.accent,
         onRefresh: () =>
             ref.read(warehouseListProvider.notifier).load(),
         child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           itemCount: state.warehouses.length,
-          itemBuilder: (context, index) {
-            final w = state.warehouses[index];
-
-            return Opacity(
-              opacity: w.isActive ? 1 : 0.55,
-              child: AppCard(
-                onTap: () => _openForm(existing: w),
-                padding: const EdgeInsets.fromLTRB(14, 14, 4, 12),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        AppIconBadge(
-                            icon: Icons.warehouse_outlined,
-                            color: AppColors.stock),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(w.name,
-                                        style: const TextStyle(
-                                            fontSize: 14.5,
-                                            fontWeight:
-                                            FontWeight.w700,
-                                            color: AppColors
-                                                .textPrimary),
-                                        overflow:
-                                        TextOverflow.ellipsis),
-                                  ),
-                                  if (!w.isActive) ...[
-                                    const SizedBox(width: 6),
-                                    AppStatusChip(
-                                        label: l10n.inactive,
-                                        color:
-                                        AppColors.textSecondary),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              AppMetaRow(items: [
-                                if (w.code != null)
-                                  (icon: Icons.tag, text: w.code!),
-                                if (w.location != null)
-                                  (
-                                  icon: Icons.place_outlined,
-                                  text: w.location!
-                                  ),
-                                if (w.managerName != null)
-                                  (
-                                  icon: Icons.person_outline,
-                                  text: w.managerName!
-                                  ),
-                              ]),
-                            ],
-                          ),
-                        ),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert,
-                              size: 19,
-                              color: AppColors.textSecondary),
-                          shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(14)),
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              _openForm(existing: w);
-                            } else if (value == 'delete') {
-                              _delete(w, l10n);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Row(children: [
-                                const Icon(Icons.edit_outlined,
-                                    size: 18),
-                                const SizedBox(width: 10),
-                                Text(l10n.edit),
-                              ]),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Row(children: [
-                                const Icon(Icons.delete_outline,
-                                    size: 18,
-                                    color: AppColors.danger),
-                                const SizedBox(width: 10),
-                                Text(l10n.delete,
-                                    style: const TextStyle(
-                                        color: AppColors.danger)),
-                              ]),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _stat(l10n.totalUnits,
-                                '${w.totalUnits}', AppColors.stock),
-                          ),
-                          Expanded(
-                            child: _stat(
-                                l10n.distinctProducts,
-                                '${w.productCount}',
-                                AppColors.primary),
-                          ),
-                          Expanded(
-                            child: _stat(
-                                l10n.stockValue,
-                                '${w.stockValue.toStringAsFixed(0)} DT',
-                                AppColors.sales),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+          itemBuilder: (context, index) =>
+              _card(state.warehouses[index], l10n),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
+        onPressed: () => _openForm(l10n),
+        backgroundColor: AppColors.black,
         icon: const Icon(Icons.add),
         label: Text(l10n.warehouse),
       ),
-    );
-  }
-
-  Widget _stat(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(value,
-            style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w800, color: color)),
-        const SizedBox(height: 1),
-        Text(label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontSize: 10, color: AppColors.textSecondary)),
-      ],
     );
   }
 }

@@ -1,8 +1,9 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/locale_provider.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 
@@ -18,6 +19,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final passwordController = TextEditingController(text: 'test1234');
   bool obscurePassword = true;
 
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   void _submit() {
     FocusScope.of(context).unfocus();
     ref.read(authNotifierProvider.notifier).login(
@@ -30,229 +38,202 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
 
     ref.listen(authNotifierProvider, (previous, next) {
-      if (next.user != null) {
-        context.go('/dashboard');
-      }
+      if (next.user != null) context.go('/dashboard');
       if (next.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.error!),
-            backgroundColor: theme.colorScheme.error,
-            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger,
           ),
         );
       }
     });
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.primary,
-              theme.colorScheme.primary.withValues(alpha: 0.75),
-              theme.colorScheme.surface,
-            ],
-            stops: const [0.0, 0.35, 0.75],
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Language switcher
-              Positioned(
-                top: 8,
-                right: 8,
-                child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.language, color: Colors.white),
-                  tooltip: l10n.language,
-                  onSelected: (code) =>
-                      ref.read(localeProvider.notifier).setLocale(Locale(code)),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(value: 'en', child: Text(l10n.english)),
-                    PopupMenuItem(value: 'fr', child: Text(l10n.french)),
-                  ],
-                ),
-              ),
-
-              Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: AppColors.canvas,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // EN / FR switch
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.all_inclusive,
-                          size: 42,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        l10n.appTitle,
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        l10n.appTagline,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 36),
-
-                      Card(
-                        elevation: 8,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                l10n.login,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                l10n.loginSubtitle,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(l10n.noAccountYet,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: theme.colorScheme.onSurfaceVariant,
-                                      )),
-                                  TextButton(
-                                    onPressed: () => context.push('/signup'),
-                                    child: Text(l10n.signUp,
-                                        style: const TextStyle(
-                                            fontSize: 13, fontWeight: FontWeight.w700)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-
-                              TextField(
-                                controller: emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                textInputAction: TextInputAction.next,
-                                decoration: InputDecoration(
-                                  labelText: l10n.email,
-                                  prefixIcon: const Icon(Icons.mail_outline),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              TextField(
-                                controller: passwordController,
-                                obscureText: obscurePassword,
-                                textInputAction: TextInputAction.done,
-                                onSubmitted: (_) => _submit(),
-                                decoration: InputDecoration(
-                                  labelText: l10n.password,
-                                  prefixIcon: const Icon(Icons.lock_outline),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(obscurePassword
-                                        ? Icons.visibility_outlined
-                                        : Icons.visibility_off_outlined),
-                                    onPressed: () => setState(
-                                            () => obscurePassword = !obscurePassword),
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                ),
-                              ),
-                              const SizedBox(height: 28),
-
-                              SizedBox(
-                                height: 52,
-                                child: FilledButton(
-                                  onPressed: authState.isLoading ? null : _submit,
-                                  style: FilledButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: authState.isLoading
-                                      ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                      : Text(
-                                    l10n.signIn,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-                      Text(
-                        l10n.copyright,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                      _langChip('en', 'EN', locale.languageCode),
+                      _langChip('fr', 'FR', locale.languageCode),
                     ],
                   ),
                 ),
               ),
-            ],
+            ),
+
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                children: [
+                  const SizedBox(height: 36),
+
+                  // Logo: 64×64, accentSoft, terracotta icon
+                  Center(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentSoft,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(Icons.all_inclusive,
+                          size: 30, color: AppColors.accent),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.appTitle,
+                    style: AppTheme.greeting,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.appTagline,
+                    style: AppTheme.body
+                        .copyWith(color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                  ),
+
+                  const SizedBox(height: 36),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: AppColors.cardShadow,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.login, style: AppTheme.sectionTitle),
+                        const SizedBox(height: 4),
+                        Text(l10n.loginSubtitle,
+                            style: AppTheme.label, maxLines: 2),
+
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          decoration: InputDecoration(
+                            labelText: l10n.email,
+                            prefixIcon: const Icon(Icons.mail_outline),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: passwordController,
+                          obscureText: obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _submit(),
+                          decoration: InputDecoration(
+                            labelText: l10n.password,
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined),
+                              onPressed: () => setState(
+                                      () => obscurePassword = !obscurePassword),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+                        authState.isLoading
+                            ? const SizedBox(
+                          height: 56,
+                          child:
+                          Center(child: CircularProgressIndicator()),
+                        )
+                            : FilledButton(
+                          onPressed: _submit,
+                          child: Text(l10n.signIn),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(l10n.noAccountYet, style: AppTheme.label),
+                      TextButton(
+                        onPressed: () => context.push('/signup'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.accent,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        child: Text(
+                          l10n.signUp,
+                          style: AppTheme.font(
+                            size: 14,
+                            weight: FontWeight.w600,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      l10n.copyright,
+                      style: AppTheme.font(
+                          size: 13, color: AppColors.textMuted),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Selected language: accentSoft background, terracotta text.
+  Widget _langChip(String code, String label, String current) {
+    final selected = current == code;
+    return GestureDetector(
+      onTap: () => ref.read(localeProvider.notifier).setLocale(Locale(code)),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.accentSoft : Colors.transparent,
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: Text(
+          label,
+          style: AppTheme.font(
+            size: 13,
+            weight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? AppColors.accent : AppColors.textSecondary,
           ),
         ),
       ),

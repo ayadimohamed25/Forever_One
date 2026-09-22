@@ -417,4 +417,18 @@
                          "yourAccount": "Votre compte",
                          "signUpDisclaimer": "Vous serez l'administrateur de cette entreprise"
                          ,"searchCategories": "Rechercher une catégorie..."
+                           ,"partiallyPaid": "Partiellement payé",
+                           "exclVatShort": "HT",
+                           "reasonOwes": "Doit {amount}",
+                           "reasonNoPurchase": "Aucun achat depuis {days} jours",
+                           "reasonUpToDate": "À jour",
+                           "followUpScore": "Score de relance",
+                           "dueOn": "Échéance le {date}",
+                           "expectedOn": "Prévu le {date}",
+                           "receivedOn": "Reçu le {date}",
+                           "unitsInStock": "{count} unités en stock"
+                             ,"reasonNeverPurchased": "Aucun achat enregistré",
+                             "auditCreated": "Création · {entity}",
+                             "auditUpdated": "Modification · {entity}",
+                             "auditDeleted": "Suppression · {entity}"
  }

@@ -1,62 +1,98 @@
 import 'package:flutter/material.dart';
 
-/// Central colour palette. Every screen pulls from here so the app keeps
-/// one visual identity instead of ad-hoc colours per widget.
+/// Warm neutral palette: cream canvas, white cards, warm dark ink,
+/// a terracotta accent, and semantic colours used only for status.
+///
+/// The domain names (sales, stock, purchases…) are kept so existing screens
+/// keep compiling. They resolve to the neutral scale — colour is never used to
+/// categorise, only to signal state.
 class AppColors {
   AppColors._();
 
-  // Brand
-  static const primary = Color(0xFF6C4BF4);
-  static const primaryDark = Color(0xFF4A2FD4);
-  static const primaryLight = Color(0xFF9B87F7);
+  // ── Canvas & surfaces ──
+  static const canvas = Color(0xFFF3EEE7);
+  static const surface = Color(0xFFFFFFFF);
+  static const surfaceAlt = Color(0xFFF3EEE7);
+  static const fill = Color(0xFFF0E9E0);
+  static const border = Color(0xFFEAE3DA);
 
-  // Domain accents — each business area has its own identity
-  static const sales = Color(0xFF10B981); // green: money coming in
-  static const purchases = Color(0xFFF59E0B); // amber: money going out
-  static const stock = Color(0xFF3B82F6); // blue: inventory
-  static const finance = Color(0xFF8B5CF6); // violet: cash & payments
-  static const ai = Color(0xFF6C4BF4); // brand purple
-  static const danger = Color(0xFFEF4444);
-  static const warning = Color(0xFFF97316);
-  static const success = Color(0xFF10B981);
-  static const info = Color(0xFF0EA5E9);
+  /// Empty progress tracks, empty chart days, unselected borders.
+  static const track = Color(0xFFEAE3DA);
 
-  // Neutrals
-  static const surface = Color(0xFFFCFBFF);
-  static const surfaceAlt = Color(0xFFF4F2FB);
-  static const border = Color(0xFFE8E4F3);
-  static const textPrimary = Color(0xFF1A1533);
-  static const textSecondary = Color(0xFF6B6785);
+  // ── Text ──
+  static const textPrimary = Color(0xFF1C1814);
+  static const textSecondary = Color(0xFF8C8378);
+  static const textMuted = Color(0xFFB8AFA3);
 
-  // Gradients
+  // ── Icons ──
+  static const icon = Color(0xFF3D3731);
+  static const iconMuted = Color(0xFF8C8378);
+
+  // ── Accent: terracotta ──
+  static const accent = Color(0xFFC8553D);
+  static const accentSoft = Color(0xFFF8E4DD);
+
+  // ── Dark ink: primary buttons, selected chips and tabs ──
+  static const black = Color(0xFF2A1F1A);
+
+  // ── Status ──
+  static const success = Color(0xFF3F7D4E);
+  static const successSoft = Color(0xFFE5F0E7);
+  static const warning = Color(0xFFA16207);
+  static const warningSoft = Color(0xFFFBF0D5);
+  static const danger = Color(0xFFB42318);
+  static const dangerSoft = Color(0xFFFBE4E1);
+
+  /// Background for neutral badges (counts, information without status).
+  static const neutralSoft = Color(0xFFF5F1EC);
+
+  // ── Compatibility aliases (neutral on purpose) ──
+  static const primary = Color(0xFF2A1F1A);
+  static const primaryDark = Color(0xFF1C1814);
+  static const primaryLight = Color(0xFF3D3731);
+  static const primarySoft = Color(0xFFF0E9E0);
+
+  static const sales = Color(0xFF2A1F1A);
+  static const salesSoft = Color(0xFFF0E9E0);
+  static const purchases = Color(0xFF3D3731);
+  static const purchasesSoft = Color(0xFFF0E9E0);
+  static const stock = Color(0xFF3D3731);
+  static const stockSoft = Color(0xFFF0E9E0);
+  static const finance = Color(0xFF3D3731);
+  static const financeSoft = Color(0xFFF0E9E0);
+  static const ai = Color(0xFF2A1F1A);
+  static const info = Color(0xFF3D3731);
+  static const infoSoft = Color(0xFFF0E9E0);
+
+  /// Kept for API compatibility — always flat, never a gradient.
   static const brandGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF7C5CFC), Color(0xFF5B34E8)],
+    colors: [Color(0xFF2A1F1A), Color(0xFF2A1F1A)],
   );
 
-  static LinearGradient tintGradient(Color color) => LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      color.withValues(alpha: 0.16),
-      color.withValues(alpha: 0.05),
-    ],
-  );
+  /// The soft background that pairs with a status colour; neutral otherwise.
+  static Color soft(Color color) {
+    if (color == accent) return accentSoft;
+    if (color == success) return successSoft;
+    if (color == warning) return warningSoft;
+    if (color == danger) return dangerSoft;
+    return fill;
+  }
 
-  static List<BoxShadow> softShadow(Color color) => [
+  /// Kept for compatibility — returns a flat fill, not a gradient.
+  static LinearGradient tintGradient(Color color) {
+    final c = soft(color);
+    return LinearGradient(colors: [c, c]);
+  }
+
+  /// Barely-there elevation, tinted warm so it doesn't read gray on cream.
+  static List<BoxShadow> get cardShadow => const [
     BoxShadow(
-      color: color.withValues(alpha: 0.10),
-      blurRadius: 16,
-      offset: const Offset(0, 4),
+      color: Color(0x0D3D2A1A),
+      blurRadius: 10,
+      offset: Offset(0, 2),
     ),
   ];
 
-  static List<BoxShadow> get cardShadow => [
-    BoxShadow(
-      color: const Color(0xFF1A1533).withValues(alpha: 0.05),
-      blurRadius: 14,
-      offset: const Offset(0, 3),
-    ),
-  ];
+  /// Kept for compatibility — same soft shadow regardless of colour.
+  static List<BoxShadow> softShadow(Color color) => cardShadow;
 }

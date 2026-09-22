@@ -438,4 +438,27 @@
                          "yourAccount": "Your account",
                          "signUpDisclaimer": "You will be the administrator of this company"
                          ,"searchCategories": "Search categories..."
+                           ,"partiallyPaid": "Partially paid",
+                           "exclVatShort": "excl. VAT",
+                           "reasonOwes": "Owes {amount}",
+                           "@reasonOwes": { "placeholders": { "amount": { "type": "String" } } },
+                           "reasonNoPurchase": "No purchase for {days} days",
+                           "@reasonNoPurchase": { "placeholders": { "days": { "type": "int" } } },
+                           "reasonUpToDate": "Up to date",
+                           "followUpScore": "Follow-up score",
+                           "dueOn": "Due {date}",
+                           "@dueOn": { "placeholders": { "date": { "type": "String" } } },
+                           "expectedOn": "Expected {date}",
+                           "@expectedOn": { "placeholders": { "date": { "type": "String" } } },
+                           "receivedOn": "Received {date}",
+                           "@receivedOn": { "placeholders": { "date": { "type": "String" } } },
+                           "unitsInStock": "{count} units in stock",
+                           "@unitsInStock": { "placeholders": { "count": { "type": "int" } } }
+                             ,"reasonNeverPurchased": "No purchase recorded",
+                             "auditCreated": "{entity} created",
+                             "@auditCreated": { "placeholders": { "entity": { "type": "String" } } },
+                             "auditUpdated": "{entity} updated",
+                             "@auditUpdated": { "placeholders": { "entity": { "type": "String" } } },
+                             "auditDeleted": "{entity} deleted",
+                             "@auditDeleted": { "placeholders": { "entity": { "type": "String" } } }
  }

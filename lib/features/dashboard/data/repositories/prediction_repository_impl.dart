@@ -4,73 +4,84 @@ import '../../../../core/errors/failures.dart';
 import '../../../customers/domain/entities/customer_score_entity.dart';
 import '../../../stock/domain/entities/dormant_product_entity.dart';
 import '../../../stock/domain/entities/stock_forecast_entity.dart';
-import '../../domain/repositories/prediction_repository.dart';
 import '../datasources/prediction_remote_datasource.dart';
 
-class PredictionRepositoryImpl implements PredictionRepository {
+class PredictionRepositoryImpl {
   final PredictionRemoteDatasource remote;
   PredictionRepositoryImpl(this.remote);
 
-  @override
+  static double _d(dynamic v) => double.tryParse('${v ?? 0}') ?? 0;
+  static int _i(dynamic v) => int.tryParse('${v ?? 0}') ?? 0;
+  static bool _b(dynamic v) => v == true || '$v' == '1' || '$v' == 'true';
+
   Future<Either<Failure, List<StockForecastEntity>>> getStockForecast() async {
     try {
       final data = await remote.getStockForecast();
-      return Right(data.map((j) => StockForecastEntity(
-        productId: j['product_id'],
-        name: j['name'],
-        currentStock: int.parse(j['current_stock'].toString()),
-        minThreshold: int.parse(j['min_threshold'].toString()),
-        dailySalesRate: double.parse(j['daily_sales_rate'].toString()),
-        daysOfCoverage: j['days_of_coverage'] != null
-            ? int.parse(j['days_of_coverage'].toString())
-            : null,
-        suggestedOrder: int.parse(j['suggested_order'].toString()),
-        urgency: j['urgency'],
-      )).toList());
+      return Right(data.whereType<Map>().map((j) {
+        final m = Map<String, dynamic>.from(j);
+        return StockForecastEntity(
+          productId: '${m['product_id']}',
+          name: '${m['name'] ?? ''}',
+          currentStock: _i(m['current_stock']),
+          minThreshold: _i(m['min_threshold']),
+          dailySalesRate: _d(m['daily_sales_rate']),
+          daysOfCoverage:
+          m['days_of_coverage'] != null ? _i(m['days_of_coverage']) : null,
+          suggestedOrder: _i(m['suggested_order']),
+          urgency: '${m['urgency'] ?? 'ok'}',
+        );
+      }).toList());
     } on DioException catch (e) {
       return Left(ServerFailure(_err(e, 'Failed to load stock forecast')));
     }
   }
 
-  @override
   Future<Either<Failure, List<DormantProductEntity>>> getDormantProducts() async {
     try {
       final data = await remote.getDormantProducts();
-      return Right(data.map((j) => DormantProductEntity(
-        id: j['id'],
-        name: j['name'],
-        lastSale: j['last_sale'],
-        daysSinceSale: j['days_since_sale'] != null
-            ? int.parse(j['days_since_sale'].toString())
-            : null,
-        neverSold: j['never_sold'] == true || j['never_sold'] == 1,
-      )).toList());
+      return Right(data.whereType<Map>().map((j) {
+        final m = Map<String, dynamic>.from(j);
+        return DormantProductEntity(
+          id: '${m['id']}',
+          name: '${m['name'] ?? ''}',
+          lastSale: m['last_sale']?.toString(),
+          daysSinceSale:
+          m['days_since_sale'] != null ? _i(m['days_since_sale']) : null,
+          neverSold: _b(m['never_sold']),
+        );
+      }).toList());
     } on DioException catch (e) {
       return Left(ServerFailure(_err(e, 'Failed to load dormant products')));
     }
   }
 
-  @override
   Future<Either<Failure, List<CustomerScoreEntity>>> getCustomerScores() async {
     try {
       final data = await remote.getCustomerScores();
-      return Right(data.map((j) => CustomerScoreEntity(
-        customerId: j['customer_id'],
-        name: j['name'],
-        phone: j['phone'],
-        balance: double.parse(j['balance'].toString()),
-        daysSincePurchase: j['days_since_purchase'] != null
-            ? int.parse(j['days_since_purchase'].toString())
-            : null,
-        score: int.parse(j['score'].toString()),
-        reason: j['reason'] ?? '',
-      )).toList());
+      return Right(data.whereType<Map>().map((j) {
+        final m = Map<String, dynamic>.from(j);
+        return CustomerScoreEntity(
+          customerId: '${m['customer_id']}',
+          name: '${m['name'] ?? ''}',
+          phone: m['phone']?.toString(),
+          balance: _d(m['balance']),
+          creditLimit: _d(m['credit_limit']),
+          daysSincePurchase: m['days_since_purchase'] != null
+              ? _i(m['days_since_purchase'])
+              : null,
+          neverPurchased: _b(m['never_purchased']),
+          overCreditLimit: _b(m['over_credit_limit']),
+          score: _i(m['score']),
+        );
+      }).toList());
     } on DioException catch (e) {
       return Left(ServerFailure(_err(e, 'Failed to load customer scores')));
     }
   }
 
   String _err(DioException e, String fallback) {
-    return e.response?.data is Map ? (e.response?.data['error'] ?? fallback) : '$fallback — check your connection';
+    return e.response?.data is Map
+        ? (e.response?.data['error'] ?? fallback)
+        : '$fallback — check your connection';
   }
 }
