@@ -6,9 +6,14 @@ class AiMessageEntity {
   /// answers are never mistaken for current ones.
   final DateTime? createdAt;
 
+  /// True when the answer was computed from the database rather than by the
+  /// AI, so the app can label it.
+  final bool isLocal;
+
   const AiMessageEntity({
     required this.question,
     required this.answer,
     this.createdAt,
+    this.isLocal = false,
   });
 }
