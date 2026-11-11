@@ -24,7 +24,7 @@ class CategoryRepositoryImpl {
           .map((j) => _map(Map<String, dynamic>.from(j)))
           .toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load categories')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -41,7 +41,7 @@ class CategoryRepositoryImpl {
       });
       return Right(_map(Map<String, dynamic>.from(data)));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to create category')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -60,7 +60,7 @@ class CategoryRepositoryImpl {
       });
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to update category')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -72,13 +72,13 @@ class CategoryRepositoryImpl {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('CATEGORY_IN_USE'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to delete category')));
+      return Left(ServerFailure(_err(e, 'DELETE_FAILED')));
     }
   }
 
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }

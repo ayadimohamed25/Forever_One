@@ -1583,4 +1583,75 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get score => 'Score';
+
+  @override
+  String get errGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get errNetwork => 'Couldn\'t reach the server. Check your connection.';
+
+  @override
+  String get errLoadFailed => 'Couldn\'t load the data.';
+
+  @override
+  String get errSaveFailed => 'Couldn\'t save the changes.';
+
+  @override
+  String get errDeleteFailed => 'Couldn\'t delete this item.';
+
+  @override
+  String get errInvalidCredentials => 'Incorrect email or password.';
+
+  @override
+  String get errLoginFailed => 'Sign-in failed. Please try again.';
+
+  @override
+  String get errSessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get errMissingFields => 'Some required information is missing.';
+
+  @override
+  String errFieldRequired(String field) {
+    return '$field is required.';
+  }
+
+  @override
+  String get errNameRequired => 'A name is required.';
+
+  @override
+  String get errLinesRequired => 'Add at least one line.';
+
+  @override
+  String get errNotFound => 'This item no longer exists.';
+
+  @override
+  String get errInvalidRole => 'This role is not valid.';
+
+  @override
+  String get errInvalidPaymentTarget =>
+      'A payment must be for a sale or a purchase, not both.';
+
+  @override
+  String get errNoImage => 'No image was received.';
+
+  @override
+  String get errUploadFailed => 'The image could not be saved.';
+
+  @override
+  String get purchaseAlreadyReceived =>
+      'This purchase has already been received.';
+
+  @override
+  String get reportReady => 'Report downloaded';
+
+  @override
+  String get reportFailed => 'Couldn\'t generate the report. Please try again.';
+
+  @override
+  String get auditSignedIn => 'Signed in';
+
+  @override
+  String get auditProfileUpdated => 'Profile updated';
 }

@@ -16,7 +16,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
       final data = await remote.getSaleBalance(saleId);
       return Right(BalanceModel.fromJson(data).toEntity());
     } on DioException catch (e) {
-      return Left(ServerFailure(_extractError(e, 'Failed to load balance')));
+      return Left(ServerFailure(_extractError(e, 'LOAD_FAILED')));
     }
   }
 
@@ -26,7 +26,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
       final data = await remote.getPurchaseBalance(purchaseId);
       return Right(BalanceModel.fromJson(data).toEntity());
     } on DioException catch (e) {
-      return Left(ServerFailure(_extractError(e, 'Failed to load balance')));
+      return Left(ServerFailure(_extractError(e, 'LOAD_FAILED')));
     }
   }
 
@@ -46,11 +46,11 @@ class PaymentRepositoryImpl implements PaymentRepository {
       });
       return Right(BalanceModel.fromJson(data['balance']).toEntity());
     } on DioException catch (e) {
-      return Left(ServerFailure(_extractError(e, 'Failed to record payment')));
+      return Left(ServerFailure(_extractError(e, 'SAVE_FAILED')));
     }
   }
 
   String _extractError(DioException e, String fallback) {
-    return e.response?.data is Map ? (e.response?.data['error'] ?? fallback) : '$fallback — check your connection';
+    return e.response?.data is Map ? (e.response?.data['error'] ?? fallback) : 'NETWORK_ERROR';
   }
 }

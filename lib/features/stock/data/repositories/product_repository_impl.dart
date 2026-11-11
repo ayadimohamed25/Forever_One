@@ -28,7 +28,7 @@ class ProductRepositoryImpl implements ProductRepository {
           .map((j) => ProductModel.fromJson(Map<String, dynamic>.from(j)))
           .toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load products')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -52,7 +52,7 @@ class ProductRepositoryImpl implements ProductRepository {
           .toList();
       return Right((product: product, history: history));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load product')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -62,7 +62,7 @@ class ProductRepositoryImpl implements ProductRepository {
       final data = await remote.createProduct(input.toJson());
       return Right(ProductModel.fromJson(Map<String, dynamic>.from(data)));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to create product')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -72,7 +72,7 @@ class ProductRepositoryImpl implements ProductRepository {
       await remote.updateProduct({'id': id, ...input.toJson()});
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to update product')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -85,13 +85,13 @@ class ProductRepositoryImpl implements ProductRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('PRODUCT_IN_USE'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to delete product')));
+      return Left(ServerFailure(_err(e, 'DELETE_FAILED')));
     }
   }
 
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }

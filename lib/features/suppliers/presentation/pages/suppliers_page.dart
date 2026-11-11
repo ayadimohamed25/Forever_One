@@ -11,6 +11,7 @@ import 'supplier_form_page.dart';
 import 'supplier_detail_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../shared/widgets/app_data_table.dart';
+import '../../../../core/errors/error_text.dart';
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -81,7 +82,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     } else if (error == 'SUPPLIER_IN_USE') {
       _showSnack(l10n.supplierInUse, isError: true);
     } else {
-      _showSnack(error, isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -151,7 +152,7 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(supplierListProvider, (previous, next) {
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     final owed =

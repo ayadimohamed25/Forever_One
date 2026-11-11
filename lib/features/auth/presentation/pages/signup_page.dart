@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/errors/error_text.dart';
 
 class SignUpPage extends ConsumerStatefulWidget {
   const SignUpPage({super.key});
@@ -39,20 +40,6 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     super.dispose();
   }
 
-  String _translateError(String code, AppLocalizations l10n) {
-    switch (code) {
-      case 'EMAIL_TAKEN':
-        return l10n.emailTaken;
-      case 'INVALID_EMAIL':
-        return l10n.invalidEmail;
-      case 'PASSWORD_TOO_SHORT':
-        return l10n.passwordTooShort;
-      case 'REGISTRATION_FAILED':
-        return l10n.registrationFailed;
-      default:
-        return code;
-    }
-  }
 
   void _submit(AppLocalizations l10n) {
     FocusScope.of(context).unfocus();
@@ -121,7 +108,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
         // The router guard redirects to the new user's home screen.
       }
       if (next.error != null) {
-        AppSnack.error(context, _translateError(next.error!, l10n));
+        AppSnack.error(context, errorText(next.error!, l10n));
       }
     });
 

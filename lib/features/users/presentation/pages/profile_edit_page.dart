@@ -8,6 +8,7 @@ import '../../../../shared/widgets/app_widgets.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../providers/user_provider.dart';
 import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/errors/error_text.dart';
 
 /// Full-page form for the signed-in user's own details. Saves directly and
 /// pops with `true` on success, so the profile page can confirm it.
@@ -48,16 +49,6 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   String? _orNull(TextEditingController c) =>
       c.text.trim().isEmpty ? null : c.text.trim();
 
-  String _translateError(String code, AppLocalizations l10n) {
-    switch (code) {
-      case 'EMAIL_TAKEN':
-        return l10n.emailTaken;
-      case 'INVALID_EMAIL':
-        return l10n.invalidEmail;
-      default:
-        return code;
-    }
-  }
 
   Future<void> _save(AppLocalizations l10n) async {
     if (!canSave) return;
@@ -75,7 +66,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     if (error == null) {
       Navigator.of(context).pop(true);
     } else {
-      AppSnack.error(context, _translateError(error, l10n));
+      AppSnack.error(context, errorText(error, l10n));
     }
   }
 

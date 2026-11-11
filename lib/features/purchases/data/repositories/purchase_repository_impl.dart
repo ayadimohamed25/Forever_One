@@ -29,7 +29,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
           .map((j) => PurchaseModel.fromJson(Map<String, dynamic>.from(j)))
           .toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load purchases')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -51,7 +51,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
           .toList();
       return Right((purchase: purchase, lines: lines));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load purchase')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -80,7 +80,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
       total: double.tryParse('${data['total'] ?? 0}') ?? 0,
       ));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to create purchase')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -107,7 +107,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('PURCHASE_HAS_PAYMENTS'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to update purchase')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -120,7 +120,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('PURCHASE_HAS_PAYMENTS'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to delete purchase')));
+      return Left(ServerFailure(_err(e, 'DELETE_FAILED')));
     }
   }
 
@@ -133,13 +133,13 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('PURCHASE_ALREADY_RECEIVED'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to receive purchase')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }

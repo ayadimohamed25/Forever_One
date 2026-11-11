@@ -10,6 +10,7 @@ import '../providers/user_provider.dart';
 import '../widgets/user_roles.dart';
 import 'profile_edit_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/errors/error_text.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -29,18 +30,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     AppSnack.show(context, message, error: isError);
   }
 
-  String _translateError(String code, AppLocalizations l10n) {
-    switch (code) {
-      case 'WRONG_PASSWORD':
-        return l10n.wrongPassword;
-      case 'PASSWORD_TOO_SHORT':
-        return l10n.passwordTooShort;
-      case 'EMAIL_TAKEN':
-        return l10n.emailTaken;
-      default:
-        return code;
-    }
-  }
 
   Future<void> _edit(UserEntity user, AppLocalizations l10n) async {
     final changed = await Navigator.of(context, rootNavigator: true).push<bool>(
@@ -131,7 +120,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (error == null) {
       _showSnack(l10n.passwordChanged);
     } else {
-      _showSnack(_translateError(error, l10n), isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 

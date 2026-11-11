@@ -17,7 +17,7 @@ class SupplierRepositoryImpl implements SupplierRepository {
       final data = await remote.getSuppliers(search: search);
       return Right(data.map((j) => SupplierModel.fromJson(j).toEntity()).toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load suppliers')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -45,7 +45,7 @@ class SupplierRepositoryImpl implements SupplierRepository {
           .toList();
       return Right((supplier: supplier, purchases: purchases));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load supplier')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -55,7 +55,7 @@ class SupplierRepositoryImpl implements SupplierRepository {
       final data = await remote.createSupplier(input.toJson());
       return Right(SupplierModel.fromJson(data).toEntity());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to create supplier')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -65,7 +65,7 @@ class SupplierRepositoryImpl implements SupplierRepository {
       await remote.updateSupplier({'id': id, ...input.toJson()});
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to update supplier')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -78,13 +78,13 @@ class SupplierRepositoryImpl implements SupplierRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('SUPPLIER_IN_USE'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to delete supplier')));
+      return Left(ServerFailure(_err(e, 'DELETE_FAILED')));
     }
   }
 
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }

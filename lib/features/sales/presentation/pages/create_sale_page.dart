@@ -13,6 +13,7 @@ import '../../../stock/presentation/providers/warehouse_provider.dart';
 import '../../domain/entities/sale_line_entity.dart';
 import '../providers/sale_provider.dart';
 import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/errors/error_text.dart';
 
 class CreateSalePage extends ConsumerStatefulWidget {
   /// When set, the page edits that sale instead of creating a new one.
@@ -129,7 +130,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
       } else if (error == 'SALE_HAS_PAYMENTS') {
         _showSnack(l10n.saleHasPayments, isError: true);
       } else {
-        _showSnack(error, isError: true);
+        _showSnack(errorText(error, l10n), isError: true);
       }
       return;
     }
@@ -232,7 +233,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
         _showSnack(l10n.saleCreated(formatAmount(next.lastTotal!)));
         Navigator.of(context).pop();
       }
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     return Scaffold(

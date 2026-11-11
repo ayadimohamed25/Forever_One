@@ -22,8 +22,8 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(UserModel.fromJson(Map<String, dynamic>.from(data['user'])));
     } on DioException catch (e) {
       final message = e.response?.data is Map
-          ? (e.response?.data['error'] ?? 'Login failed')
-          : 'Login failed — check your connection';
+          ? (e.response?.data['error'] ?? 'LOGIN_FAILED')
+          : 'NETWORK_ERROR';
       return Left(AuthFailure(message));
     }
   }

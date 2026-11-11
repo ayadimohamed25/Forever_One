@@ -174,7 +174,6 @@ class _UserFormPageState extends State<UserFormPage> {
                   obscureText: obscurePassword,
                   style: AppTheme.font(size: 15),
                   decoration: InputDecoration(
-                    hintText: '••••••••',
                     prefixIcon: const Icon(Icons.lock_outline),
                     // Explains the rule as soon as it's broken, not on save.
                     errorText: password.isNotEmpty && password.length < 8

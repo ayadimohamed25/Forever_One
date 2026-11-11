@@ -21,11 +21,11 @@ class AuditRepositoryImpl {
       )).toList());
     } on DioException catch (e) {
       if (e.response?.statusCode == 403) {
-        return const Left(AuthFailure('Accès réservé aux administrateurs'));
+        return const Left(AuthFailure('FORBIDDEN'));
       }
       final message = e.response?.data is Map
-          ? (e.response?.data['error'] ?? 'Failed to load audit log')
-          : 'Failed to load audit log — check your connection';
+          ? (e.response?.data['error'] ?? 'LOAD_FAILED')
+          : 'NETWORK_ERROR';
       return Left(ServerFailure(message));
     }
   }

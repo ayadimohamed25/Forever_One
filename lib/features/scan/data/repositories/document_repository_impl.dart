@@ -17,7 +17,7 @@ class DocumentRepositoryImpl implements DocumentRepository {
       final data = await remote.scanDocument(image);
       return Right(DocumentModel.fromJson(data).toEntity());
     } on DioException catch (e) {
-      return Left(ServerFailure(_extractError(e, 'Failed to scan document')));
+      return Left(ServerFailure(_extractError(e, 'SAVE_FAILED')));
     }
   }
 
@@ -31,11 +31,11 @@ class DocumentRepositoryImpl implements DocumentRepository {
       await remote.confirmDocument({'id': id, 'amount': amount, 'date': date});
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_extractError(e, 'Failed to confirm document')));
+      return Left(ServerFailure(_extractError(e, 'SAVE_FAILED')));
     }
   }
 
   String _extractError(DioException e, String fallback) {
-    return e.response?.data is Map ? (e.response?.data['error'] ?? fallback) : '$fallback — check your connection';
+    return e.response?.data is Map ? (e.response?.data['error'] ?? fallback) : 'NETWORK_ERROR';
   }
 }

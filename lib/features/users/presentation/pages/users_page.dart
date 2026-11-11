@@ -11,6 +11,7 @@ import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../shared/widgets/app_data_table.dart';
+import '../../../../core/errors/error_text.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
   const UsersPage({super.key});
@@ -40,26 +41,6 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   }
 
   /// Turns a backend error code into a message the user understands.
-  String _translateError(String code, AppLocalizations l10n) {
-    switch (code) {
-      case 'EMAIL_TAKEN':
-        return l10n.emailTaken;
-      case 'INVALID_EMAIL':
-        return l10n.invalidEmail;
-      case 'PASSWORD_TOO_SHORT':
-        return l10n.passwordTooShort;
-      case 'LAST_ADMIN':
-        return l10n.lastAdmin;
-      case 'CANNOT_DELETE_SELF':
-        return l10n.cannotDeleteSelf;
-      case 'USER_HAS_ACTIVITY':
-        return l10n.userHasActivity;
-      case 'FORBIDDEN':
-        return l10n.forbidden;
-      default:
-        return code;
-    }
-  }
 
   Future<void> _create(AppLocalizations l10n) async {
     final input = await openUserForm(context);
@@ -71,7 +52,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     if (error == null) {
       _showSnack(l10n.userCreated);
     } else {
-      _showSnack(_translateError(error, l10n), isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -85,7 +66,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     if (error == null) {
       _showSnack(l10n.userUpdated);
     } else {
-      _showSnack(_translateError(error, l10n), isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -148,7 +129,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     if (error == null) {
       _showSnack(l10n.passwordReset);
     } else {
-      _showSnack(_translateError(error, l10n), isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -180,7 +161,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     if (error == null) {
       _showSnack(l10n.userDeleted);
     } else {
-      _showSnack(_translateError(error, l10n), isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -243,7 +224,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
 
     ref.listen(userListProvider, (previous, next) {
       if (next.error != null) {
-        _showSnack(_translateError(next.error!, l10n), isError: true);
+        _showSnack(errorText(next.error!, l10n), isError: true);
       }
     });
 

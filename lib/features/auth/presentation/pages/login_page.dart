@@ -9,6 +9,7 @@ import '../providers/auth_provider.dart';
 import '../../../../shared/widgets/app_pressable.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../shared/widgets/app_widgets.dart';
+import '../../../../core/errors/error_text.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -47,7 +48,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       // After a successful sign-in the router guard redirects (to where the
       // user was headed, or their home screen).
       if (next.error != null) {
-        AppSnack.error(context, next.error!);
+        AppSnack.error(context, errorText(next.error, l10n));
       }
     });
 
@@ -155,7 +156,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             autofillHints: const [AutofillHints.password],
                             onSubmitted: (_) => _submit(),
                             decoration: InputDecoration(
-                              hintText: '••••••••',
                               suffixIcon: IconButton(
                                 tooltip: obscurePassword
                                     ? l10n.showPassword

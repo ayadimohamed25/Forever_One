@@ -3001,6 +3001,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Score'**
   String get score;
+
+  /// No description provided for @errGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get errGeneric;
+
+  /// No description provided for @errNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the server. Check your connection.'**
+  String get errNetwork;
+
+  /// No description provided for @errLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the data.'**
+  String get errLoadFailed;
+
+  /// No description provided for @errSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the changes.'**
+  String get errSaveFailed;
+
+  /// No description provided for @errDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete this item.'**
+  String get errDeleteFailed;
+
+  /// No description provided for @errInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect email or password.'**
+  String get errInvalidCredentials;
+
+  /// No description provided for @errLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. Please try again.'**
+  String get errLoginFailed;
+
+  /// No description provided for @errSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Please sign in again.'**
+  String get errSessionExpired;
+
+  /// No description provided for @errMissingFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Some required information is missing.'**
+  String get errMissingFields;
+
+  /// No description provided for @errFieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} is required.'**
+  String errFieldRequired(String field);
+
+  /// No description provided for @errNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A name is required.'**
+  String get errNameRequired;
+
+  /// No description provided for @errLinesRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one line.'**
+  String get errLinesRequired;
+
+  /// No description provided for @errNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This item no longer exists.'**
+  String get errNotFound;
+
+  /// No description provided for @errInvalidRole.
+  ///
+  /// In en, this message translates to:
+  /// **'This role is not valid.'**
+  String get errInvalidRole;
+
+  /// No description provided for @errInvalidPaymentTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'A payment must be for a sale or a purchase, not both.'**
+  String get errInvalidPaymentTarget;
+
+  /// No description provided for @errNoImage.
+  ///
+  /// In en, this message translates to:
+  /// **'No image was received.'**
+  String get errNoImage;
+
+  /// No description provided for @errUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The image could not be saved.'**
+  String get errUploadFailed;
+
+  /// No description provided for @purchaseAlreadyReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'This purchase has already been received.'**
+  String get purchaseAlreadyReceived;
+
+  /// No description provided for @reportReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Report downloaded'**
+  String get reportReady;
+
+  /// No description provided for @reportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t generate the report. Please try again.'**
+  String get reportFailed;
+
+  /// No description provided for @auditSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get auditSignedIn;
+
+  /// No description provided for @auditProfileUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated'**
+  String get auditProfileUpdated;
 }
 
 class _AppLocalizationsDelegate

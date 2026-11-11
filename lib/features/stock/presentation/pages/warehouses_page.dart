@@ -11,6 +11,7 @@ import '../providers/warehouse_provider.dart';
 import 'warehouse_form_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../shared/widgets/app_data_table.dart';
+import '../../../../core/errors/error_text.dart';
 
 class WarehousesPage extends ConsumerStatefulWidget {
   const WarehousesPage({super.key});
@@ -87,7 +88,7 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     } else if (error == 'WAREHOUSE_IN_USE') {
       _showSnack(l10n.warehouseInUse, isError: true);
     } else {
-      _showSnack(error, isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -142,7 +143,7 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(warehouseListProvider, (previous, next) {
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     final totalValue =

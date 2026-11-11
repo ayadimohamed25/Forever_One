@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/file_saver.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/report_remote_datasource.dart';
 
@@ -10,9 +11,14 @@ final reportDatasourceProvider = Provider((ref) {
 
 class ReportState {
   final bool isLoading;
-  final File? file;
+
+  /// Set once a report was handed to the user (downloaded or opened).
+  final int deliveredCount;
+
+  /// An error CODE, translated by the screen (never user-facing text here).
   final String? error;
-  const ReportState({this.isLoading = false, this.file, this.error});
+
+  const ReportState({this.isLoading = false, this.deliveredCount = 0, this.error});
 }
 
 class ReportNotifier extends StateNotifier<ReportState> {
@@ -20,12 +26,16 @@ class ReportNotifier extends StateNotifier<ReportState> {
   ReportNotifier(this.datasource) : super(const ReportState());
 
   Future<void> download({String locale = 'en'}) async {
-    state = const ReportState(isLoading: true);
+    final delivered = state.deliveredCount;
+    state = ReportState(isLoading: true, deliveredCount: delivered);
     try {
-      final file = await datasource.downloadDirectorReport(locale: locale);
-      state = ReportState(file: file);
+      final report = await datasource.downloadDirectorReport(locale: locale);
+      if (report.bytes.isEmpty) throw StateError('empty report');
+      await saveAndOpenFile(report.bytes, report.filename, 'application/pdf');
+      state = ReportState(deliveredCount: delivered + 1);
     } catch (e) {
-      state = const ReportState(error: 'Impossible de générer le rapport');
+      debugPrint('[report] failed: $e');
+      state = ReportState(deliveredCount: delivered, error: 'REPORT_FAILED');
     }
   }
 }

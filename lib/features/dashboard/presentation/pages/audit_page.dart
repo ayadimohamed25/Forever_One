@@ -7,6 +7,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
+import '../../../users/presentation/widgets/user_roles.dart';
 import '../../domain/entities/audit_log_entity.dart';
 import '../providers/audit_provider.dart';
 
@@ -72,7 +73,9 @@ class _AuditPageState extends ConsumerState<AuditPage> {
   String _actionLabel(String action, AppLocalizations l10n) {
     switch (action) {
       case 'login':
-        return l10n.connection;
+        return l10n.auditSignedIn;
+      case 'update_profile':
+        return l10n.auditProfileUpdated;
       case 'create_sale':
         return l10n.saleCreatedAction;
       case 'create_purchase':
@@ -162,7 +165,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       final decoded = jsonDecode(raw);
       if (decoded is Map) {
         return decoded.entries
-            .map((e) => '${e.key}: ${_detailValue('${e.key}', e.value)}')
+            .where((e) => '${e.value}'.trim().isNotEmpty)
+            .map((e) => _detailValue('${e.key}', e.value))
             .toList();
       }
     } catch (_) {
@@ -176,6 +180,17 @@ class _AuditPageState extends ConsumerState<AuditPage> {
     if (amount != null && (key == 'total' || key == 'amount')) {
       return formatDT(amount);
     }
+    if (key == 'quantity') return '× $value';
+    if (key == 'role') return roleLabel('$value', AppLocalizations.of(context)!);
+    if (key == 'type') {
+      final l10n = AppLocalizations.of(context)!;
+      switch ('$value') {
+        case 'in':
+          return l10n.stockIn;
+        case 'out':
+          return l10n.stockOut;
+      }
+    }
     return '$value';
   }
 
@@ -186,12 +201,12 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: AppColors.neutralSoft,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.chip),
       ),
       child: Text(
         text,
         style: AppTheme.font(
-            size: 12, weight: FontWeight.w500, color: AppColors.black),
+            size: 12, weight: FontWeight.w500, color: AppColors.textLabel),
       ),
     );
   }
@@ -204,11 +219,11 @@ class _AuditPageState extends ConsumerState<AuditPage> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: selected ? AppColors.black : AppColors.surface,
+        color: selected ? AppColors.primarySoft : AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.chip),
           side: BorderSide(
-            color: selected ? AppColors.black : AppColors.track,
+            color: selected ? AppColors.primary : AppColors.fieldBorder,
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -223,7 +238,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                 style: AppTheme.font(
                   size: 13,
                   weight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected ? Colors.white : AppColors.textPrimary,
+                  color: selected ? AppColors.primary : AppColors.textLabel,
                 ),
               ),
             ),
@@ -236,8 +251,6 @@ class _AuditPageState extends ConsumerState<AuditPage> {
   Widget _entry(AuditLogEntity log, bool isLast, AppLocalizations l10n) {
     final date = DateTime.tryParse(log.createdAt);
     final pills = _detailPills(log.details);
-    // A login carries no detail worth a full block — email and date fit on one line.
-    final compact = log.action == 'login';
 
     return IntrinsicHeight(
       child: Row(
@@ -262,40 +275,13 @@ class _AuditPageState extends ConsumerState<AuditPage> {
               padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
               child: Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(compact ? 12 : 14),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: compact
-                    ? Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        log.userEmail ?? l10n.system,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.fade,
-                        style: AppTheme.font(
-                            size: 14, weight: FontWeight.w500),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    if (date != null)
-                      Text(
-                        formatDateTime(date),
-                        maxLines: 1,
-                        softWrap: false,
-                        style: AppTheme.font(
-                          size: 12,
-                          color: AppColors.textSecondary,
-                          tabularFigures: true,
-                        ),
-                      ),
-                  ],
-                )
-                    : Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(

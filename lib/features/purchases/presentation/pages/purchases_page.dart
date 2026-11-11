@@ -11,6 +11,7 @@ import '../providers/purchase_provider.dart';
 import 'create_purchase_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../shared/widgets/app_data_table.dart';
+import '../../../../core/errors/error_text.dart';
 
 class PurchasesPage extends ConsumerStatefulWidget {
   const PurchasesPage({super.key});
@@ -76,7 +77,7 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
     } else if (error == 'PURCHASE_ALREADY_RECEIVED') {
       _showSnack(l10n.alreadyReceived, isError: true);
     } else {
-      _showSnack(error, isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -110,7 +111,7 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
     } else if (error == 'PURCHASE_HAS_PAYMENTS') {
       _showSnack(l10n.purchaseHasPayments, isError: true);
     } else {
-      _showSnack(error, isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -202,7 +203,7 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(purchaseListProvider, (previous, next) {
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     final pending = state.purchases.where((p) => p.isPending).length;

@@ -62,7 +62,7 @@ void main() {
           response: Response(
             requestOptions: RequestOptions(path: '/auth/login'),
             statusCode: 401,
-            data: {'error': 'Invalid credentials'},
+            data: {'error': 'INVALID_CREDENTIALS'},
           ),
         ),
       );
@@ -73,7 +73,7 @@ void main() {
       result.fold(
             (failure) {
           expect(failure, isA<AuthFailure>());
-          expect(failure.message, 'Invalid credentials');
+          expect(failure.message, 'INVALID_CREDENTIALS');
         },
             (user) => fail('Ne devrait pas rÃ©ussir'),
       );
@@ -91,7 +91,7 @@ void main() {
 
       expect(result.isLeft(), true);
       result.fold(
-            (failure) => expect(failure.message, contains('connection')),
+            (failure) => expect(failure.message, 'NETWORK_ERROR'),
             (user) => fail('Ne devrait pas rÃ©ussir'),
       );
     });

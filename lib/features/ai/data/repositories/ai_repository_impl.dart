@@ -16,7 +16,7 @@ class AiRepositoryImpl implements AiRepository {
       final data = await remote.ask(question, locale: locale);
       return Right(AiMessageModel.fromJson(data).toEntity());
     } on DioException catch (e) {
-      return Left(ServerFailure(_extractError(e, 'Failed to get AI response')));
+      return Left(ServerFailure(_extractError(e, 'SAVE_FAILED')));
     }
   }
 
@@ -26,11 +26,11 @@ class AiRepositoryImpl implements AiRepository {
       final data = await remote.getHistory();
       return Right(data.map((j) => AiMessageModel.fromJson(j).toEntity()).toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_extractError(e, 'Failed to load history')));
+      return Left(ServerFailure(_extractError(e, 'LOAD_FAILED')));
     }
   }
 
   String _extractError(DioException e, String fallback) {
-    return e.response?.data is Map ? (e.response?.data['error'] ?? fallback) : '$fallback — check your connection';
+    return e.response?.data is Map ? (e.response?.data['error'] ?? fallback) : 'NETWORK_ERROR';
   }
 }

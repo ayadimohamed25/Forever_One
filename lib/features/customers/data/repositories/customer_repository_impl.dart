@@ -17,7 +17,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
       final data = await remote.getCustomers(search: search);
       return Right(data.map((j) => CustomerModel.fromJson(j).toEntity()).toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load customers')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -38,7 +38,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
           .toList();
       return Right((customer: customer, sales: sales));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load customer')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -48,7 +48,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
       final data = await remote.createCustomer(input.toJson());
       return Right(CustomerModel.fromJson(data).toEntity());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to create customer')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -58,7 +58,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
       await remote.updateCustomer({'id': id, ...input.toJson()});
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to update customer')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -71,13 +71,13 @@ class CustomerRepositoryImpl implements CustomerRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('CUSTOMER_IN_USE'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to delete customer')));
+      return Left(ServerFailure(_err(e, 'DELETE_FAILED')));
     }
   }
 
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }

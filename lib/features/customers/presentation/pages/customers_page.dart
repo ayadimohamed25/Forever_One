@@ -11,6 +11,7 @@ import '../widgets/customer_form_route.dart';
 import 'customer_detail_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../shared/widgets/app_data_table.dart';
+import '../../../../core/errors/error_text.dart';
 
 class CustomersPage extends ConsumerStatefulWidget {
   const CustomersPage({super.key});
@@ -81,7 +82,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     } else if (error == 'CUSTOMER_IN_USE') {
       _showSnack(l10n.customerInUse, isError: true);
     } else {
-      _showSnack(error, isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -173,7 +174,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(customerListProvider, (previous, next) {
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     final outstanding = state.customers

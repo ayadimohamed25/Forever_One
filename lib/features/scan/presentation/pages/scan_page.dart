@@ -9,6 +9,7 @@ import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/errors/error_text.dart';
 
 class ScanPage extends ConsumerStatefulWidget {
   const ScanPage({super.key});
@@ -106,7 +107,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
         );
       }
       if (next.error != null) {
-        AppSnack.error(context, next.error!);
+        AppSnack.error(context, errorText(next.error, l10n));
       }
     });
 

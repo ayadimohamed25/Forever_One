@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:open_filex/open_filex.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
@@ -361,7 +360,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         onTap: () => setState(() => trendDays = days),
         selected: selected,
         borderRadius: BorderRadius.zero,
-        semanticLabel: '$days days',
+        semanticLabel: '$days ${AppLocalizations.of(context)!.days}',
         child: Container(
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -711,10 +710,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final summary = dashboardState.summary;
 
     ref.listen(reportProvider, (previous, next) {
-      if (next.file != null && previous?.file != next.file) {
-        OpenFilex.open(next.file!.path);
+      if (next.deliveredCount > (previous?.deliveredCount ?? 0)) {
+        AppSnack.success(context, l10n.reportReady);
       }
-      if (next.error != null) AppSnack.error(context, next.error!);
+      if (next.error != null && previous?.error == null) {
+        AppSnack.error(context, l10n.reportFailed);
+      }
     });
 
     final company = (user?.companyName.isNotEmpty ?? false)

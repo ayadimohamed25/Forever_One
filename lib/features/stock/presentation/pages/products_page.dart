@@ -14,6 +14,7 @@ import 'categories_page.dart';
 import 'product_detail_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/errors/error_text.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
   const ProductsPage({super.key});
@@ -90,7 +91,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     } else if (error == 'PRODUCT_IN_USE') {
       _showSnack(l10n.productInUse, isError: true);
     } else {
-      _showSnack(error, isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -246,7 +247,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(productListProvider, (previous, next) {
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     final lowStockCount = state.products.where((p) => p.isLowStock).length;

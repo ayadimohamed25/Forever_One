@@ -1589,4 +1589,77 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get score => 'Score';
+
+  @override
+  String get errGeneric => 'Une erreur s\'est produite. Veuillez réessayer.';
+
+  @override
+  String get errNetwork =>
+      'Impossible de joindre le serveur. Vérifiez votre connexion.';
+
+  @override
+  String get errLoadFailed => 'Impossible de charger les données.';
+
+  @override
+  String get errSaveFailed => 'Impossible d\'enregistrer les modifications.';
+
+  @override
+  String get errDeleteFailed => 'Impossible de supprimer cet élément.';
+
+  @override
+  String get errInvalidCredentials => 'E-mail ou mot de passe incorrect.';
+
+  @override
+  String get errLoginFailed => 'La connexion a échoué. Veuillez réessayer.';
+
+  @override
+  String get errSessionExpired =>
+      'Votre session a expiré. Veuillez vous reconnecter.';
+
+  @override
+  String get errMissingFields =>
+      'Des informations obligatoires sont manquantes.';
+
+  @override
+  String errFieldRequired(String field) {
+    return 'Le champ $field est obligatoire.';
+  }
+
+  @override
+  String get errNameRequired => 'Un nom est obligatoire.';
+
+  @override
+  String get errLinesRequired => 'Ajoutez au moins une ligne.';
+
+  @override
+  String get errNotFound => 'Cet élément n\'existe plus.';
+
+  @override
+  String get errInvalidRole => 'Ce rôle n\'est pas valide.';
+
+  @override
+  String get errInvalidPaymentTarget =>
+      'Un paiement concerne une vente ou un achat, pas les deux.';
+
+  @override
+  String get errNoImage => 'Aucune image reçue.';
+
+  @override
+  String get errUploadFailed => 'L\'image n\'a pas pu être enregistrée.';
+
+  @override
+  String get purchaseAlreadyReceived => 'Cet achat a déjà été réceptionné.';
+
+  @override
+  String get reportReady => 'Rapport téléchargé';
+
+  @override
+  String get reportFailed =>
+      'Impossible de générer le rapport. Veuillez réessayer.';
+
+  @override
+  String get auditSignedIn => 'Connexion';
+
+  @override
+  String get auditProfileUpdated => 'Profil modifié';
 }

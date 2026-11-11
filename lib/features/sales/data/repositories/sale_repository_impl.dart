@@ -29,7 +29,7 @@ class SaleRepositoryImpl implements SaleRepository {
           .map((j) => SaleModel.fromJson(Map<String, dynamic>.from(j)))
           .toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load sales')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -50,7 +50,7 @@ class SaleRepositoryImpl implements SaleRepository {
           .toList();
       return Right((sale: sale, lines: lines));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load sale')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -77,7 +77,7 @@ class SaleRepositoryImpl implements SaleRepository {
       total: double.tryParse('${data['total'] ?? 0}') ?? 0,
       ));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to create sale')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -104,7 +104,7 @@ class SaleRepositoryImpl implements SaleRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('SALE_HAS_PAYMENTS'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to update sale')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -117,13 +117,13 @@ class SaleRepositoryImpl implements SaleRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('SALE_HAS_PAYMENTS'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to delete sale')));
+      return Left(ServerFailure(_err(e, 'DELETE_FAILED')));
     }
   }
 
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }

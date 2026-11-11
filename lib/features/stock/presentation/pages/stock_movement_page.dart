@@ -9,6 +9,7 @@ import '../providers/product_provider.dart';
 import '../providers/stock_movement_provider.dart';
 import '../providers/warehouse_provider.dart';
 import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/errors/error_text.dart';
 
 typedef _MovementType = ({String label, IconData icon, Color color});
 
@@ -156,7 +157,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
         setState(() {});
       }
       if (next.error != null) {
-        AppSnack.error(context, next.error!);
+        AppSnack.error(context, errorText(next.error, l10n));
       }
     });
 

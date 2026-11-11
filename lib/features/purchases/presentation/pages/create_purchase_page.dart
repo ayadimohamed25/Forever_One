@@ -13,6 +13,7 @@ import '../../../suppliers/presentation/providers/supplier_provider.dart';
 import '../../domain/entities/purchase_line_entity.dart';
 import '../providers/purchase_provider.dart';
 import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/errors/error_text.dart';
 
 class CreatePurchasePage extends ConsumerStatefulWidget {
   /// When set, the page edits that purchase instead of creating a new one.
@@ -152,7 +153,7 @@ class _CreatePurchasePageState extends ConsumerState<CreatePurchasePage> {
       } else if (error == 'PURCHASE_HAS_PAYMENTS') {
         _showSnack(l10n.purchaseHasPayments, isError: true);
       } else {
-        _showSnack(error, isError: true);
+        _showSnack(errorText(error, l10n), isError: true);
       }
       return;
     }
@@ -256,7 +257,7 @@ class _CreatePurchasePageState extends ConsumerState<CreatePurchasePage> {
         _showSnack(l10n.purchaseRecorded(formatAmount(next.lastTotal!)));
         Navigator.of(context).pop();
       }
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     return Scaffold(

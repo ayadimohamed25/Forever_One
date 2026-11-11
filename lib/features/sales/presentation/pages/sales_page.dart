@@ -11,6 +11,7 @@ import '../providers/sale_provider.dart';
 import 'create_sale_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../shared/widgets/app_data_table.dart';
+import '../../../../core/errors/error_text.dart';
 
 class SalesPage extends ConsumerStatefulWidget {
   const SalesPage({super.key});
@@ -96,7 +97,7 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     } else if (error == 'SALE_HAS_PAYMENTS') {
       _showSnack(l10n.saleHasPayments, isError: true);
     } else {
-      _showSnack(error, isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -184,7 +185,7 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(saleListProvider, (previous, next) {
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     final outstanding = state.sales

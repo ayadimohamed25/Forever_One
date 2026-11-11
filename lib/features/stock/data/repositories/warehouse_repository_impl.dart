@@ -19,7 +19,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
           .map((j) => WarehouseModel.fromJson(Map<String, dynamic>.from(j)))
           .toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load warehouses')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -29,7 +29,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
       final data = await remote.createWarehouse(input.toJson());
       return Right(WarehouseModel.fromJson(Map<String, dynamic>.from(data)));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to create warehouse')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -39,7 +39,7 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
       await remote.updateWarehouse({'id': id, ...input.toJson()});
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to update warehouse')));
+      return Left(ServerFailure(_err(e, 'SAVE_FAILED')));
     }
   }
 
@@ -52,13 +52,13 @@ class WarehouseRepositoryImpl implements WarehouseRepository {
       if (e.response?.statusCode == 409) {
         return const Left(ServerFailure('WAREHOUSE_IN_USE'));
       }
-      return Left(ServerFailure(_err(e, 'Failed to delete warehouse')));
+      return Left(ServerFailure(_err(e, 'DELETE_FAILED')));
     }
   }
 
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }

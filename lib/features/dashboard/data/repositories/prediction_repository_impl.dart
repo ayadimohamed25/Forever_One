@@ -32,7 +32,7 @@ class PredictionRepositoryImpl {
         );
       }).toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load stock forecast')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -51,7 +51,7 @@ class PredictionRepositoryImpl {
         );
       }).toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load dormant products')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -75,13 +75,13 @@ class PredictionRepositoryImpl {
         );
       }).toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load customer scores')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }

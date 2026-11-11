@@ -43,7 +43,7 @@ class PredictionNotifier extends StateNotifier<PredictionState> {
       dormantProducts: dormantResult.getOrElse(() => []),
       customerScores: customerResult.getOrElse(() => []),
       error: stockResult.isLeft() || dormantResult.isLeft() || customerResult.isLeft()
-          ? 'Certaines données n\'ont pas pu être chargées'
+          ? 'LOAD_FAILED'
           : null,
     );
   }

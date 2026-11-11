@@ -677,32 +677,40 @@ class AppFormSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: AppSpacing.gap),
-      padding: padding,
-      decoration: BoxDecoration(
+    // A Material (not a coloured DecoratedBox) paints the white card, so
+    // ListTiles / SwitchListTiles inside can draw their ink on it. With a
+    // DecoratedBox they raise "ListTile background color or ink splashes may
+    // be invisible" in debug builds.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.gap),
+      child: Material(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (title != null) ...[
-            Row(
-              children: [
-                Expanded(child: Text(title!, style: AppTheme.sectionTitle)),
-                ?trailing,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        child: Padding(
+          padding: padding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (title != null) ...[
+                Row(
+                  children: [
+                    Expanded(child: Text(title!, style: AppTheme.sectionTitle)),
+                    ?trailing,
+                  ],
+                ),
+                SizedBox(height: spacing),
               ],
-            ),
-            SizedBox(height: spacing),
-          ],
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) SizedBox(height: spacing),
-            children[i],
-          ],
-        ],
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) SizedBox(height: spacing),
+                children[i],
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -985,8 +993,12 @@ class AppBottomActionBar extends StatelessWidget {
         ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: wide
+            // heightFactor: 1 keeps the bar as tall as the button. Without it
+            // an Align in bottomNavigationBar grows to the whole window and
+            // hides the form (blank page with only Save on the right).
             ? Align(
                 alignment: Alignment.centerRight,
+                heightFactor: 1,
                 child: ConstrainedBox(
                   constraints:
                       const BoxConstraints(minWidth: 200, maxWidth: 320),

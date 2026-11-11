@@ -8,6 +8,7 @@ import '../../../../shared/widgets/app_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/errors/error_text.dart';
 class PaymentPage extends ConsumerStatefulWidget {
   final String? saleId;
   final String? purchaseId;
@@ -77,7 +78,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
     ref.listen(paymentProvider, (previous, next) {
       if (next.error != null) {
-        AppSnack.error(context, next.error!);
+        AppSnack.error(context, errorText(next.error, l10n));
       }
     });
 

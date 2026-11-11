@@ -9,6 +9,7 @@ import '../../domain/entities/category_entity.dart';
 import '../providers/product_provider.dart';
 import 'category_form_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/errors/error_text.dart';
 
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
@@ -88,7 +89,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     } else if (error == 'CATEGORY_IN_USE') {
       _showSnack(l10n.categoryInUse, isError: true);
     } else {
-      _showSnack(error, isError: true);
+      _showSnack(errorText(error, l10n), isError: true);
     }
   }
 
@@ -154,7 +155,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(categoryListProvider, (previous, next) {
-      if (next.error != null) _showSnack(next.error!, isError: true);
+      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
     });
 
     return Scaffold(

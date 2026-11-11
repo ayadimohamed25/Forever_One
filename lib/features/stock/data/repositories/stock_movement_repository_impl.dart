@@ -27,8 +27,8 @@ class StockMovementRepositoryImpl implements StockMovementRepository {
       return Right(data['current_stock'] as int);
     } on DioException catch (e) {
       final message = e.response?.data is Map
-          ? (e.response?.data['error'] ?? 'Failed to record movement')
-          : 'Failed to record movement — check your connection';
+          ? (e.response?.data['error'] ?? 'SAVE_FAILED')
+          : 'NETWORK_ERROR';
       return Left(ServerFailure(message));
     }
   }

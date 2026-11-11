@@ -19,7 +19,7 @@ class UserRepositoryImpl implements UserRepository {
           .map((j) => UserModel.fromJson(Map<String, dynamic>.from(j)))
           .toList());
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load users')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -29,7 +29,7 @@ class UserRepositoryImpl implements UserRepository {
       await remote.createUser(input.toJson());
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_code(e, 'Failed to create user')));
+      return Left(ServerFailure(_code(e, 'SAVE_FAILED')));
     }
   }
 
@@ -39,7 +39,7 @@ class UserRepositoryImpl implements UserRepository {
       await remote.updateUser({'id': id, ...input.toJson()});
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_code(e, 'Failed to update user')));
+      return Left(ServerFailure(_code(e, 'SAVE_FAILED')));
     }
   }
 
@@ -49,7 +49,7 @@ class UserRepositoryImpl implements UserRepository {
       await remote.deleteUser(id);
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_code(e, 'Failed to delete user')));
+      return Left(ServerFailure(_code(e, 'DELETE_FAILED')));
     }
   }
 
@@ -59,7 +59,7 @@ class UserRepositoryImpl implements UserRepository {
       await remote.resetPassword(id, password);
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_code(e, 'Failed to reset password')));
+      return Left(ServerFailure(_code(e, 'SAVE_FAILED')));
     }
   }
 
@@ -71,7 +71,7 @@ class UserRepositoryImpl implements UserRepository {
       merged['permissions'] = data['permissions'] ?? [];
       return Right(UserModel.fromJson(merged));
     } on DioException catch (e) {
-      return Left(ServerFailure(_err(e, 'Failed to load profile')));
+      return Left(ServerFailure(_err(e, 'LOAD_FAILED')));
     }
   }
 
@@ -89,7 +89,7 @@ class UserRepositoryImpl implements UserRepository {
       });
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_code(e, 'Failed to update profile')));
+      return Left(ServerFailure(_code(e, 'SAVE_FAILED')));
     }
   }
 
@@ -100,7 +100,7 @@ class UserRepositoryImpl implements UserRepository {
       await remote.changeOwnPassword(currentPassword, newPassword);
       return const Right(null);
     } on DioException catch (e) {
-      return Left(ServerFailure(_code(e, 'Failed to change password')));
+      return Left(ServerFailure(_code(e, 'SAVE_FAILED')));
     }
   }
 
@@ -115,6 +115,6 @@ class UserRepositoryImpl implements UserRepository {
   String _err(DioException e, String fallback) {
     return e.response?.data is Map
         ? (e.response?.data['error'] ?? fallback)
-        : '$fallback — check your connection';
+        : 'NETWORK_ERROR';
   }
 }
