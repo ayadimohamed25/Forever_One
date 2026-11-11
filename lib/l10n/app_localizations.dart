@@ -1373,13 +1373,13 @@ abstract class AppLocalizations {
   /// No description provided for @paid.
   ///
   /// In en, this message translates to:
-  /// **'paid'**
+  /// **'Paid'**
   String get paid;
 
   /// No description provided for @unpaid.
   ///
   /// In en, this message translates to:
-  /// **'unpaid'**
+  /// **'Unpaid'**
   String get unpaid;
 
   /// No description provided for @taxId.
@@ -2593,6 +2593,414 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'and {count} other products'**
   String andOtherProducts(int count);
+
+  /// No description provided for @localData.
+  ///
+  /// In en, this message translates to:
+  /// **'Local data'**
+  String get localData;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @openMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Open menu'**
+  String get openMenu;
+
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get loading;
+
+  /// No description provided for @collapseSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse sidebar'**
+  String get collapseSidebar;
+
+  /// No description provided for @expandSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand sidebar'**
+  String get expandSidebar;
+
+  /// No description provided for @serverUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the server. Check your connection and try again.'**
+  String get serverUnreachable;
+
+  /// No description provided for @loadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this page'**
+  String get loadFailedTitle;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @moreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get moreActions;
+
+  /// No description provided for @send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get send;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// No description provided for @removeLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove line'**
+  String get removeLine;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @notificationsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTooltip;
+
+  /// No description provided for @noNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up'**
+  String get noNotifications;
+
+  /// No description provided for @noNotificationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock, payment and delivery alerts will appear here.'**
+  String get noNotificationsHint;
+
+  /// No description provided for @notifOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get notifOutOfStock;
+
+  /// No description provided for @notifLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get notifLowStock;
+
+  /// No description provided for @notifOverduePayments.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue customer payments'**
+  String get notifOverduePayments;
+
+  /// No description provided for @notifCreditExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit limit exceeded'**
+  String get notifCreditExceeded;
+
+  /// No description provided for @notifSupplierPaymentsDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier payments due'**
+  String get notifSupplierPaymentsDue;
+
+  /// No description provided for @notifPendingDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending deliveries'**
+  String get notifPendingDeliveries;
+
+  /// No description provided for @notifStockLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} left · minimum {min}'**
+  String notifStockLeft(String count, String min);
+
+  /// No description provided for @notifDaysOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days overdue'**
+  String notifDaysOverdue(int days);
+
+  /// No description provided for @notifDueInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Due in {days} days'**
+  String notifDueInDays(int days);
+
+  /// No description provided for @notifDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get notifDueToday;
+
+  /// No description provided for @notifExpectedInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected in {days} days'**
+  String notifExpectedInDays(int days);
+
+  /// No description provided for @notifDeliveryLate.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days late'**
+  String notifDeliveryLate(int days);
+
+  /// No description provided for @notifNoDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No delivery date'**
+  String get notifNoDate;
+
+  /// No description provided for @notifOverLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit {limit}'**
+  String notifOverLimit(String limit);
+
+  /// No description provided for @alertsBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 alert} other{{count} alerts}}'**
+  String alertsBanner(int count);
+
+  /// No description provided for @alertsOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} out of stock'**
+  String alertsOutOfStock(int count);
+
+  /// No description provided for @alertsLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} low stock'**
+  String alertsLowStock(int count);
+
+  /// No description provided for @alertsOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} overdue payments'**
+  String alertsOverdue(int count);
+
+  /// No description provided for @alertsOther.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} other'**
+  String alertsOther(int count);
+
+  /// No description provided for @tabHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get tabHome;
+
+  /// No description provided for @tabCopilot.
+  ///
+  /// In en, this message translates to:
+  /// **'Copilot'**
+  String get tabCopilot;
+
+  /// No description provided for @addProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get addProduct;
+
+  /// No description provided for @scanShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scanShort;
+
+  /// No description provided for @seeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get seeAll;
+
+  /// No description provided for @revenueThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue this month'**
+  String get revenueThisMonth;
+
+  /// No description provided for @downloadPdfReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Download PDF report'**
+  String get downloadPdfReport;
+
+  /// No description provided for @colVat.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT'**
+  String get colVat;
+
+  /// No description provided for @colMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin'**
+  String get colMargin;
+
+  /// No description provided for @colBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get colBalance;
+
+  /// No description provided for @colProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get colProducts;
+
+  /// No description provided for @colPriceInclVat.
+  ///
+  /// In en, this message translates to:
+  /// **'Price incl. VAT'**
+  String get colPriceInclVat;
+
+  /// No description provided for @colTotalInclVat.
+  ///
+  /// In en, this message translates to:
+  /// **'Total incl. VAT'**
+  String get colTotalInclVat;
+
+  /// No description provided for @colSku.
+  ///
+  /// In en, this message translates to:
+  /// **'SKU'**
+  String get colSku;
+
+  /// No description provided for @statusOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get statusOutOfStock;
+
+  /// No description provided for @statusLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get statusLowStock;
+
+  /// No description provided for @statusUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get statusUpToDate;
+
+  /// No description provided for @statusOverLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Over limit'**
+  String get statusOverLimit;
+
+  /// No description provided for @statusToPay.
+  ///
+  /// In en, this message translates to:
+  /// **'To pay'**
+  String get statusToPay;
+
+  /// No description provided for @statusPendingDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending delivery'**
+  String get statusPendingDelivery;
+
+  /// No description provided for @statusNoBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled'**
+  String get statusNoBalance;
+
+  /// No description provided for @statusLateDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Late delivery'**
+  String get statusLateDelivery;
+
+  /// No description provided for @requiredField.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get requiredField;
+
+  /// No description provided for @lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines'**
+  String get lines;
+
+  /// No description provided for @qtyShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get qtyShort;
+
+  /// No description provided for @removeLineTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove line'**
+  String get removeLineTooltip;
+
+  /// No description provided for @minimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Min.'**
+  String get minimum;
+
+  /// No description provided for @suggestedOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'To order'**
+  String get suggestedOrder;
+
+  /// No description provided for @lastSale.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sale'**
+  String get lastSale;
+
+  /// No description provided for @score.
+  ///
+  /// In en, this message translates to:
+  /// **'Score'**
+  String get score;
 }
 
 class _AppLocalizationsDelegate

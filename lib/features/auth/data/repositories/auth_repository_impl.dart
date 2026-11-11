@@ -32,6 +32,28 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() async {
     await _storage.delete(key: 'auth_token');
   }
+
+  @override
+  Future<Either<Failure, UserEntity>> restoreSession() async {
+    final token = await _storage.read(key: 'auth_token');
+    if (token == null || token.isEmpty) {
+      return const Left(SessionExpiredFailure());
+    }
+    try {
+      final data = await remote.profile();
+      final merged = Map<String, dynamic>.from(data['user']);
+      merged['permissions'] = data['permissions'] ?? [];
+      return Right(UserModel.fromJson(merged));
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      if (status == 401 || status == 403) {
+        // Only a rejected token ends the session. A network error keeps it.
+        await _storage.delete(key: 'auth_token');
+        return const Left(SessionExpiredFailure());
+      }
+      return const Left(NetworkFailure());
+    }
+  }
   @override
   Future<Either<Failure, UserEntity>> register({
     required String companyName,

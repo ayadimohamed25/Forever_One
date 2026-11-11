@@ -8,12 +8,12 @@ import '../pages/user_form_page.dart';
 export 'user_roles.dart';
 
 /// Opens the user form as a full page and returns what the admin saved,
-/// or null if they backed out. Kept under its original name and signature.
-Future<UserInput?> showUserFormDialog(
+/// or null if they backed out. Pushed on the root navigator, above the shell.
+Future<UserInput?> openUserForm(
     BuildContext context, {
       UserEntity? existing,
     }) {
-  return Navigator.of(context).push<UserInput>(
+  return Navigator.of(context, rootNavigator: true).push<UserInput>(
     MaterialPageRoute(builder: (_) => UserFormPage(existing: existing)),
   );
 }

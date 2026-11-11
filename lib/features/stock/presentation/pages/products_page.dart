@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_data_table.dart';
+import '../../../../shared/widgets/app_pressable.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/product_entity.dart';
 import '../providers/product_provider.dart';
-import '../widgets/product_form_dialog.dart';
+import '../widgets/product_form_route.dart';
 import 'categories_page.dart';
 import 'product_detail_page.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/utils/formatters.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
   const ProductsPage({super.key});
@@ -39,23 +42,18 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   Future<void> _create() async {
-    final input = await showProductFormDialog(context, ref);
+    final input = await openProductForm(context, ref);
     if (input == null) return;
     await ref.read(productListProvider.notifier).add(input);
   }
 
   Future<void> _edit(ProductEntity product, AppLocalizations l10n) async {
     final input =
-    await showProductFormDialog(context, ref, existing: product);
+    await openProductForm(context, ref, existing: product);
     if (input == null) return;
     await ref.read(productListProvider.notifier).update(product.id, input);
     if (mounted) _showSnack(l10n.productUpdated);
@@ -97,14 +95,14 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   }
 
   Future<void> _openDetail(ProductEntity product) async {
-    await Navigator.of(context).push(MaterialPageRoute(
+    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => ProductDetailPage(productId: product.id),
     ));
     if (mounted) ref.read(productListProvider.notifier).load();
   }
 
   Future<void> _openCategories() async {
-    await Navigator.of(context).push(MaterialPageRoute(
+    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => const CategoriesPage(),
     ));
     if (mounted) {
@@ -113,34 +111,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     }
   }
 
-  /// Stock tile colours: empty → danger, at/below threshold → warning,
-  /// otherwise → success.
-  ({Color fg, Color bg}) _stockColors(ProductEntity p) {
-    if (p.currentStock <= 0) {
-      return (fg: AppColors.danger, bg: AppColors.dangerSoft);
-    }
-    if (p.isLowStock) {
-      return (fg: AppColors.warning, bg: AppColors.warningSoft);
-    }
-    return (fg: AppColors.success, bg: AppColors.successSoft);
-  }
-
-  Widget _pill(String text, Color foreground, Color background) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Text(
-        text,
-        style: AppTheme.font(
-            size: 12, weight: FontWeight.w600, color: foreground),
-      ),
-    );
-  }
-
-  /// Selected: dark ink with white text. Others: white with a cream border.
+  /// Filter chip: white with a grey border; selected = light blue, blue text.
   Widget _categoryChip({
     required String label,
     required bool selected,
@@ -148,29 +119,27 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: Material(
-        color: selected ? AppColors.black : AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(100),
-          side: BorderSide(
-            color: selected ? AppColors.black : AppColors.track,
+      child: AppPressable(
+        onTap: onTap,
+        selected: selected,
+        semanticLabel: label,
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+        color: selected ? AppColors.primarySoft : AppColors.surface,
+        child: Container(
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: selected ? AppColors.primary : AppColors.fieldBorder),
+            borderRadius: BorderRadius.circular(AppRadius.chip),
           ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Center(
-            widthFactor: 1,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                label,
-                style: AppTheme.font(
-                  size: 13,
-                  weight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
+          child: Text(
+            label,
+            style: AppTheme.font(
+              size: 13,
+              weight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected ? AppColors.primary : AppColors.textLabel,
             ),
           ),
         ),
@@ -178,145 +147,97 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     );
   }
 
-  Widget _productCard(ProductEntity p, AppLocalizations l10n) {
-    final stock = _stockColors(p);
+  double _priceTtc(ProductEntity p) => p.price * (1 + p.vatRate / 100);
 
-    // Second line: reference and supplier; falls back to the category.
-    final details = [p.sku, p.supplierName]
-        .whereType<String>()
-        .where((s) => s.trim().isNotEmpty)
-        .toList();
-    final secondLine = details.isNotEmpty
-        ? details.join(' · ')
-        : (p.categoryName ?? l10n.noCategory);
+  /// Stock figure: red when out, amber when at or below the minimum.
+  Color _stockColor(ProductEntity p) => p.currentStock <= 0
+      ? AppColors.dangerText
+      : p.isLowStock
+          ? AppColors.warningText
+          : AppColors.textPrimary;
 
-    Widget? status;
-    if (!p.isActive) {
-      status = _pill(l10n.inactive, AppColors.textSecondary, AppColors.fill);
-    } else if (p.currentStock <= 0) {
-      status = _pill(l10n.rupture, AppColors.danger, AppColors.dangerSoft);
-    } else if (p.isLowStock) {
-      status = _pill(l10n.soon, AppColors.warning, AppColors.warningSoft);
-    }
-
-    return Opacity(
-      opacity: p.isActive ? 1 : 0.6,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: AppColors.cardShadow,
+  List<AppTableColumn<ProductEntity>> _columns(AppLocalizations l10n) => [
+        AppTableColumn(
+          label: l10n.product,
+          flex: 4,
+          sortValue: (p) => p.name.toLowerCase(),
+          cell: (p) => Opacity(
+            opacity: p.isActive ? 1 : 0.55,
+            child: AppCellText(p.name,
+                strong: true, sub: p.categoryName ?? l10n.noCategory),
+          ),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _openDetail(p),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: stock.bg,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          '${p.currentStock}',
-                          style: AppTheme.font(
-                            size: 15,
-                            weight: FontWeight.w700,
-                            color: stock.fg,
-                            tabularFigures: true,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(p.name, style: AppTheme.rowTitle, maxLines: 2),
-                        const SizedBox(height: 4),
-                        Text(secondLine, style: AppTheme.label, maxLines: 2),
-                        if (status != null) ...[
-                          const SizedBox(height: 10),
-                          status,
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('${p.price.toStringAsFixed(2)} DT',
-                          style: AppTheme.money),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${l10n.lineVat} ${p.vatRate.toStringAsFixed(0)}%',
-                        style: AppTheme.label,
-                      ),
-                    ],
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert,
-                        size: 20, color: AppColors.iconMuted),
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _edit(p, l10n);
-                      } else if (value == 'delete') {
-                        _delete(p, l10n);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.edit_outlined,
-                                size: 18, color: AppColors.icon),
-                            const SizedBox(width: 12),
-                            Text(l10n.edit, style: AppTheme.font(size: 15)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.delete_outline,
-                                size: 18, color: AppColors.danger),
-                            const SizedBox(width: 12),
-                            Text(
-                              l10n.delete,
-                              style: AppTheme.font(
-                                  size: 15, color: AppColors.danger),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+        AppTableColumn(
+          label: l10n.colSku,
+          flex: 2,
+          showFrom: 600,
+          sortValue: (p) => p.sku ?? '',
+          cell: (p) => AppCellText(p.sku ?? '—', color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.supplier,
+          flex: 3,
+          showFrom: 760,
+          sortValue: (p) => (p.supplierName ?? '').toLowerCase(),
+          cell: (p) => AppCellText(p.supplierName ?? '—'),
+        ),
+        AppTableColumn(
+          label: l10n.stock,
+          width: 64,
+          numeric: true,
+          sortValue: (p) => p.currentStock,
+          cell: (p) => Text(
+            '${p.currentStock}',
+            style: AppTheme.font(
+              size: 14,
+              weight: p.isLowStock || p.currentStock <= 0
+                  ? FontWeight.w600
+                  : FontWeight.w400,
+              color: _stockColor(p),
+              tabularFigures: true,
             ),
           ),
         ),
-      ),
-    );
-  }
+        AppTableColumn(
+          label: l10n.colVat,
+          width: 56,
+          numeric: true,
+          showFrom: 600,
+          sortValue: (p) => p.vatRate,
+          cell: (p) => AppCellText('${p.vatRate.toStringAsFixed(0)}%', numeric: true),
+        ),
+        AppTableColumn(
+          label: l10n.colMargin,
+          width: 72,
+          numeric: true,
+          showFrom: 900,
+          sortValue: (p) => p.price > 0 ? (p.price - p.cost) / p.price : 0,
+          cell: (p) => AppCellText(
+              p.price > 0
+                  ? '${((p.price - p.cost) / p.price * 100).toStringAsFixed(0)}%'
+                  : '—',
+              numeric: true),
+        ),
+        AppTableColumn(
+          label: l10n.colPriceInclVat,
+          width: 112,
+          numeric: true,
+          sortValue: (p) => _priceTtc(p),
+          cell: (p) => AppCellText(formatDT(_priceTtc(p)), numeric: true),
+        ),
+      ];
+
+  Widget _rowMenu(ProductEntity p, AppLocalizations l10n) => AppRowMenu(actions: [
+        AppMenuAction(
+            label: l10n.edit,
+            icon: Icons.edit_outlined,
+            onTap: () => _edit(p, l10n)),
+        AppMenuAction(
+            label: l10n.delete,
+            icon: Icons.delete_outline,
+            destructive: true,
+            onTap: () => _delete(p, l10n)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -337,7 +258,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/products'),
       appBar: searchVisible
           ? AppSearchHeader(
         controller: searchController,
@@ -366,16 +286,17 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             tooltip: l10n.categories,
             onTap: _openCategories,
           ),
+          AppHeaderAddButton(onPressed: _create, label: l10n.product),
         ],
       ),
       body: Column(
         children: [
           if (categories.isNotEmpty && !searchVisible)
             SizedBox(
-              height: 54,
+              height: 50,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 children: [
                   _categoryChip(
                     label: l10n.allCategories,
@@ -397,7 +318,15 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             ),
           Expanded(
             child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? AppSkeletonList(semanticLabel: l10n.loading)
+                : state.error != null && state.products.isEmpty
+                ? AppErrorState(
+                    title: l10n.loadFailedTitle,
+                    message: l10n.serverUnreachable,
+                    retryLabel: l10n.retry,
+                    onRetry: () =>
+                        ref.read(productListProvider.notifier).load(),
+                  )
                 : state.products.isEmpty
                 ? AppEmptyState(
               icon: state.hasSearched
@@ -408,28 +337,25 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   : l10n.noProducts,
               subtitle: state.hasSearched
                   ? l10n.tryDifferentSearch
-                  : l10n.tapPlusToAdd,
+                  : '',
+              actionLabel: state.hasSearched ? null : l10n.product,
+              onAction: _create,
             )
                 : RefreshIndicator(
-              color: AppColors.accent,
               onRefresh: () =>
                   ref.read(productListProvider.notifier).load(),
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
-                itemCount: state.products.length,
-                itemBuilder: (context, index) =>
-                    _productCard(state.products[index], l10n),
+              child: AppDataTable<ProductEntity>(
+                columns: _columns(l10n),
+                rows: state.products,
+                initialSortColumn: 0,
+                onRowTap: _openDetail,
+                rowMenu: (p) => _rowMenu(p, l10n),
               ),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _create,
-        backgroundColor: AppColors.black,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.product),
-      ),
+      floatingActionButton: AppAddFab(onPressed: _create, label: l10n.product),
     );
   }
 }

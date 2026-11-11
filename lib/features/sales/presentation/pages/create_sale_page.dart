@@ -5,12 +5,14 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_lines_table.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../customers/presentation/providers/customer_provider.dart';
 import '../../../stock/presentation/providers/product_provider.dart';
 import '../../../stock/presentation/providers/warehouse_provider.dart';
 import '../../domain/entities/sale_line_entity.dart';
 import '../providers/sale_provider.dart';
+import '../../../../shared/widgets/app_snack.dart';
 
 class CreateSalePage extends ConsumerStatefulWidget {
   /// When set, the page edits that sale instead of creating a new one.
@@ -83,12 +85,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
       c.text.trim().isEmpty ? null : c.text.trim();
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   void _addLine() {
@@ -146,54 +143,6 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
     );
   }
 
-  Widget _lineCard(int index, SaleLineEntity l, AppLocalizations l10n) {
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 4, 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AppLeadingTile.icon(Icons.inventory_2_outlined),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l.productName, style: AppTheme.rowTitle, maxLines: 2),
-                const SizedBox(height: 4),
-                Text(
-                  '${l.quantity} × ${formatDT(l.unitPrice)} · '
-                      '${l10n.lineVat} ${l.vatRate.toStringAsFixed(0)}%',
-                  style: AppTheme.label,
-                  maxLines: 2,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(formatDT(l.lineTotalTtc), style: AppTheme.money),
-              const SizedBox(height: 3),
-              Text(
-                '${formatDT(l.lineTotal)} ${l10n.exclVatShort}',
-                style: AppTheme.font(
-                  size: 12,
-                  color: AppColors.textSecondary,
-                  tabularFigures: true,
-                ),
-              ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 20, color: AppColors.textMuted),
-            onPressed: () => setState(() => lines.removeAt(index)),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _totalRow(String label, double value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -214,12 +163,12 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.track)),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -234,30 +183,29 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                   Expanded(
                     child: Text(
                       l10n.totalTtc,
-                      style: AppTheme.font(size: 15, weight: FontWeight.w600),
+                      style: AppTheme.font(size: 14, weight: FontWeight.w600),
                     ),
                   ),
                   Text(
                     formatDT(totalTtc),
                     style: AppTheme.font(
-                      size: 22,
-                      weight: FontWeight.w700,
-                      letterSpacing: -0.5,
+                      size: 18,
+                      weight: FontWeight.w600,
                       tabularFigures: true,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               isLoading
                   ? const SizedBox(
-                height: 56,
+                height: 48,
                 child: Center(child: CircularProgressIndicator()),
               )
-                  : FilledButton(
+                  : AppBlockButton(child: FilledButton(
                 onPressed: _canSubmit ? () => _submit(l10n) : null,
                 child: Text(l10n.confirmSale),
-              ),
+              )),
             ],
           ),
         ),
@@ -281,7 +229,7 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
       if (!isEditing &&
           next.lastTotal != null &&
           previous?.lastTotal != next.lastTotal) {
-        _showSnack(l10n.saleCreated(next.lastTotal!.toStringAsFixed(2)));
+        _showSnack(l10n.saleCreated(formatAmount(next.lastTotal!)));
         Navigator.of(context).pop();
       }
       if (next.error != null) _showSnack(next.error!, isError: true);
@@ -298,8 +246,12 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
         color: AppColors.sales,
         showMenuButton: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           AppFormSection(
             title: l10n.invoiceDetails,
@@ -371,46 +323,31 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                 keyboardType: TextInputType.number,
                 onChanged: (_) => setState(() {}),
               ),
-              OutlinedButton.icon(
+              AppBlockButton(height: 48, child: OutlinedButton.icon(
                 onPressed: _canAddLine ? _addLine : null,
                 icon: const Icon(Icons.add),
                 label: Text(l10n.product),
-              ),
+              )),
             ],
           ),
 
           const SizedBox(height: 24),
 
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 10),
-            child: Text(
-              lines.isEmpty ? l10n.noLines : l10n.linesCount(lines.length),
-              style: AppTheme.font(size: 16, weight: FontWeight.w600),
-            ),
-          ),
-          if (lines.isEmpty)
-            AppCard(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Column(
-                  children: [
-                    const Icon(Icons.shopping_basket_outlined,
-                        size: 36, color: AppColors.textMuted),
-                    const SizedBox(height: 10),
-                    Text(
-                      l10n.addAtLeastOneProduct,
-                      textAlign: TextAlign.center,
-                      style: AppTheme.label,
-                    ),
-                  ],
+          AppLinesTable(
+            title: lines.isEmpty ? l10n.noLines : l10n.linesCount(lines.length),
+            emptyText: l10n.addAtLeastOneProduct,
+            priceLabel: l10n.price,
+            rows: [
+              for (final l in lines)
+                AppLineRow(
+                  product: l.productName,
+                  quantity: l.quantity,
+                  unitPrice: l.unitPrice,
+                  total: l.lineTotal,
                 ),
-              ),
-            )
-          else
-            for (var i = 0; i < lines.length; i++)
-              _lineCard(i, lines[i], l10n),
-
-          const SizedBox(height: 12),
+            ],
+            onRemove: (i) => setState(() => lines.removeAt(i)),
+          ),
           AppFormSection(
             title: l10n.notes,
             children: [
@@ -422,6 +359,8 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
             ],
           ),
         ],
+      ),
+        ),
       ),
       bottomNavigationBar: _totalsBar(l10n, saleState.isLoading),
     );

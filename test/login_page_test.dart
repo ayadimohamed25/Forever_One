@@ -37,12 +37,31 @@ void main() {
         expect(find.widgetWithText(FilledButton, 'Se connecter'), findsOneWidget);
       });
 
-  testWidgets('LoginPage prefills the demo credentials',
+  testWidgets('LoginPage starts empty, with placeholders that vanish on typing',
           (WidgetTester tester) async {
         await tester.pumpWidget(_wrap(const LoginPage()));
         await tester.pumpAndSettle();
 
-        expect(find.text('admin@demo.com'), findsOneWidget);
+        // No real credentials are prefilled.
+        expect(find.text('admin@demo.com'), findsNothing);
+        expect(find.text('test1234'), findsNothing);
+
+        // Flutter keeps the hint in the tree and fades it, so read its opacity.
+        double hintOpacity() => tester
+            .widget<AnimatedOpacity>(find
+                .ancestor(
+                    of: find.text('name@company.com'),
+                    matching: find.byType(AnimatedOpacity))
+                .first)
+            .opacity;
+
+        // The example placeholder shows while the field is empty...
+        expect(hintOpacity(), 1.0);
+
+        // ...and disappears once the user types.
+        await tester.enterText(find.byType(TextField).first, 'a');
+        await tester.pumpAndSettle();
+        expect(hintOpacity(), 0.0);
       });
 
   testWidgets('The eye button toggles password visibility',

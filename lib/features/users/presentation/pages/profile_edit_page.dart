@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../providers/user_provider.dart';
+import '../../../../shared/widgets/app_snack.dart';
 
 /// Full-page form for the signed-in user's own details. Saves directly and
 /// pops with `true` on success, so the profile page can confirm it.
@@ -73,12 +75,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     if (error == null) {
       Navigator.of(context).pop(true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_translateError(error, l10n)),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      AppSnack.error(context, _translateError(error, l10n));
     }
   }
 
@@ -95,8 +92,12 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         color: AppColors.primary,
         showMenuButton: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           AppFormSection(
             title: l10n.generalInfo,
@@ -109,6 +110,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
               AppTextField(
                 controller: emailController,
                 label: l10n.email,
+                required: true,
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -121,6 +123,8 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             ],
           ),
         ],
+      ),
+        ),
       ),
       bottomNavigationBar: AppBottomActionBar(
         child: isSaving

@@ -5,7 +5,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/audit_log_entity.dart';
@@ -207,7 +206,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       child: Material(
         color: selected ? AppColors.black : AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(100),
+          borderRadius: BorderRadius.circular(AppRadius.chip),
           side: BorderSide(
             color: selected ? AppColors.black : AppColors.track,
           ),
@@ -266,8 +265,8 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                 padding: EdgeInsets.all(compact ? 12 : 14),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: AppColors.cardShadow,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: compact
                     ? Row(
@@ -290,7 +289,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                         softWrap: false,
                         style: AppTheme.font(
                           size: 12,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           tabularFigures: true,
                         ),
                       ),
@@ -318,7 +317,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                         softWrap: false,
                         style: AppTheme.font(
                           size: 12,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           tabularFigures: true,
                         ),
                       ),
@@ -355,7 +354,6 @@ class _AuditPageState extends ConsumerState<AuditPage> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/audit'),
       appBar: AppPageHeader(
         title: l10n.auditLog,
         subtitle: state.logs.isEmpty ? null : '${logs.length} / ${state.logs.length}',
@@ -370,13 +368,16 @@ class _AuditPageState extends ConsumerState<AuditPage> {
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(semanticLabel: l10n.loading)
           : state.error != null
-          ? AppEmptyState(
-        icon: Icons.lock_outline,
-        title: l10n.restrictedAccess,
-        subtitle: state.error!,
-      )
+          // Access is enforced by the router guard; an error here is a
+          // failed load, so offer Retry rather than "restricted access".
+          ? AppErrorState(
+              title: l10n.loadFailedTitle,
+              message: l10n.serverUnreachable,
+              retryLabel: l10n.retry,
+              onRetry: () => ref.read(auditProvider.notifier).load(),
+            )
           : state.logs.isEmpty
           ? AppEmptyState(
         icon: Icons.history,

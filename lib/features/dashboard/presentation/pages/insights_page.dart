@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_data_table.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../customers/domain/entities/customer_score_entity.dart';
 import '../../../customers/presentation/pages/customer_detail_page.dart';
@@ -29,33 +28,15 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
   }
 
   void _openProduct(String id) {
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => ProductDetailPage(productId: id)),
     );
   }
 
   void _openCustomer(String id) {
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => CustomerDetailPage(customerId: id)),
     );
-  }
-
-  // ── Stock rules: same colours as the Products list ──
-
-  BadgeTone _stockTone(StockForecastEntity f) {
-    if (f.currentStock <= 0) return BadgeTone.danger;
-    if (f.urgency != 'ok' || f.currentStock <= f.minThreshold) {
-      return BadgeTone.warning;
-    }
-    return BadgeTone.success;
-  }
-
-  String _stockLabel(StockForecastEntity f, AppLocalizations l10n) {
-    if (f.currentStock <= 0) return l10n.rupture;
-    if (f.urgency != 'ok' || f.currentStock <= f.minThreshold) {
-      return l10n.soon;
-    }
-    return l10n.ok;
   }
 
   /// The follow-up reason, phrased from ARB strings in the app language.
@@ -76,16 +57,16 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         state.stockForecast.where((f) => f.currentStock <= 0).length;
 
     return PreferredSize(
-      preferredSize: const Size.fromHeight(76 + 64),
+      preferredSize: const Size.fromHeight(64 + 48),
       child: Column(
         children: [
           AppPageHeader(
             title: l10n.insightsAndForecasts,
             subtitle: outOfStock > 0
-                ? '$outOfStock · ${l10n.rupture.toLowerCase()}'
+                ? '$outOfStock · ${l10n.statusOutOfStock.toLowerCase()}'
                 : null,
             icon: Icons.insights_outlined,
-            color: AppColors.accent,
+            color: AppColors.primary,
             actions: [
               AppHeaderAction(
                 icon: Icons.refresh,
@@ -94,36 +75,21 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               ),
             ],
           ),
-          // Pill segmented control: selected tab in dark ink, white text.
+          // Plain underline tabs on white, like the rest of the app.
           Container(
-            color: AppColors.canvas,
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.fill,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: TabBar(
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  color: AppColors.black,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                labelColor: Colors.white,
-                unselectedLabelColor: AppColors.textSecondary,
-                labelStyle: AppTheme.font(size: 13, weight: FontWeight.w600),
-                unselectedLabelStyle:
-                AppTheme.font(size: 13, weight: FontWeight.w500),
-                overlayColor: WidgetStateProperty.all(Colors.transparent),
-                tabs: [
-                  Tab(height: 40, text: l10n.stock),
-                  Tab(height: 40, text: l10n.dormant),
-                  Tab(height: 40, text: l10n.followUps),
-                ],
-              ),
+            height: 48,
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              border: Border(bottom: BorderSide(color: AppColors.border)),
+            ),
+            child: TabBar(
+              isScrollable: false,
+              dividerColor: Colors.transparent,
+              tabs: [
+                Tab(text: l10n.stock),
+                Tab(text: l10n.dormant),
+                Tab(text: l10n.followUps),
+              ],
             ),
           ),
         ],
@@ -135,22 +101,38 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(predictionProvider);
     final l10n = AppLocalizations.of(context)!;
+    Future<void> reload() => ref.read(predictionProvider.notifier).loadAll();
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         backgroundColor: AppColors.canvas,
-        drawer: const AppDrawer(currentRoute: '/insights'),
         appBar: _header(state, l10n),
         body: state.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-          children: [
-            _stockTab(state.stockForecast, l10n),
-            _dormantTab(state.dormantProducts, l10n),
-            _followUpTab(state.customerScores, l10n),
-          ],
-        ),
+            ? AppSkeletonList(semanticLabel: l10n.loading)
+            : state.error != null &&
+                    state.stockForecast.isEmpty &&
+                    state.dormantProducts.isEmpty &&
+                    state.customerScores.isEmpty
+                ? AppErrorState(
+                    title: l10n.loadFailedTitle,
+                    message: l10n.serverUnreachable,
+                    retryLabel: l10n.retry,
+                    onRetry: reload,
+                  )
+                : TabBarView(
+                    children: [
+                      RefreshIndicator(
+                          onRefresh: reload,
+                          child: _stockTab(state.stockForecast, l10n)),
+                      RefreshIndicator(
+                          onRefresh: reload,
+                          child: _dormantTab(state.dormantProducts, l10n)),
+                      RefreshIndicator(
+                          onRefresh: reload,
+                          child: _followUpTab(state.customerScores, l10n)),
+                    ],
+                  ),
       ),
     );
   }
@@ -165,68 +147,85 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         subtitle: l10n.addProductsForForecasts,
       );
     }
+    int rank(StockForecastEntity f) => f.currentStock <= 0
+        ? 2
+        : (f.urgency != 'ok' || f.currentStock <= f.minThreshold)
+            ? 1
+            : 0;
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final f = items[index];
-        final tone = _stockTone(f);
-
-        return AppCard(
-          onTap: () => _openProduct(f.productId),
-          padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppLeadingTile.value('${f.currentStock}', tone: tone),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(f.name, style: AppTheme.rowTitle, maxLines: 2),
-                        const SizedBox(height: 4),
-                        Text(
-                          f.daysOfCoverage != null
-                              ? l10n.daysOfCoverage(f.daysOfCoverage!,
-                              f.dailySalesRate.toStringAsFixed(2))
-                              : l10n.noRecentSales,
-                          style: AppTheme.label,
-                          maxLines: 2,
-                        ),
-                        const SizedBox(height: 10),
-                        AppBadge(label: _stockLabel(f, l10n), tone: tone),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(Icons.chevron_right,
-                      size: 22, color: AppColors.textMuted),
-                ],
-              ),
-              if (f.suggestedOrder > 0)
-                AppCardFooter(
-                  color: AppColors.accent,
-                  children: [
-                    const Icon(Icons.lightbulb_outline,
-                        size: 18, color: AppColors.accent),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        l10n.orderUnits(f.suggestedOrder),
-                        style:
-                        AppTheme.font(size: 14, weight: FontWeight.w500),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+    return AppDataTable<StockForecastEntity>(
+      bottomPadding: 24,
+      rows: items,
+      initialSortColumn: 4,
+      initialAscending: false,
+      onRowTap: (f) => _openProduct(f.productId),
+      columns: [
+        AppTableColumn(
+          label: l10n.product,
+          flex: 4,
+          sortValue: (f) => f.name.toLowerCase(),
+          cell: (f) => AppCellText(
+            f.name,
+            strong: true,
+            sub: f.daysOfCoverage != null
+                ? l10n.daysOfCoverage(
+                    f.daysOfCoverage!, f.dailySalesRate.toStringAsFixed(2))
+                : l10n.noRecentSales,
           ),
-        );
-      },
+        ),
+        AppTableColumn(
+          label: l10n.stock,
+          width: 60,
+          numeric: true,
+          sortValue: (f) => f.currentStock,
+          cell: (f) => AppCellText('${f.currentStock}',
+              numeric: true,
+              color: f.currentStock <= 0
+                  ? AppColors.dangerText
+                  : rank(f) == 1
+                      ? AppColors.warningText
+                      : AppColors.textPrimary),
+        ),
+        AppTableColumn(
+          label: l10n.minimum,
+          width: 64,
+          numeric: true,
+          showFrom: 600,
+          sortValue: (f) => f.minThreshold,
+          cell: (f) => AppCellText('${f.minThreshold}',
+              numeric: true, color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.suggestedOrder,
+          width: 88,
+          numeric: true,
+          showFrom: 600,
+          sortValue: (f) => f.suggestedOrder,
+          cell: (f) => AppCellText(
+              f.suggestedOrder > 0 ? '+${f.suggestedOrder}' : '—',
+              numeric: true,
+              color: f.suggestedOrder > 0
+                  ? AppColors.primary
+                  : AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.status,
+          width: 100,
+          sortValue: rank,
+          cell: (f) => AppBadge(
+            label: switch (rank(f)) {
+              2 => l10n.statusOutOfStock,
+              1 => l10n.statusLowStock,
+              _ => l10n.ok,
+            },
+            tone: switch (rank(f)) {
+              2 => BadgeTone.danger,
+              1 => BadgeTone.warning,
+              _ => BadgeTone.success,
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -240,47 +239,38 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         subtitle: l10n.allProductsSelling,
       );
     }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final d = items[index];
-
-        return AppCard(
-          onTap: () => _openProduct(d.id),
-          padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppLeadingTile.icon(Icons.hourglass_bottom_outlined,
-                  tone: BadgeTone.warning),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(d.name, style: AppTheme.rowTitle, maxLines: 2),
-                    const SizedBox(height: 4),
-                    Text(
-                      d.neverSold
-                          ? l10n.neverSold
-                          : l10n.lastSaleDaysAgo(d.daysSinceSale ?? 0),
-                      style: AppTheme.label,
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 10),
-                    AppBadge(label: l10n.dormant, tone: BadgeTone.warning),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(Icons.chevron_right,
-                  size: 22, color: AppColors.textMuted),
-            ],
-          ),
-        );
-      },
+    return AppDataTable<DormantProductEntity>(
+      bottomPadding: 24,
+      rows: items,
+      initialSortColumn: 1,
+      initialAscending: false,
+      onRowTap: (d) => _openProduct(d.id),
+      columns: [
+        AppTableColumn(
+          label: l10n.product,
+          flex: 4,
+          sortValue: (d) => d.name.toLowerCase(),
+          cell: (d) => AppCellText(d.name, strong: true),
+        ),
+        AppTableColumn(
+          label: l10n.lastSale,
+          width: 132,
+          numeric: true,
+          // Never sold sorts as the oldest.
+          sortValue: (d) => d.neverSold ? 1 << 30 : (d.daysSinceSale ?? 0),
+          cell: (d) => AppCellText(
+              d.neverSold
+                  ? l10n.neverSold
+                  : l10n.lastSaleDaysAgo(d.daysSinceSale ?? 0),
+              numeric: true,
+              color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.status,
+          width: 92,
+          cell: (d) => AppBadge(label: l10n.dormant, tone: BadgeTone.warning),
+        ),
+      ],
     );
   }
 
@@ -294,99 +284,53 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         subtitle: l10n.addCustomersForScores,
       );
     }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final c = items[index];
-
-        final Widget badge;
-        if (c.overCreditLimit) {
-          badge = AppBadge(
-              label: l10n.creditLimitExceeded, tone: BadgeTone.danger);
-        } else if (c.balance > 0.009) {
-          badge = AppBadge(label: l10n.unpaid, tone: BadgeTone.warning);
-        } else {
-          badge = AppBadge(label: l10n.reasonUpToDate, tone: BadgeTone.success);
-        }
-
-        return AppCard(
-          onTap: () => _openCustomer(c.customerId),
-          padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Follow-up score ring, in terracotta.
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: CircularProgressIndicator(
-                            value: (c.score / 100).clamp(0.0, 1.0),
-                            strokeWidth: 4,
-                            strokeCap: StrokeCap.round,
-                            backgroundColor: AppColors.accentSoft,
-                            valueColor: const AlwaysStoppedAnimation(
-                                AppColors.accent),
-                          ),
-                        ),
-                        Text(
-                          '${c.score}',
-                          style: AppTheme.font(
-                            size: 13,
-                            weight: FontWeight.w700,
-                            color: AppColors.accent,
-                            tabularFigures: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(c.name, style: AppTheme.rowTitle, maxLines: 2),
-                        const SizedBox(height: 4),
-                        Text(_reason(c, l10n),
-                            style: AppTheme.label, maxLines: 3),
-                        const SizedBox(height: 10),
-                        badge,
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(Icons.chevron_right,
-                      size: 22, color: AppColors.textMuted),
-                ],
-              ),
-              if (c.balance > 0.009)
-                AppCardFooter(
-                  color: AppColors.danger,
-                  children: [
-                    Expanded(
-                      child: Text(l10n.outstandingBalance,
-                          style: AppTheme.label),
-                    ),
-                    Text(
-                      formatDT(c.balance),
-                      style: AppTheme.money.copyWith(color: AppColors.danger),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        );
-      },
+    return AppDataTable<CustomerScoreEntity>(
+      bottomPadding: 24,
+      rows: items,
+      initialSortColumn: 1,
+      initialAscending: false,
+      onRowTap: (c) => _openCustomer(c.customerId),
+      columns: [
+        AppTableColumn(
+          label: l10n.customer,
+          flex: 4,
+          sortValue: (c) => c.name.toLowerCase(),
+          cell: (c) => AppCellText(c.name, strong: true, sub: _reason(c, l10n)),
+        ),
+        AppTableColumn(
+          label: l10n.score,
+          width: 56,
+          numeric: true,
+          sortValue: (c) => c.score,
+          cell: (c) => AppCellText('${c.score}',
+              numeric: true,
+              color: c.score >= 70
+                  ? AppColors.dangerText
+                  : c.score >= 40
+                      ? AppColors.warningText
+                      : AppColors.textPrimary),
+        ),
+        AppTableColumn(
+          label: l10n.colBalance,
+          width: 112,
+          numeric: true,
+          showFrom: 600,
+          sortValue: (c) => c.balance,
+          cell: (c) => AppCellText(
+              c.balance > 0.009 ? formatDT(c.balance) : '—',
+              numeric: true),
+        ),
+        AppTableColumn(
+          label: l10n.status,
+          width: 104,
+          sortValue: (c) => c.overCreditLimit ? 2 : (c.balance > 0.009 ? 1 : 0),
+          cell: (c) => c.overCreditLimit
+              ? AppBadge(label: l10n.statusOverLimit, tone: BadgeTone.danger)
+              : c.balance > 0.009
+                  ? AppBadge(label: l10n.unpaid, tone: BadgeTone.warning)
+                  : AppBadge(label: l10n.statusUpToDate, tone: BadgeTone.success),
+        ),
+      ],
     );
   }
 }

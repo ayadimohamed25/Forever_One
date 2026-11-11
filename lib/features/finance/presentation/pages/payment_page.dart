@@ -4,6 +4,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/payment_provider.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_widgets.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../core/utils/formatters.dart';
 class PaymentPage extends ConsumerStatefulWidget {
   final String? saleId;
   final String? purchaseId;
@@ -57,17 +61,9 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: TextStyle(
-                fontSize: bold ? 14.5 : 13,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
-                color: bold ? AppColors.textPrimary : AppColors.textSecondary,
-              )),
-          Text('${value.toStringAsFixed(3)} DT',
-              style: TextStyle(
-                fontSize: bold ? 20 : 14,
-                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                color: color ?? AppColors.textPrimary,
-              )),
+              style: AppTheme.font(size: bold ? 15 : 13, weight: bold ? FontWeight.w700 : FontWeight.w400, color: bold ? AppColors.textPrimary : AppColors.textSecondary)),
+          Text(formatDT(value),
+              style: AppTheme.font(size: bold ? 20 : 14, weight: bold ? FontWeight.w800 : FontWeight.w600, color: color ?? AppColors.textPrimary)),
         ],
       ),
     );
@@ -81,10 +77,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
     ref.listen(paymentProvider, (previous, next) {
       if (next.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(next.error!), backgroundColor: AppColors.danger),
-        );
+        AppSnack.error(context, next.error!);
       }
     });
 
@@ -114,9 +107,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(color: AppColors.border),
-              boxShadow: AppColors.cardShadow,
             ),
             child: Column(
               children: [
@@ -139,10 +131,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 ),
                 const SizedBox(height: 14),
                 Text(isPaid ? l10n.paidInFull : l10n.balanceDue,
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: accent)),
+                    style: AppTheme.font(size: 15, weight: FontWeight.w700, color: accent)),
                 const SizedBox(height: 18),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -160,8 +149,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   child: Text(
                     l10n.percentSettled(
                         (progress * 100).toStringAsFixed(0)),
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textSecondary),
+                    style: AppTheme.font(size: 12, color: AppColors.textSecondary),
                   ),
                 ),
                 const Divider(height: 26),
@@ -179,21 +167,17 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
           if (!isPaid) ...[
             Text(l10n.recordPayment,
-                style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary)),
+                style: AppTheme.font(size: 15, weight: FontWeight.w700, color: AppColors.textPrimary)),
             const SizedBox(height: 14),
-            TextField(
+            AppLabeledField(label: l10n.amount, child: TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: l10n.amount,
                 prefixIcon: const Icon(Icons.payments_outlined),
                 suffixText: 'DT',
                 fillColor: Colors.white,
               ),
-            ),
+            )),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
@@ -204,13 +188,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 }),
                 icon: const Icon(Icons.done_all, size: 16),
                 label: Text(l10n.payFullAmount,
-                    style: const TextStyle(fontSize: 12.5)),
+                    style: AppTheme.font(size: 13)),
               ),
             ),
             const SizedBox(height: 12),
             Text(l10n.paymentMethod,
-                style: const TextStyle(
-                    fontSize: 12.5, color: AppColors.textSecondary)),
+                style: AppTheme.font(size: 13, color: AppColors.textSecondary)),
             const SizedBox(height: 10),
             Row(
               children: methods.entries.map((e) {
@@ -220,14 +203,14 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                     padding: const EdgeInsets.only(right: 8),
                     child: InkWell(
                       onTap: () => setState(() => method = e.key),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.control),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: selected
                               ? AppColors.primary.withValues(alpha: 0.08)
                               : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(AppRadius.control),
                           border: Border.all(
                             color: selected
                                 ? AppColors.primary
@@ -245,15 +228,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                             const SizedBox(height: 6),
                             Text(e.value.label,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: selected
+                                style: AppTheme.font(size: 12, weight: selected
                                       ? FontWeight.w700
-                                      : FontWeight.normal,
-                                  color: selected
+                                      : FontWeight.w400, color: selected
                                       ? AppColors.primary
-                                      : AppColors.textPrimary,
-                                )),
+                                      : AppColors.textPrimary)),
                           ],
                         ),
                       ),
@@ -265,7 +244,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             const SizedBox(height: 24),
             SizedBox(
               height: 52,
-              child: FilledButton.icon(
+              child: AppBlockButton(height: 52, child: FilledButton.icon(
                 onPressed: () {
                   final amount =
                       double.tryParse(amountController.text) ?? 0;
@@ -280,8 +259,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 },
                 icon: const Icon(Icons.check),
                 label: Text(l10n.recordThePayment,
-                    style: const TextStyle(fontSize: 15)),
-              ),
+                    style: AppTheme.font(size: 15)),
+              )),
             ),
           ],
           const SizedBox(height: 24),

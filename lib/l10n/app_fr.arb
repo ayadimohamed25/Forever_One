@@ -230,8 +230,8 @@
        "contact": "Contact",
        "callCustomer": "Appeler",
        "sendEmail": "Email",
-       "paid": "payé",
-       "unpaid": "impayé"
+       "paid": "Payé",
+       "unpaid": "Impayé"
 
          ,"taxId": "Matricule fiscale",
          "contactPerson": "Personne à contacter",
@@ -445,4 +445,83 @@
                                  "aiBlocked": "L'assistant n'a pas pu répondre à cette question.",
                                  "aiUnavailable": "L'assistant IA est momentanément indisponible.",
                                  "andOtherProducts": "et {count} autres produits"
- }
+                                   ,"localData": "Données locales"
+  ,"back": "Retour"
+  ,"openMenu": "Ouvrir le menu"
+  ,"loading": "Chargement"
+  ,"collapseSidebar": "Réduire le menu"
+  ,"expandSidebar": "Développer le menu"
+  ,"serverUnreachable": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez."
+  ,"loadFailedTitle": "Impossible de charger cette page"
+  ,"clearSearch": "Effacer la recherche"
+  ,"close": "Fermer"
+  ,"moreActions": "Plus d'actions"
+  ,"send": "Envoyer"
+  ,"showPassword": "Afficher le mot de passe"
+  ,"hidePassword": "Masquer le mot de passe"
+  ,"removeLine": "Supprimer la ligne"
+  ,"notifications": "Notifications"
+  ,"notificationsTooltip": "Notifications"
+  ,"noNotifications": "Tout est à jour"
+  ,"noNotificationsHint": "Les alertes de stock, de paiement et de livraison apparaîtront ici."
+  ,"notifOutOfStock": "Rupture de stock"
+  ,"notifLowStock": "Stock faible"
+  ,"notifOverduePayments": "Paiements clients en retard"
+  ,"notifCreditExceeded": "Plafond de crédit dépassé"
+  ,"notifSupplierPaymentsDue": "Paiements fournisseurs à échéance"
+  ,"notifPendingDeliveries": "Livraisons en attente"
+  ,"notifStockLeft": "{count} restant(s) · minimum {min}"
+  ,"@notifStockLeft": {"placeholders":{"count":{"type":"String"},"min":{"type":"String"}}}
+  ,"notifDaysOverdue": "{days} jours de retard"
+  ,"@notifDaysOverdue": {"placeholders":{"days":{"type":"int"}}}
+  ,"notifDueInDays": "Échéance dans {days} jours"
+  ,"@notifDueInDays": {"placeholders":{"days":{"type":"int"}}}
+  ,"notifDueToday": "Échéance aujourd'hui"
+  ,"notifExpectedInDays": "Attendue dans {days} jours"
+  ,"@notifExpectedInDays": {"placeholders":{"days":{"type":"int"}}}
+  ,"notifDeliveryLate": "{days} jours de retard"
+  ,"@notifDeliveryLate": {"placeholders":{"days":{"type":"int"}}}
+  ,"notifNoDate": "Sans date de livraison"
+  ,"notifOverLimit": "Plafond {limit}"
+  ,"@notifOverLimit": {"placeholders":{"limit":{"type":"String"}}}
+  ,"alertsBanner": "{count, plural, =1{1 alerte} other{{count} alertes}}"
+  ,"@alertsBanner": {"placeholders":{"count":{"type":"int"}}}
+  ,"alertsOutOfStock": "{count} en rupture"
+  ,"@alertsOutOfStock": {"placeholders":{"count":{"type":"int"}}}
+  ,"alertsLowStock": "{count} stock faible"
+  ,"@alertsLowStock": {"placeholders":{"count":{"type":"int"}}}
+  ,"alertsOverdue": "{count} paiements en retard"
+  ,"@alertsOverdue": {"placeholders":{"count":{"type":"int"}}}
+  ,"alertsOther": "{count} autres"
+  ,"@alertsOther": {"placeholders":{"count":{"type":"int"}}}
+  ,"tabHome": "Accueil"
+  ,"tabCopilot": "Copilote"
+  ,"addProduct": "Ajouter un produit"
+  ,"scanShort": "Scanner"
+  ,"seeAll": "Voir tout"
+  ,"revenueThisMonth": "Chiffre d'affaires du mois"
+  ,"downloadPdfReport": "Télécharger le rapport PDF"
+  ,"colVat": "TVA"
+  ,"colMargin": "Marge"
+  ,"colBalance": "Solde"
+  ,"colProducts": "Produits"
+  ,"colPriceInclVat": "Prix TTC"
+  ,"colTotalInclVat": "Total TTC"
+  ,"colSku": "Réf."
+  ,"statusOutOfStock": "Rupture"
+  ,"statusLowStock": "Stock faible"
+  ,"statusUpToDate": "À jour"
+  ,"statusOverLimit": "Plafond dépassé"
+  ,"statusToPay": "À payer"
+  ,"statusPendingDelivery": "Livraison en attente"
+  ,"statusNoBalance": "Soldé"
+  ,"statusLateDelivery": "Livraison en retard"
+  ,"requiredField": "Obligatoire"
+  ,"lines": "Lignes"
+  ,"qtyShort": "Qté"
+  ,"removeLineTooltip": "Supprimer la ligne"
+  ,"minimum": "Min."
+  ,"suggestedOrder": "À commander"
+  ,"lastSale": "Dernière vente"
+  ,"score": "Score"
+}

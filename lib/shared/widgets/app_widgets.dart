@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import 'app_pressable.dart';
 
 // ═════════════════════════ Status ═════════════════════════
 
@@ -11,29 +12,36 @@ enum BadgeTone { success, warning, danger, neutral, accent }
 ({Color fg, Color bg}) badgeColors(BadgeTone tone) {
   switch (tone) {
     case BadgeTone.success:
-      return (fg: AppColors.success, bg: AppColors.successSoft);
+      return (fg: AppColors.successText, bg: AppColors.successSoft);
     case BadgeTone.warning:
-      return (fg: AppColors.warning, bg: AppColors.warningSoft);
+      return (fg: AppColors.warningText, bg: AppColors.warningSoft);
     case BadgeTone.danger:
-      return (fg: AppColors.danger, bg: AppColors.dangerSoft);
+      return (fg: AppColors.dangerText, bg: AppColors.dangerSoft);
     case BadgeTone.accent:
-      return (fg: AppColors.accent, bg: AppColors.accentSoft);
+      return (fg: AppColors.primary, bg: AppColors.primarySoft);
     case BadgeTone.neutral:
-      return (fg: AppColors.black, bg: AppColors.neutralSoft);
+      return (fg: AppColors.textLabel, bg: AppColors.neutralSoft);
   }
 }
 
 /// Maps a colour argument onto a tone, so call sites that pass
 /// AppColors.success / warning / danger / accent keep their meaning.
 BadgeTone toneForColor(Color color) {
-  if (color == AppColors.success) return BadgeTone.success;
-  if (color == AppColors.warning) return BadgeTone.warning;
-  if (color == AppColors.danger) return BadgeTone.danger;
+  if (color == AppColors.success || color == AppColors.successText) {
+    return BadgeTone.success;
+  }
+  if (color == AppColors.warning || color == AppColors.warningText) {
+    return BadgeTone.warning;
+  }
+  if (color == AppColors.danger || color == AppColors.dangerText) {
+    return BadgeTone.danger;
+  }
   if (color == AppColors.accent) return BadgeTone.accent;
   return BadgeTone.neutral;
 }
 
-/// Fully rounded status pill.
+/// Status chip: radius 6, 12px medium text, tinted background.
+/// Labels are always sentence case ("Partially paid"); see [statusLabel].
 class AppBadge extends StatelessWidget {
   final String label;
   final BadgeTone tone;
@@ -50,10 +58,10 @@ class AppBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = badgeColors(tone);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: icon != null ? 9 : 11, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: icon != null ? 6 : 8, vertical: 3),
       decoration: BoxDecoration(
         color: c.bg,
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(AppRadius.chip),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -64,12 +72,21 @@ class AppBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: AppTheme.font(size: 12, weight: FontWeight.w600, color: c.fg),
+            style: AppTheme.font(size: 12, weight: FontWeight.w500, color: c.fg),
+            maxLines: 1,
           ),
         ],
       ),
     );
   }
+}
+
+/// One capitalisation everywhere: "partially paid" / "PAID" → "Partially paid".
+String statusLabel(String raw) {
+  final t = raw.trim().replaceAll('_', ' ');
+  if (t.isEmpty) return t;
+  final lower = t.toLowerCase();
+  return lower[0].toUpperCase() + lower.substring(1);
 }
 
 /// Legacy status pill. Honours the semantic colour it is given.
@@ -91,14 +108,14 @@ class AppStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     if (solid) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: AppColors.black,
-          borderRadius: BorderRadius.circular(100),
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppRadius.chip),
         ),
         child: Text(
           label,
-          style: AppTheme.font(size: 12, weight: FontWeight.w600, color: Colors.white),
+          style: AppTheme.font(size: 12, weight: FontWeight.w500, color: Colors.white),
         ),
       );
     }
@@ -108,7 +125,7 @@ class AppStatusChip extends StatelessWidget {
 
 // ═════════════════════════ Cards & tiles ═════════════════════════
 
-/// White card, radius 22, soft shadow. No side stripe.
+/// White card: radius 12, 1px border, no shadow. Cards sit 12 apart.
 class AppCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -123,7 +140,7 @@ class AppCard extends StatelessWidget {
     required this.child,
     this.onTap,
     this.padding = const EdgeInsets.all(16),
-    this.margin = const EdgeInsets.only(bottom: 12),
+    this.margin = const EdgeInsets.only(bottom: AppSpacing.gap),
     this.accentColor,
   });
 
@@ -133,8 +150,8 @@ class AppCard extends StatelessWidget {
       margin: margin,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: AppColors.cardShadow,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -215,7 +232,7 @@ class AppLeadingTile extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: c.bg,
-        borderRadius: BorderRadius.circular(size * 0.3),
+        borderRadius: BorderRadius.circular(size * 0.25),
       ),
       alignment: Alignment.center,
       child: content,
@@ -243,7 +260,7 @@ class AppIconBadge extends StatelessWidget {
       AppLeadingTile.icon(icon, size: size);
 }
 
-/// Initials tile — accentSoft background, terracotta text.
+/// Initials tile — soft blue background, blue text.
 class AppInitialsBadge extends StatelessWidget {
   final String name;
   final Color color;
@@ -324,38 +341,232 @@ class AppEmptyState extends StatelessWidget {
   final String subtitle;
   final Color? color;
 
+  /// Optional call to action under the text, e.g. "New customer".
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
   const AppEmptyState({
     super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
     this.color,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 44, color: AppColors.textMuted),
+            Icon(icon, size: 40, color: AppColors.iconMuted),
             const SizedBox(height: 24),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: AppTheme.font(size: 20, weight: FontWeight.w600, letterSpacing: -0.4),
+              style: AppTheme.font(size: 16, weight: FontWeight.w600),
             ),
             if (subtitle.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: AppTheme.font(size: 15, height: 1.45, color: AppColors.textSecondary),
+                style: AppTheme.font(size: 14, height: 1.45, color: AppColors.textSecondary),
+              ),
+            ],
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.add, size: 20),
+                label: Text(actionLabel!),
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A screen whose data failed to load: what happened, and a way to retry.
+/// Use instead of an empty state or an endless spinner when a load fails, so
+/// a network error is never shown as "nothing here".
+class AppErrorState extends StatelessWidget {
+  final String title;
+  final String message;
+  final String retryLabel;
+  final VoidCallback onRetry;
+
+  const AppErrorState({
+    super.key,
+    required this.title,
+    required this.message,
+    required this.retryLabel,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: AppColors.dangerSoft,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.cloud_off_outlined,
+                  size: 28, color: AppColors.danger),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: AppTheme.font(
+                  size: 16, weight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: AppTheme.font(
+                    size: 14, height: 1.45, color: AppColors.textSecondary),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, size: 20),
+              label: Text(retryLabel),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Placeholder rows while a list loads: white cards that mirror a real row
+/// (leading tile, two text lines, trailing stub), gently pulsing.
+/// Appears only after 200 ms so fast loads don't flash, and stays still when
+/// the platform asks for reduced motion.
+class AppSkeletonList extends StatefulWidget {
+  final int rows;
+  final EdgeInsets padding;
+  final String semanticLabel;
+
+  const AppSkeletonList({
+    super.key,
+    this.rows = 6,
+    this.padding = const EdgeInsets.fromLTRB(20, 8, 20, 20),
+    this.semanticLabel = 'Loading',
+  });
+
+  @override
+  State<AppSkeletonList> createState() => _AppSkeletonListState();
+}
+
+class _AppSkeletonListState extends State<AppSkeletonList>
+    with SingleTickerProviderStateMixin {
+  // Created in initState, never lazily: a lazy controller would first be
+  // built in dispose() when the list disappears within 200 ms, which crashes.
+  late final AnimationController _pulse;
+  bool _visible = false;
+
+  static const _low = Color(0xFFF2F4F7);
+  static const _high = Color(0xFFE4E7EC);
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (!mounted) return;
+      setState(() => _visible = true);
+      final reduceMotion =
+          MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+      if (!reduceMotion) _pulse.repeat(reverse: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  Widget _block(double width, double height, Color color,
+          {double radius = 6}) =>
+      Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_visible) return const SizedBox.shrink();
+    return Semantics(
+      label: widget.semanticLabel,
+      liveRegion: true,
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _pulse,
+          builder: (context, _) {
+            final c = Color.lerp(_low, _high, _pulse.value)!;
+            return ListView.separated(
+              physics: const NeverScrollableScrollPhysics(),
+              padding: widget.padding,
+              itemCount: widget.rows,
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (context, _) => Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    _block(36, 36, c, radius: 8),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, box) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _block(box.maxWidth * 0.6, 12, c),
+                            const SizedBox(height: 8),
+                            _block(box.maxWidth * 0.35, 10, c),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    _block(48, 14, c),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -384,8 +595,8 @@ class AppTrailingStat extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(value,
-            style: AppTheme.font(size: 15, weight: FontWeight.w600, color: color, tabularFigures: true)),
-        const SizedBox(height: 3),
+            style: AppTheme.font(size: 14, weight: FontWeight.w600, color: color, tabularFigures: true)),
+        const SizedBox(height: 2),
         Text(label, style: AppTheme.label),
       ],
     );
@@ -406,7 +617,7 @@ class AppMetaRow extends StatelessWidget {
       runSpacing: 4,
       children: [
         for (var i = 0; i < items.length; i++) ...[
-          if (i > 0) Text('·', style: AppTheme.font(size: 13, color: AppColors.textMuted)),
+          if (i > 0) Text('·', style: AppTheme.font(size: 12, color: AppColors.textSecondary)),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -433,7 +644,7 @@ class AppCardFooter extends StatelessWidget {
     return Column(
       children: [
         const Padding(
-          padding: EdgeInsets.only(top: 16, bottom: 14),
+          padding: EdgeInsets.only(top: 12, bottom: 12),
           child: Divider(height: 1),
         ),
         Row(children: children),
@@ -444,50 +655,55 @@ class AppCardFooter extends StatelessWidget {
 
 // ═════════════════════════ Forms & detail pages ═════════════════════════
 
-/// Optional title over a white card holding a vertical list of children.
+/// A form or detail section: section title and content in ONE flat white
+/// card (no card inside a card, no tinted field inside a white card).
 class AppFormSection extends StatelessWidget {
   final String? title;
   final List<Widget> children;
   final EdgeInsets padding;
   final double spacing;
 
+  /// Optional widget at the right of the title (an action, a count).
+  final Widget? trailing;
+
   const AppFormSection({
     super.key,
     this.title,
     required this.children,
     this.padding = const EdgeInsets.all(16),
-    this.spacing = 12,
+    this.spacing = 14,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 10),
-            child: Text(title!, style: AppTheme.font(size: 16, weight: FontWeight.w600)),
-          ),
-        Container(
-          width: double.infinity,
-          padding: padding,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: AppColors.cardShadow,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) SizedBox(height: spacing),
-                children[i],
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: AppSpacing.gap),
+      padding: padding,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (title != null) ...[
+            Row(
+              children: [
+                Expanded(child: Text(title!, style: AppTheme.sectionTitle)),
+                ?trailing,
               ],
-            ],
-          ),
-        ),
-      ],
+            ),
+            SizedBox(height: spacing),
+          ],
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) SizedBox(height: spacing),
+            children[i],
+          ],
+        ],
+      ),
     );
   }
 }
@@ -511,31 +727,86 @@ class AppInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    // Label on the left, value on the right, thin divider below: the
+    // detail-page row of business software.
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
       padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.iconMuted),
-          const SizedBox(width: 14),
+          Icon(icon, size: 18, color: AppColors.iconMuted),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: AppTheme.label),
-                const SizedBox(height: 2),
-                Text(value,
-                    style: AppTheme.font(size: 15, color: valueColor ?? AppColors.textPrimary)),
-              ],
+            flex: 4,
+            child: Text(label,
+                style: AppTheme.font(size: 13, color: AppColors.textSecondary)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 6,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: AppTheme.font(
+                  size: 14,
+                  weight: FontWeight.w500,
+                  color: valueColor == null
+                      ? AppColors.textPrimary
+                      : AppColors.textOn(valueColor!)),
             ),
           ),
-          ?trailing,
+          if (trailing != null) ...[const SizedBox(width: 4), trailing!],
         ],
       ),
     );
   }
 }
 
-/// Text field with the app's styling. One per row in every form.
+/// A field label above its field (13px medium), with an optional
+/// required mark. Use it to put any input under a label.
+class AppLabeledField extends StatelessWidget {
+  final String label;
+  final Widget child;
+  final bool required;
+
+  const AppLabeledField({
+    super.key,
+    required this.label,
+    required this.child,
+    this.required = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text.rich(
+          TextSpan(children: [
+            TextSpan(text: label),
+            if (required)
+              TextSpan(
+                  text: ' *',
+                  style: AppTheme.font(
+                      size: 13,
+                      weight: FontWeight.w500,
+                      color: AppColors.dangerText)),
+          ]),
+          style: AppTheme.fieldLabel,
+        ),
+        const SizedBox(height: 6),
+        child,
+      ],
+    );
+  }
+}
+
+/// Text field with the app's styling: label above, white bordered field,
+/// 48 high. One per row in every form (or two side by side in a Row).
 class AppTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -545,6 +816,9 @@ class AppTextField extends StatelessWidget {
   final String? suffix;
   final ValueChanged<String>? onChanged;
   final bool autofocus;
+  final bool required;
+  final String? hint;
+  final String? errorText;
 
   const AppTextField({
     super.key,
@@ -556,23 +830,30 @@ class AppTextField extends StatelessWidget {
     this.suffix,
     this.onChanged,
     this.autofocus = false,
+    this.required = false,
+    this.hint,
+    this.errorText,
   });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      autofocus: autofocus,
-      onChanged: onChanged,
-      style: AppTheme.font(size: 15),
-      decoration: InputDecoration(
-        labelText: label,
-        alignLabelWithHint: maxLines > 1,
-        prefixIcon: icon != null ? Icon(icon) : null,
-        suffixText: suffix,
-        suffixStyle: AppTheme.font(size: 14, color: AppColors.textSecondary),
+    return AppLabeledField(
+      label: label,
+      required: required,
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        autofocus: autofocus,
+        onChanged: onChanged,
+        style: AppTheme.font(size: 14),
+        decoration: InputDecoration(
+          hintText: hint,
+          errorText: errorText,
+          prefixIcon: icon != null ? Icon(icon, size: 20) : null,
+          suffixText: suffix,
+          suffixStyle: AppTheme.font(size: 14, color: AppColors.textSecondary),
+        ),
       ),
     );
   }
@@ -598,21 +879,24 @@ class AppDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<T>(
-      initialValue: value,
-      isExpanded: true,
-      items: items,
-      onChanged: onChanged,
-      style: AppTheme.font(size: 15),
-      dropdownColor: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      icon: const Icon(Icons.expand_more, color: AppColors.iconMuted),
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+    return AppLabeledField(
+      label: label,
+      child: DropdownButtonFormField<T>(
+        initialValue: value,
+        isExpanded: true,
+        items: items,
+        onChanged: onChanged,
+        style: AppTheme.font(size: 14),
+        dropdownColor: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        icon: const Icon(Icons.expand_more, color: AppColors.iconMuted),
+        decoration: InputDecoration(prefixIcon: Icon(icon, size: 20)),
+      ),
     );
   }
 }
 
-/// Pill segmented control: selected option in dark ink with white text.
+/// Segmented control: bordered group, selected segment on a light blue fill.
 class AppSegmentedControl<T> extends StatelessWidget {
   final List<({T value, String label, IconData? icon})> options;
   final T selected;
@@ -628,23 +912,27 @@ class AppSegmentedControl<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.fill,
-        borderRadius: BorderRadius.circular(100),
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.fieldBorder),
+        borderRadius: BorderRadius.circular(AppRadius.control),
       ),
       child: Row(
         children: [
           for (final o in options)
             Expanded(
-              child: GestureDetector(
+              child: AppPressable(
                 onTap: () => onChanged(o.value),
+                selected: o.value == selected,
+                borderRadius: BorderRadius.circular(8),
+                semanticLabel: o.label,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
                   padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
                   decoration: BoxDecoration(
-                    color: o.value == selected ? AppColors.black : Colors.transparent,
-                    borderRadius: BorderRadius.circular(100),
+                    color: o.value == selected ? AppColors.primarySoft : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -652,7 +940,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
                       if (o.icon != null) ...[
                         Icon(o.icon,
                             size: 16,
-                            color: o.value == selected ? Colors.white : AppColors.textSecondary),
+                            color: o.value == selected ? AppColors.primary : AppColors.textSecondary),
                         const SizedBox(width: 6),
                       ],
                       Flexible(
@@ -662,7 +950,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
                           style: AppTheme.font(
                             size: 13,
                             weight: o.value == selected ? FontWeight.w600 : FontWeight.w500,
-                            color: o.value == selected ? Colors.white : AppColors.textSecondary,
+                            color: o.value == selected ? AppColors.primary : AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -678,6 +966,8 @@ class AppSegmentedControl<T> extends StatelessWidget {
 }
 
 /// Bottom bar holding the primary action of a full-page form.
+/// Below 840px the action spans the width (thumb reach); from 840px it sits
+/// at the right, up to 320 wide, like a desktop dialog's primary button.
 class AppBottomActionBar extends StatelessWidget {
   final Widget child;
 
@@ -685,15 +975,42 @@ class AppBottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 840;
     return SafeArea(
       top: false,
       child: Container(
-        color: AppColors.canvas,
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-        child: child,
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: wide
+            ? Align(
+                alignment: Alignment.centerRight,
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(minWidth: 200, maxWidth: 320),
+                  child: SizedBox(height: 48, child: child),
+                ),
+              )
+            : SizedBox(width: double.infinity, height: 48, child: child),
       ),
     );
   }
+}
+
+/// A primary or secondary button that fills the width of its column, 48
+/// high. The theme's buttons size to their label (min 88×48); use this where
+/// a form's main action should span the form.
+class AppBlockButton extends StatelessWidget {
+  final Widget child;
+  final double height;
+
+  const AppBlockButton({super.key, required this.child, this.height = 48});
+
+  @override
+  Widget build(BuildContext context) =>
+      SizedBox(width: double.infinity, height: height, child: child);
 }
 
 // ═════════════════════════ Row menu ═════════════════════════
@@ -736,7 +1053,7 @@ class AppRowMenu extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   actions[i].label,
-                  style: AppTheme.font(size: 15, color: _color(actions[i])),
+                  style: AppTheme.font(size: 14, color: _color(actions[i])),
                 ),
               ],
             ),

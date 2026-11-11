@@ -1,16 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/supplier_entity.dart';
 import '../providers/supplier_provider.dart';
-import '../widgets/supplier_form_dialog.dart';
+import 'supplier_form_page.dart';
 import 'supplier_detail_page.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../shared/widgets/app_data_table.dart';
 
 class SuppliersPage extends ConsumerStatefulWidget {
   const SuppliersPage({super.key});
@@ -36,22 +36,17 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   Future<void> _create() async {
-    final input = await showSupplierFormDialog(context);
+    final input = await openSupplierForm(context);
     if (input == null) return;
     await ref.read(supplierListProvider.notifier).add(input);
   }
 
   Future<void> _edit(SupplierEntity s, AppLocalizations l10n) async {
-    final input = await showSupplierFormDialog(context, existing: s);
+    final input = await openSupplierForm(context, existing: s);
     if (input == null) return;
     await ref.read(supplierListProvider.notifier).update(s.id, input);
     if (mounted) _showSnack(l10n.supplierUpdated);
@@ -91,122 +86,64 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
   }
 
   Future<void> _openDetail(SupplierEntity s) async {
-    await Navigator.of(context).push(MaterialPageRoute(
+    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => SupplierDetailPage(supplierId: s.id),
     ));
     if (mounted) ref.read(supplierListProvider.notifier).load();
   }
 
-  /// Only shown when deliveries actually have expected and received dates;
-  /// with no data there is nothing honest to display.
-  Widget? _reliabilityBadge(SupplierEntity s, AppLocalizations l10n) {
-    final tracked = s.trackedDeliveries;
-    if (tracked <= 0) return null;
+  // Delivery reliability is shown on the supplier's detail page only.
+  Widget _statusBadge(SupplierEntity s, AppLocalizations l10n) => s.owesMoney
+      ? AppBadge(label: l10n.statusToPay, tone: BadgeTone.warning)
+      : AppBadge(label: l10n.statusNoBalance, tone: BadgeTone.success);
 
-    final rate = s.onTimeDeliveries / tracked;
-    final tone = rate > 0.8
-        ? BadgeTone.success
-        : rate >= 0.5
-        ? BadgeTone.warning
-        : BadgeTone.danger;
+  List<AppTableColumn<SupplierEntity>> _columns(AppLocalizations l10n) => [
+        AppTableColumn(
+          label: l10n.supplier,
+          flex: 4,
+          sortValue: (s) => s.name.toLowerCase(),
+          cell: (s) => AppCellText(s.name, strong: true, sub: s.contactPerson),
+        ),
+        AppTableColumn(
+          label: l10n.phone,
+          flex: 2,
+          showFrom: 760,
+          sortValue: (s) => s.phone ?? '',
+          cell: (s) => AppCellText(s.phone ?? '—', color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.orders,
+          width: 60,
+          numeric: true,
+          showFrom: 600,
+          sortValue: (s) => s.orderCount,
+          cell: (s) => AppCellText('${s.orderCount}', numeric: true),
+        ),
+        AppTableColumn(
+          label: l10n.amountOwed,
+          width: 112,
+          numeric: true,
+          sortValue: (s) => s.balance,
+          cell: (s) => AppCellText(formatDT(s.balance > 0 ? s.balance : 0),
+              numeric: true),
+        ),
+        AppTableColumn(
+          label: l10n.status,
+          width: 84,
+          sortValue: (s) => s.owesMoney ? 1 : 0,
+          cell: (s) => _statusBadge(s, l10n),
+        ),
+      ];
 
-    return AppBadge(
-      label: '${(rate * 100).toStringAsFixed(0)}% '
-          '${l10n.onTimeDeliveries(s.onTimeDeliveries, tracked)}',
-      tone: tone,
-    );
-  }
-
-  Widget _card(SupplierEntity s, AppLocalizations l10n) {
-    final owes = s.balance > 0.009;
-    final reliability = _reliabilityBadge(s, l10n);
-    final hasPhone = s.phone != null && s.phone!.trim().isNotEmpty;
-
-    return AppCard(
-      onTap: () => _openDetail(s),
-      padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AppLeadingTile.icon(Icons.local_shipping_outlined),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(s.name, style: AppTheme.rowTitle, maxLines: 2),
-                if (s.contactPerson != null &&
-                    s.contactPerson!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(s.contactPerson!, style: AppTheme.label, maxLines: 2),
-                ],
-                if (hasPhone) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.phone_outlined,
-                          size: 14, color: AppColors.iconMuted),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          s.phone!,
-                          maxLines: 1,
-                          style: AppTheme.font(
-                            size: 13,
-                            color: AppColors.textSecondary,
-                            tabularFigures: true,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    AppBadge(
-                      label: owes ? l10n.unpaid : l10n.paid,
-                      tone: owes ? BadgeTone.warning : BadgeTone.success,
-                    ),
-                    ?reliability,
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (owes) ...[
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  formatDT(s.balance),
-                  style: AppTheme.money.copyWith(color: AppColors.danger),
-                ),
-                const SizedBox(height: 3),
-                Text(l10n.amountOwed, style: AppTheme.label),
-              ],
-            ),
-          ],
-          AppRowMenu(actions: [
-            AppMenuAction(
-              label: l10n.edit,
-              icon: Icons.edit_outlined,
-              onTap: () => _edit(s, l10n),
-            ),
-            AppMenuAction(
-              label: l10n.delete,
-              icon: Icons.delete_outline,
-              destructive: true,
-              onTap: () => _delete(s, l10n),
-            ),
-          ]),
-        ],
-      ),
-    );
-  }
+  Widget _rowMenu(SupplierEntity s, AppLocalizations l10n) => AppRowMenu(actions: [
+        AppMenuAction(
+            label: l10n.edit, icon: Icons.edit_outlined, onTap: () => _edit(s, l10n)),
+        AppMenuAction(
+            label: l10n.delete,
+            icon: Icons.delete_outline,
+            destructive: true,
+            onTap: () => _delete(s, l10n)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +164,6 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/suppliers'),
       appBar: searchVisible
           ? AppSearchHeader(
         controller: searchController,
@@ -251,10 +187,18 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
           ),
+          AppHeaderAddButton(onPressed: _create, label: l10n.supplier),
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(semanticLabel: l10n.loading)
+          : state.error != null && state.suppliers.isEmpty
+          ? AppErrorState(
+              title: l10n.loadFailedTitle,
+              message: l10n.serverUnreachable,
+              retryLabel: l10n.retry,
+              onRetry: () => ref.read(supplierListProvider.notifier).load(),
+            )
           : state.suppliers.isEmpty
           ? AppEmptyState(
         icon: state.hasSearched
@@ -264,25 +208,22 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
         state.hasSearched ? l10n.noResults : l10n.noSuppliers,
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
-            : l10n.tapPlusToAdd,
+            : '',
+          actionLabel: state.hasSearched ? null : l10n.supplier,
+          onAction: _create,
       )
           : RefreshIndicator(
-        color: AppColors.accent,
         onRefresh: () =>
             ref.read(supplierListProvider.notifier).load(),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          itemCount: state.suppliers.length,
-          itemBuilder: (context, index) =>
-              _card(state.suppliers[index], l10n),
+        child: AppDataTable<SupplierEntity>(
+          columns: _columns(l10n),
+          rows: state.suppliers,
+          initialSortColumn: 0,
+          onRowTap: _openDetail,
+          rowMenu: (s) => _rowMenu(s, l10n),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _create,
-        backgroundColor: AppColors.black,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.supplier),
-      ),
+      floatingActionButton: AppAddFab(onPressed: _create, label: l10n.supplier),
     );
   }
 }

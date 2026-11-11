@@ -1,16 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../providers/customer_provider.dart';
-import '../widgets/customer_form_dialog.dart';
+import '../widgets/customer_form_route.dart';
 import 'customer_detail_page.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../shared/widgets/app_data_table.dart';
 
 class CustomersPage extends ConsumerStatefulWidget {
   const CustomersPage({super.key});
@@ -36,22 +36,17 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   Future<void> _create() async {
-    final input = await showCustomerFormDialog(context);
+    final input = await openCustomerForm(context);
     if (input == null) return;
     await ref.read(customerListProvider.notifier).add(input);
   }
 
   Future<void> _edit(CustomerEntity c, AppLocalizations l10n) async {
-    final input = await showCustomerFormDialog(context, existing: c);
+    final input = await openCustomerForm(context, existing: c);
     if (input == null) return;
     await ref.read(customerListProvider.notifier).update(c.id, input);
     if (mounted) _showSnack(l10n.customerUpdated);
@@ -91,147 +86,86 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   }
 
   Future<void> _openDetail(CustomerEntity c) async {
-    await Navigator.of(context).push(MaterialPageRoute(
+    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => CustomerDetailPage(customerId: c.id),
     ));
     if (mounted) ref.read(customerListProvider.notifier).load();
   }
 
+  /// One status per customer: over the credit limit beats unpaid beats
+  /// settled.
   Widget _statusBadge(CustomerEntity c, AppLocalizations l10n) {
     if (c.isOverCreditLimit) {
-      return AppBadge(label: l10n.creditLimitExceeded, tone: BadgeTone.danger);
+      return AppBadge(label: l10n.statusOverLimit, tone: BadgeTone.danger);
     }
     if (c.owesMoney) {
       return AppBadge(label: l10n.unpaid, tone: BadgeTone.warning);
     }
-    return AppBadge(label: l10n.reasonUpToDate, tone: BadgeTone.success);
+    return AppBadge(label: l10n.statusUpToDate, tone: BadgeTone.success);
   }
 
-  /// Credit usage bar under the card's main row.
-  Widget _creditFooter(CustomerEntity c, AppLocalizations l10n) {
-    final color = c.isOverCreditLimit
-        ? AppColors.danger
-        : c.isNearCreditLimit
-        ? AppColors.warning
-        : AppColors.success;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 16, bottom: 14),
-          child: Divider(height: 1),
+  List<AppTableColumn<CustomerEntity>> _columns(AppLocalizations l10n) => [
+        AppTableColumn(
+          label: l10n.customer,
+          flex: 4,
+          sortValue: (c) => c.name.toLowerCase(),
+          cell: (c) => AppCellText(c.name, strong: true, sub: c.phone),
         ),
-        Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            child: LinearProgressIndicator(
-              value: c.creditUsage.clamp(0.0, 1.0),
-              minHeight: 6,
-              backgroundColor: AppColors.track,
-              valueColor: AlwaysStoppedAnimation(color),
-            ),
-          ),
+        AppTableColumn(
+          label: l10n.email,
+          flex: 3,
+          showFrom: 760,
+          sortValue: (c) => (c.email ?? '').toLowerCase(),
+          cell: (c) => AppCellText(c.email ?? '—', color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 8),
-        Text(
-          '${l10n.creditUsage} · ${formatDT(c.balance > 0 ? c.balance : 0)} / ${formatDT(c.creditLimit)}',
-          maxLines: 2,
-          style: AppTheme.font(
-            size: 12,
-            color: AppColors.textSecondary,
-            tabularFigures: true,
-          ),
+        AppTableColumn(
+          label: l10n.orders,
+          width: 60,
+          numeric: true,
+          sortValue: (c) => c.orderCount,
+          cell: (c) => AppCellText('${c.orderCount}', numeric: true),
         ),
-      ],
-    );
-  }
+        AppTableColumn(
+          label: l10n.status,
+          width: 116,
+          showFrom: 600,
+          sortValue: (c) => c.isOverCreditLimit ? 2 : (c.owesMoney ? 1 : 0),
+          cell: (c) => _statusBadge(c, l10n),
+        ),
+        AppTableColumn(
+          label: l10n.colBalance,
+          width: 118,
+          numeric: true,
+          sortValue: (c) => c.balance,
+          cell: (c) => LayoutBuilder(builder: (context, _) {
+            final amount = AppCellText(
+              formatDT(c.balance > 0 ? c.balance : 0),
+              numeric: true,
+              color: c.isOverCreditLimit
+                  ? AppColors.dangerText
+                  : AppColors.textPrimary,
+            );
+            // On phones the status chip sits under the balance; from 600px
+            // it has its own column.
+            if (MediaQuery.sizeOf(context).width >= 600) return amount;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [amount, const SizedBox(height: 4), _statusBadge(c, l10n)],
+            );
+          }),
+        ),
+      ];
 
-  Widget _card(CustomerEntity c, AppLocalizations l10n) {
-    final hasPhone = c.phone != null && c.phone!.trim().isNotEmpty;
-
-    return AppCard(
-      onTap: () => _openDetail(c),
-      padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppLeadingTile.initials(c.name),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(c.name, style: AppTheme.rowTitle, maxLines: 2),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${c.orderCount} ${l10n.orders.toLowerCase()}',
-                      style: AppTheme.label,
-                    ),
-                    // The phone gets its own line — it is not a count.
-                    if (hasPhone) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.phone_outlined,
-                              size: 14, color: AppColors.iconMuted),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              c.phone!,
-                              maxLines: 1,
-                              style: AppTheme.font(
-                                size: 13,
-                                color: AppColors.textSecondary,
-                                tabularFigures: true,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    _statusBadge(c, l10n),
-                  ],
-                ),
-              ),
-              if (c.owesMoney) ...[
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      formatDT(c.balance),
-                      style: AppTheme.money.copyWith(color: AppColors.danger),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(l10n.outstandingBalance, style: AppTheme.label),
-                  ],
-                ),
-              ],
-              AppRowMenu(actions: [
-                AppMenuAction(
-                  label: l10n.edit,
-                  icon: Icons.edit_outlined,
-                  onTap: () => _edit(c, l10n),
-                ),
-                AppMenuAction(
-                  label: l10n.delete,
-                  icon: Icons.delete_outline,
-                  destructive: true,
-                  onTap: () => _delete(c, l10n),
-                ),
-              ]),
-            ],
-          ),
-          if (c.creditLimit > 0) _creditFooter(c, l10n),
-        ],
-      ),
-    );
-  }
+  Widget _rowMenu(CustomerEntity c, AppLocalizations l10n) => AppRowMenu(actions: [
+        AppMenuAction(
+            label: l10n.edit, icon: Icons.edit_outlined, onTap: () => _edit(c, l10n)),
+        AppMenuAction(
+            label: l10n.delete,
+            icon: Icons.delete_outline,
+            destructive: true,
+            onTap: () => _delete(c, l10n)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +187,6 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/customers'),
       appBar: searchVisible
           ? AppSearchHeader(
         controller: searchController,
@@ -277,10 +210,18 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
           ),
+          AppHeaderAddButton(onPressed: _create, label: l10n.customer),
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(semanticLabel: l10n.loading)
+          : state.error != null && state.customers.isEmpty
+          ? AppErrorState(
+              title: l10n.loadFailedTitle,
+              message: l10n.serverUnreachable,
+              retryLabel: l10n.retry,
+              onRetry: () => ref.read(customerListProvider.notifier).load(),
+            )
           : state.customers.isEmpty
           ? AppEmptyState(
         icon: state.hasSearched
@@ -290,25 +231,22 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         state.hasSearched ? l10n.noResults : l10n.noCustomers,
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
-            : l10n.tapPlusToAdd,
+            : '',
+          actionLabel: state.hasSearched ? null : l10n.customer,
+          onAction: _create,
       )
           : RefreshIndicator(
-        color: AppColors.accent,
         onRefresh: () =>
             ref.read(customerListProvider.notifier).load(),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          itemCount: state.customers.length,
-          itemBuilder: (context, index) =>
-              _card(state.customers[index], l10n),
+        child: AppDataTable<CustomerEntity>(
+          columns: _columns(l10n),
+          rows: state.customers,
+          initialSortColumn: 0,
+          onRowTap: _openDetail,
+          rowMenu: (c) => _rowMenu(c, l10n),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _create,
-        backgroundColor: AppColors.black,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.customer),
-      ),
+      floatingActionButton: AppAddFab(onPressed: _create, label: l10n.customer),
     );
   }
 }

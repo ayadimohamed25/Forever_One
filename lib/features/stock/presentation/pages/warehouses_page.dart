@@ -1,16 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/warehouse_entity.dart';
 import '../../domain/repositories/warehouse_repository.dart';
 import '../providers/warehouse_provider.dart';
 import 'warehouse_form_page.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../shared/widgets/app_data_table.dart';
 
 class WarehousesPage extends ConsumerStatefulWidget {
   const WarehousesPage({super.key});
@@ -36,17 +36,12 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   Future<void> _openForm(AppLocalizations l10n,
       {WarehouseEntity? existing}) async {
-    final input = await Navigator.of(context).push<WarehouseInput>(
+    final input = await Navigator.of(context, rootNavigator: true).push<WarehouseInput>(
       MaterialPageRoute(
           builder: (_) => WarehouseFormPage(existing: existing)),
     );
@@ -96,73 +91,50 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     }
   }
 
-  Widget _card(WarehouseEntity w, AppLocalizations l10n) {
-    final details = [w.code, w.location, w.managerName]
-        .whereType<String>()
-        .where((s) => s.trim().isNotEmpty)
-        .toList();
-
-    return Opacity(
-      opacity: w.isActive ? 1 : 0.6,
-      child: AppCard(
-        onTap: () => _openForm(l10n, existing: w),
-        padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppLeadingTile.icon(Icons.warehouse_outlined),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(w.name, style: AppTheme.rowTitle, maxLines: 2),
-                  if (details.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(details.join(' · '),
-                        style: AppTheme.label, maxLines: 2),
-                  ],
-                  const SizedBox(height: 4),
-                  Text(
-                    '${l10n.unitsInStock(w.totalUnits)} · ${l10n.productCount(w.productCount)}',
-                    style: AppTheme.label,
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 10),
-                  AppBadge(
-                    label: w.isActive ? l10n.active : l10n.inactive,
-                    tone: w.isActive ? BadgeTone.success : BadgeTone.neutral,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(formatDT(w.stockValue), style: AppTheme.money),
-                const SizedBox(height: 3),
-                Text(l10n.stockValue, style: AppTheme.label),
-              ],
-            ),
-            AppRowMenu(actions: [
-              AppMenuAction(
-                label: l10n.edit,
-                icon: Icons.edit_outlined,
-                onTap: () => _openForm(l10n, existing: w),
-              ),
-              AppMenuAction(
-                label: l10n.delete,
-                icon: Icons.delete_outline,
-                destructive: true,
-                onTap: () => _delete(w, l10n),
-              ),
-            ]),
-          ],
+  List<AppTableColumn<WarehouseEntity>> _columns(AppLocalizations l10n) => [
+        AppTableColumn(
+          label: l10n.warehouse,
+          flex: 4,
+          sortValue: (w) => w.name.toLowerCase(),
+          cell: (w) => Opacity(
+            opacity: w.isActive ? 1 : 0.55,
+            child: AppCellText(w.name, strong: true, sub: w.location),
+          ),
         ),
-      ),
-    );
-  }
+        AppTableColumn(
+          label: l10n.manager,
+          flex: 3,
+          showFrom: 760,
+          sortValue: (w) => (w.managerName ?? '').toLowerCase(),
+          cell: (w) => AppCellText(w.managerName ?? '—'),
+        ),
+        AppTableColumn(
+          label: l10n.colProducts,
+          width: 80,
+          numeric: true,
+          sortValue: (w) => w.productCount,
+          cell: (w) => AppCellText('${w.productCount}', numeric: true),
+        ),
+        AppTableColumn(
+          label: l10n.stockValue,
+          width: 120,
+          numeric: true,
+          sortValue: (w) => w.stockValue,
+          cell: (w) => AppCellText(formatDT(w.stockValue), numeric: true),
+        ),
+      ];
+
+  Widget _rowMenu(WarehouseEntity w, AppLocalizations l10n) => AppRowMenu(actions: [
+        AppMenuAction(
+            label: l10n.edit,
+            icon: Icons.edit_outlined,
+            onTap: () => _openForm(l10n, existing: w)),
+        AppMenuAction(
+            label: l10n.delete,
+            icon: Icons.delete_outline,
+            destructive: true,
+            onTap: () => _delete(w, l10n)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +153,6 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/warehouses'),
       appBar: searchVisible
           ? AppSearchHeader(
         controller: searchController,
@@ -205,10 +176,18 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
           ),
+          AppHeaderAddButton(onPressed: () => _openForm(l10n), label: l10n.warehouse),
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(semanticLabel: l10n.loading)
+          : state.error != null && state.warehouses.isEmpty
+          ? AppErrorState(
+              title: l10n.loadFailedTitle,
+              message: l10n.serverUnreachable,
+              retryLabel: l10n.retry,
+              onRetry: () => ref.read(warehouseListProvider.notifier).load(),
+            )
           : state.warehouses.isEmpty
           ? AppEmptyState(
         icon: state.hasSearched
@@ -219,25 +198,22 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
             : l10n.noWarehouses,
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
-            : l10n.tapPlusToAdd,
+            : '',
+          actionLabel: state.hasSearched ? null : l10n.warehouse,
+          onAction: () => _openForm(l10n),
       )
           : RefreshIndicator(
-        color: AppColors.accent,
         onRefresh: () =>
             ref.read(warehouseListProvider.notifier).load(),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          itemCount: state.warehouses.length,
-          itemBuilder: (context, index) =>
-              _card(state.warehouses[index], l10n),
+        child: AppDataTable<WarehouseEntity>(
+          columns: _columns(l10n),
+          rows: state.warehouses,
+          initialSortColumn: 0,
+          onRowTap: (w) => _openForm(l10n, existing: w),
+          rowMenu: (w) => _rowMenu(w, l10n),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(l10n),
-        backgroundColor: AppColors.black,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.warehouse),
-      ),
+      floatingActionButton: AppAddFab(onPressed: () => _openForm(l10n), label: l10n.warehouse),
     );
   }
 }

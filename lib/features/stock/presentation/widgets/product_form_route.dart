@@ -6,16 +6,14 @@ import '../pages/product_form_page.dart';
 
 /// Opens the product form as a full page and returns what the user saved,
 /// or null if they backed out.
-///
-/// Kept under its original name and signature so the products list and the
-/// product detail page call it unchanged. [ref] is no longer needed here but
-/// stays for that compatibility.
-Future<ProductInput?> showProductFormDialog(
+/// Pushed on the root navigator, so the form covers the shell (no sidebar)
+/// and has its own back button.
+Future<ProductInput?> openProductForm(
     BuildContext context,
     WidgetRef ref, {
       ProductEntity? existing,
     }) {
-  return Navigator.of(context).push<ProductInput>(
+  return Navigator.of(context, rootNavigator: true).push<ProductInput>(
     MaterialPageRoute(builder: (_) => ProductFormPage(existing: existing)),
   );
 }

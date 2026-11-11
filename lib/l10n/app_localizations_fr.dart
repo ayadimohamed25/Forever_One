@@ -684,10 +684,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sendEmail => 'Email';
 
   @override
-  String get paid => 'payé';
+  String get paid => 'Payé';
 
   @override
-  String get unpaid => 'impayé';
+  String get unpaid => 'Impayé';
 
   @override
   String get taxId => 'Matricule fiscale';
@@ -1355,4 +1355,238 @@ class AppLocalizationsFr extends AppLocalizations {
   String andOtherProducts(int count) {
     return 'et $count autres produits';
   }
+
+  @override
+  String get localData => 'Données locales';
+
+  @override
+  String get back => 'Retour';
+
+  @override
+  String get openMenu => 'Ouvrir le menu';
+
+  @override
+  String get loading => 'Chargement';
+
+  @override
+  String get collapseSidebar => 'Réduire le menu';
+
+  @override
+  String get expandSidebar => 'Développer le menu';
+
+  @override
+  String get serverUnreachable =>
+      'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get loadFailedTitle => 'Impossible de charger cette page';
+
+  @override
+  String get clearSearch => 'Effacer la recherche';
+
+  @override
+  String get close => 'Fermer';
+
+  @override
+  String get moreActions => 'Plus d\'actions';
+
+  @override
+  String get send => 'Envoyer';
+
+  @override
+  String get showPassword => 'Afficher le mot de passe';
+
+  @override
+  String get hidePassword => 'Masquer le mot de passe';
+
+  @override
+  String get removeLine => 'Supprimer la ligne';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get notificationsTooltip => 'Notifications';
+
+  @override
+  String get noNotifications => 'Tout est à jour';
+
+  @override
+  String get noNotificationsHint =>
+      'Les alertes de stock, de paiement et de livraison apparaîtront ici.';
+
+  @override
+  String get notifOutOfStock => 'Rupture de stock';
+
+  @override
+  String get notifLowStock => 'Stock faible';
+
+  @override
+  String get notifOverduePayments => 'Paiements clients en retard';
+
+  @override
+  String get notifCreditExceeded => 'Plafond de crédit dépassé';
+
+  @override
+  String get notifSupplierPaymentsDue => 'Paiements fournisseurs à échéance';
+
+  @override
+  String get notifPendingDeliveries => 'Livraisons en attente';
+
+  @override
+  String notifStockLeft(String count, String min) {
+    return '$count restant(s) · minimum $min';
+  }
+
+  @override
+  String notifDaysOverdue(int days) {
+    return '$days jours de retard';
+  }
+
+  @override
+  String notifDueInDays(int days) {
+    return 'Échéance dans $days jours';
+  }
+
+  @override
+  String get notifDueToday => 'Échéance aujourd\'hui';
+
+  @override
+  String notifExpectedInDays(int days) {
+    return 'Attendue dans $days jours';
+  }
+
+  @override
+  String notifDeliveryLate(int days) {
+    return '$days jours de retard';
+  }
+
+  @override
+  String get notifNoDate => 'Sans date de livraison';
+
+  @override
+  String notifOverLimit(String limit) {
+    return 'Plafond $limit';
+  }
+
+  @override
+  String alertsBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alertes',
+      one: '1 alerte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String alertsOutOfStock(int count) {
+    return '$count en rupture';
+  }
+
+  @override
+  String alertsLowStock(int count) {
+    return '$count stock faible';
+  }
+
+  @override
+  String alertsOverdue(int count) {
+    return '$count paiements en retard';
+  }
+
+  @override
+  String alertsOther(int count) {
+    return '$count autres';
+  }
+
+  @override
+  String get tabHome => 'Accueil';
+
+  @override
+  String get tabCopilot => 'Copilote';
+
+  @override
+  String get addProduct => 'Ajouter un produit';
+
+  @override
+  String get scanShort => 'Scanner';
+
+  @override
+  String get seeAll => 'Voir tout';
+
+  @override
+  String get revenueThisMonth => 'Chiffre d\'affaires du mois';
+
+  @override
+  String get downloadPdfReport => 'Télécharger le rapport PDF';
+
+  @override
+  String get colVat => 'TVA';
+
+  @override
+  String get colMargin => 'Marge';
+
+  @override
+  String get colBalance => 'Solde';
+
+  @override
+  String get colProducts => 'Produits';
+
+  @override
+  String get colPriceInclVat => 'Prix TTC';
+
+  @override
+  String get colTotalInclVat => 'Total TTC';
+
+  @override
+  String get colSku => 'Réf.';
+
+  @override
+  String get statusOutOfStock => 'Rupture';
+
+  @override
+  String get statusLowStock => 'Stock faible';
+
+  @override
+  String get statusUpToDate => 'À jour';
+
+  @override
+  String get statusOverLimit => 'Plafond dépassé';
+
+  @override
+  String get statusToPay => 'À payer';
+
+  @override
+  String get statusPendingDelivery => 'Livraison en attente';
+
+  @override
+  String get statusNoBalance => 'Soldé';
+
+  @override
+  String get statusLateDelivery => 'Livraison en retard';
+
+  @override
+  String get requiredField => 'Obligatoire';
+
+  @override
+  String get lines => 'Lignes';
+
+  @override
+  String get qtyShort => 'Qté';
+
+  @override
+  String get removeLineTooltip => 'Supprimer la ligne';
+
+  @override
+  String get minimum => 'Min.';
+
+  @override
+  String get suggestedOrder => 'À commander';
+
+  @override
+  String get lastSale => 'Dernière vente';
+
+  @override
+  String get score => 'Score';
 }

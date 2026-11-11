@@ -10,7 +10,7 @@ import '../../../../shared/widgets/app_widgets.dart';
 import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../providers/customer_provider.dart';
-import '../widgets/customer_form_dialog.dart';
+import '../widgets/customer_form_route.dart';
 
 class CustomerDetailPage extends ConsumerStatefulWidget {
   final String customerId;
@@ -34,7 +34,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
   }
 
   Future<void> _edit(CustomerEntity c) async {
-    final input = await showCustomerFormDialog(context, existing: c);
+    final input = await openCustomerForm(context, existing: c);
     if (input == null) return;
     await ref.read(customerListProvider.notifier).update(c.id, input);
     if (mounted) ref.read(customerDetailProvider.notifier).load(c.id);
@@ -63,8 +63,8 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
               value,
               style: AppTheme.font(
                 size: 16,
-                weight: FontWeight.w700,
-                color: color,
+                weight: FontWeight.w600,
+                color: AppColors.textOn(color),
                 tabularFigures: true,
               ),
             ),
@@ -82,7 +82,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
   }
 
   Widget _statDivider() =>
-      Container(width: 1, height: 36, color: AppColors.track);
+      Container(width: 1, height: 36, color: AppColors.border);
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +108,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(rows: 4, semanticLabel: AppLocalizations.of(context)!.loading)
           : c == null
           ? AppEmptyState(
         icon: Icons.error_outline,
@@ -116,12 +116,11 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
         subtitle: '',
       )
           : RefreshIndicator(
-        color: AppColors.accent,
         onRefresh: () => ref
             .read(customerDetailProvider.notifier)
             .load(widget.customerId),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          padding: const EdgeInsets.all(AppSpacing.page),
           children: [
             // ── Identity ──
             AppCard(
@@ -188,7 +187,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                   color: c.isOverCreditLimit
                       ? AppColors.dangerSoft
                       : AppColors.warningSoft,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                 ),
                 child: Row(
                   children: [
@@ -208,9 +207,9 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                         style: AppTheme.font(
                           size: 14,
                           weight: FontWeight.w600,
-                          color: c.isOverCreditLimit
+                          color: AppColors.textOn(c.isOverCreditLimit
                               ? AppColors.danger
-                              : AppColors.warning,
+                              : AppColors.warning),
                         ),
                       ),
                     ),
@@ -272,7 +271,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                     ),
                     const SizedBox(height: 10),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
+                      borderRadius: BorderRadius.circular(AppRadius.chip),
                       child: LinearProgressIndicator(
                         value: c.creditUsage.clamp(0.0, 1.0),
                         minHeight: 8,
@@ -298,8 +297,6 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
                   ],
                 ),
               ),
-
-            const SizedBox(height: 12),
 
             // ── Commercial info ──
             AppFormSection(
@@ -403,7 +400,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> {
               for (final s in state.sales)
                 AppCard(
                   onTap: () async {
-                    await Navigator.of(context).push(
+                    await Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
                         builder: (_) => PaymentPage(
                           saleId: s.id,

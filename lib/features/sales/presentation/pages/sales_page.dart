@@ -1,16 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/sale_entity.dart';
 import '../providers/sale_provider.dart';
 import 'create_sale_page.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../shared/widgets/app_data_table.dart';
 
 class SalesPage extends ConsumerStatefulWidget {
   const SalesPage({super.key});
@@ -36,16 +36,11 @@ class _SalesPageState extends ConsumerState<SalesPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   Future<void> _openPayment(SaleEntity s, AppLocalizations l10n) async {
-    await Navigator.of(context).push(MaterialPageRoute(
+    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => PaymentPage(
         saleId: s.id,
         title: '${l10n.payment} — ${s.customerName}',
@@ -55,14 +50,14 @@ class _SalesPageState extends ConsumerState<SalesPage> {
   }
 
   Future<void> _create() async {
-    await Navigator.of(context).push(
+    await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => const CreateSalePage()),
     );
     if (mounted) ref.read(saleListProvider.notifier).load();
   }
 
   Future<void> _edit(SaleEntity s, AppLocalizations l10n) async {
-    final changed = await Navigator.of(context).push<bool>(
+    final changed = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(builder: (_) => CreateSalePage(existingSaleId: s.id)),
     );
     if (changed == true && mounted) {
@@ -105,120 +100,83 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     }
   }
 
+  /// One status per sale: overdue beats partially paid beats unpaid.
   ({String label, BadgeTone tone}) _paymentStatus(
       SaleEntity s, AppLocalizations l10n) {
     if (s.isFullyPaid) return (label: l10n.paid, tone: BadgeTone.success);
+    if (s.isOverdue) return (label: l10n.overdue, tone: BadgeTone.danger);
     if (s.paid > 0.009) {
       return (label: l10n.partiallyPaid, tone: BadgeTone.warning);
     }
     return (label: l10n.unpaid, tone: BadgeTone.warning);
   }
 
-  Widget _card(SaleEntity s, AppLocalizations l10n) {
-    final status = _paymentStatus(s, l10n);
+  int _statusRank(SaleEntity s) => s.isFullyPaid
+      ? 0
+      : s.isOverdue
+          ? 3
+          : s.paid > 0.009
+              ? 1
+              : 2;
 
-    // Sales from before VAT was introduced have no breakdown stored;
-    // for those the line is hidden rather than guessed.
-    final hasVatBreakdown = s.subtotalHt > 0.009 || s.totalVat > 0.009;
+  List<AppTableColumn<SaleEntity>> _columns(AppLocalizations l10n) => [
+        AppTableColumn(
+          label: l10n.customer,
+          flex: 4,
+          sortValue: (s) => s.customerName.toLowerCase(),
+          cell: (s) => AppCellText(s.customerName,
+              strong: true, sub: formatDate(s.createdAt)),
+        ),
+        AppTableColumn(
+          label: l10n.date,
+          width: 96,
+          showFrom: 760,
+          sortValue: (s) => s.createdAt,
+          cell: (s) => AppCellText(formatDate(s.createdAt),
+              color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.colBalance,
+          width: 108,
+          numeric: true,
+          showFrom: 600,
+          sortValue: (s) => s.balance,
+          cell: (s) => AppCellText(
+              s.isFullyPaid ? '—' : formatDT(s.balance),
+              numeric: true,
+              color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.colTotalInclVat,
+          width: 112,
+          numeric: true,
+          sortValue: (s) => s.total,
+          cell: (s) => AppCellText(formatDT(s.total), numeric: true),
+        ),
+        AppTableColumn(
+          label: l10n.status,
+          width: 104,
+          sortValue: _statusRank,
+          cell: (s) {
+            final st = _paymentStatus(s, l10n);
+            return AppBadge(label: st.label, tone: st.tone);
+          },
+        ),
+      ];
 
-    final details = [
-      if (s.reference != null && s.reference!.trim().isNotEmpty) s.reference!,
-      formatDate(s.createdAt),
-    ].join(' · ');
-
-    return AppCard(
-      onTap: () => _openPayment(s, l10n),
-      padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppLeadingTile.initials(s.customerName),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.customerName,
-                        style: AppTheme.rowTitle, maxLines: 2),
-                    const SizedBox(height: 4),
-                    Text(details, style: AppTheme.label, maxLines: 2),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        AppBadge(label: status.label, tone: status.tone),
-                        if (s.isOverdue)
-                          AppBadge(
-                              label: l10n.overdue, tone: BadgeTone.danger)
-                        else if (!s.isFullyPaid && s.dueDate != null)
-                          AppBadge(
-                            label: l10n.dueOn(formatDate(s.dueDate!)),
-                            tone: BadgeTone.warning,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(formatDT(s.total), style: AppTheme.money),
-                  if (!s.isFullyPaid) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      formatDT(s.balance),
-                      style: AppTheme.font(
-                        size: 13,
-                        weight: FontWeight.w600,
-                        color: AppColors.danger,
-                        tabularFigures: true,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              AppRowMenu(actions: [
-                AppMenuAction(
-                  label: l10n.edit,
-                  icon: Icons.edit_outlined,
-                  onTap: () => _edit(s, l10n),
-                ),
-                AppMenuAction(
-                  label: l10n.delete,
-                  icon: Icons.delete_outline,
-                  destructive: true,
-                  onTap: () => _delete(s, l10n),
-                ),
-              ]),
-            ],
-          ),
-          if (hasVatBreakdown)
-            AppCardFooter(
-              color: AppColors.textSecondary,
-              children: [
-                Expanded(
-                  child: Text(
-                    '${formatDT(s.subtotalHt)} ${l10n.exclVatShort}  ·  '
-                        '${l10n.totalVat} ${formatDT(s.totalVat)}',
-                    maxLines: 2,
-                    style: AppTheme.font(
-                      size: 12,
-                      color: AppColors.textSecondary,
-                      tabularFigures: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
+  Widget _rowMenu(SaleEntity s, AppLocalizations l10n) => AppRowMenu(actions: [
+        AppMenuAction(
+            label: l10n.payment,
+            icon: Icons.payments_outlined,
+            onTap: () => _openPayment(s, l10n)),
+        AppMenuAction(
+            label: l10n.edit, icon: Icons.edit_outlined, onTap: () => _edit(s, l10n)),
+        AppMenuAction(
+            label: l10n.delete,
+            icon: Icons.delete_outline,
+            destructive: true,
+            onTap: () => _delete(s, l10n)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +198,6 @@ class _SalesPageState extends ConsumerState<SalesPage> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/sales'),
       appBar: searchVisible
           ? AppSearchHeader(
         controller: searchController,
@@ -263,10 +220,18 @@ class _SalesPageState extends ConsumerState<SalesPage> {
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
           ),
+          AppHeaderAddButton(onPressed: _create, label: l10n.newSale),
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(semanticLabel: l10n.loading)
+          : state.error != null && state.sales.isEmpty
+          ? AppErrorState(
+              title: l10n.loadFailedTitle,
+              message: l10n.serverUnreachable,
+              retryLabel: l10n.retry,
+              onRetry: () => ref.read(saleListProvider.notifier).load(),
+            )
           : state.sales.isEmpty
           ? AppEmptyState(
         icon: state.hasSearched
@@ -278,21 +243,18 @@ class _SalesPageState extends ConsumerState<SalesPage> {
             : l10n.tapPlusToCreate,
       )
           : RefreshIndicator(
-        color: AppColors.accent,
         onRefresh: () => ref.read(saleListProvider.notifier).load(),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          itemCount: state.sales.length,
-          itemBuilder: (context, index) =>
-              _card(state.sales[index], l10n),
+        child: AppDataTable<SaleEntity>(
+          columns: _columns(l10n),
+          rows: state.sales,
+          // Newest first, like an invoice book.
+          initialSortColumn: 1,
+          initialAscending: false,
+          onRowTap: (s) => _openPayment(s, l10n),
+          rowMenu: (s) => _rowMenu(s, l10n),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _create,
-        backgroundColor: AppColors.black,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.newSale),
-      ),
+      floatingActionButton: AppAddFab(onPressed: _create, label: l10n.newSale),
     );
   }
 }

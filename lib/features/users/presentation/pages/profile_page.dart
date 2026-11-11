@@ -9,6 +9,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../providers/user_provider.dart';
 import '../widgets/user_roles.dart';
 import 'profile_edit_page.dart';
+import '../../../../shared/widgets/app_snack.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -25,12 +26,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   String _translateError(String code, AppLocalizations l10n) {
@@ -47,7 +43,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Future<void> _edit(UserEntity user, AppLocalizations l10n) async {
-    final changed = await Navigator.of(context).push<bool>(
+    final changed = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(builder: (_) => ProfileEditPage(user: user)),
     );
     if (changed == true && mounted) _showSnack(l10n.userUpdated);
@@ -69,37 +65,34 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
+                AppLabeledField(label: l10n.currentPassword, child: TextField(
                   controller: currentController,
                   obscureText: true,
                   autofocus: true,
                   style: AppTheme.font(size: 15),
                   decoration: InputDecoration(
-                    labelText: l10n.currentPassword,
                     prefixIcon: const Icon(Icons.lock_outline),
                   ),
-                ),
+                )),
                 const SizedBox(height: 12),
-                TextField(
+                AppLabeledField(label: l10n.newPassword, child: TextField(
                   controller: newController,
                   obscureText: true,
                   style: AppTheme.font(size: 15),
                   decoration: InputDecoration(
-                    labelText: l10n.newPassword,
                     prefixIcon: const Icon(Icons.lock_reset),
                   ),
-                ),
+                )),
                 const SizedBox(height: 12),
-                TextField(
+                AppLabeledField(label: l10n.confirmPassword, child: TextField(
                   controller: confirmController,
                   obscureText: true,
                   style: AppTheme.font(size: 15),
                   decoration: InputDecoration(
-                    labelText: l10n.confirmPassword,
                     prefixIcon: const Icon(Icons.check),
                     errorText: localError,
                   ),
-                ),
+                )),
               ],
             ),
           ),
@@ -120,7 +113,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 }
                 Navigator.of(context).pop(true);
               },
-              style: TextButton.styleFrom(foregroundColor: AppColors.accent),
+              style: TextButton.styleFrom(foregroundColor: AppColors.accentText),
               child: Text(l10n.save),
             ),
           ],
@@ -155,7 +148,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         subtitle: user?.email,
         icon: Icons.person_outline,
         color: AppColors.primary,
-        showMenuButton: false,
         actions: [
           if (user != null)
             AppHeaderAction(

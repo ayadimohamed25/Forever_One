@@ -8,6 +8,7 @@ import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/category_entity.dart';
 import '../providers/product_provider.dart';
 import 'category_form_page.dart';
+import '../../../../shared/widgets/app_snack.dart';
 
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
@@ -33,16 +34,11 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   Future<void> _openForm({CategoryEntity? existing}) async {
-    final result = await Navigator.of(context).push<CategoryFormResult>(
+    final result = await Navigator.of(context, rootNavigator: true).push<CategoryFormResult>(
       MaterialPageRoute(builder: (_) => CategoryFormPage(existing: existing)),
     );
     if (result == null) return;
@@ -182,17 +178,24 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
             : '${state.categories.length} ${l10n.categories.toLowerCase()}',
         icon: Icons.category_outlined,
         color: AppColors.accent,
-        showMenuButton: false,
         actions: [
           AppHeaderAction(
             icon: Icons.search,
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
           ),
+          AppHeaderAddButton(onPressed: () => _openForm(), label: l10n.category),
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(semanticLabel: l10n.loading)
+          : state.error != null && state.categories.isEmpty
+          ? AppErrorState(
+              title: l10n.loadFailedTitle,
+              message: l10n.serverUnreachable,
+              retryLabel: l10n.retry,
+              onRetry: () => ref.read(categoryListProvider.notifier).load(),
+            )
           : state.categories.isEmpty
           ? AppEmptyState(
         icon: state.hasSearched
@@ -202,7 +205,9 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
         state.hasSearched ? l10n.noResults : l10n.noCategories,
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
-            : l10n.tapPlusToAdd,
+            : '',
+          actionLabel: state.hasSearched ? null : l10n.category,
+          onAction: () => _openForm(),
       )
           : RefreshIndicator(
         color: AppColors.accent,
@@ -215,12 +220,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
               _card(state.categories[index], l10n),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
-        backgroundColor: AppColors.black,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.category),
-      ),
+      floatingActionButton: AppAddFab(onPressed: () => _openForm(), label: l10n.category),
     );
   }
 }

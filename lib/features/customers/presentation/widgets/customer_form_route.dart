@@ -5,14 +5,13 @@ import '../pages/customer_form_page.dart';
 
 /// Opens the customer form as a full page and returns what the user saved,
 /// or null if they backed out.
-///
-/// Kept under its original name and signature so the Customers list and the
-/// customer detail page call it unchanged.
-Future<CustomerInput?> showCustomerFormDialog(
+/// Pushed on the root navigator, so the form covers the shell (no sidebar)
+/// and has its own back button.
+Future<CustomerInput?> openCustomerForm(
     BuildContext context, {
       CustomerEntity? existing,
     }) {
-  return Navigator.of(context).push<CustomerInput>(
+  return Navigator.of(context, rootNavigator: true).push<CustomerInput>(
     MaterialPageRoute(builder: (_) => CustomerFormPage(existing: existing)),
   );
 }

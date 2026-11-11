@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
+import '../../../../shared/widgets/app_widgets.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/app_snack.dart';
 
 class SignUpPage extends ConsumerStatefulWidget {
   const SignUpPage({super.key});
@@ -101,10 +104,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
           ),
           const SizedBox(width: 10),
           Text(text,
-              style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
+              style: AppTheme.font(size: 14, weight: FontWeight.w700, color: AppColors.textPrimary)),
         ],
       ),
     );
@@ -117,21 +117,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.user != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.accountCreated),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        context.go('/dashboard');
+        AppSnack.success(context, l10n.accountCreated);
+        // The router guard redirects to the new user's home screen.
       }
       if (next.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_translateError(next.error!, l10n)),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppSnack.error(context, _translateError(next.error!, l10n));
       }
     });
 
@@ -148,6 +138,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                 child: Row(
                   children: [
                     IconButton(
+                      tooltip: l10n.back,
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => context.go('/login'),
                     ),
@@ -157,16 +148,10 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(l10n.signUp,
-                              style: const TextStyle(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white)),
+                              style: AppTheme.font(size: 22, weight: FontWeight.w800, color: Colors.white)),
                           const SizedBox(height: 2),
                           Text(l10n.signUpSubtitle,
-                              style: TextStyle(
-                                  fontSize: 12.5,
-                                  color:
-                                  Colors.white.withValues(alpha: 0.85))),
+                              style: AppTheme.font(size: 13, color: Colors.white.withValues(alpha: 0.85))),
                         ],
                       ),
                     ),
@@ -189,60 +174,55 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     padding: const EdgeInsets.fromLTRB(22, 26, 22, 30),
                     children: [
                       _sectionTitle(l10n.companyInfo, Icons.business),
-                      TextField(
+                      AppLabeledField(label: l10n.companyName, child: TextField(
                         controller: companyController,
                         textCapitalization: TextCapitalization.words,
                         decoration: InputDecoration(
-                          labelText: l10n.companyName,
                           prefixIcon: const Icon(Icons.storefront_outlined),
                         ),
-                      ),
+                      )),
                       const SizedBox(height: 12),
-                      TextField(
+                      AppLabeledField(label: '${l10n.city} (${l10n.optional})', child: TextField(
                         controller: cityController,
                         textCapitalization: TextCapitalization.words,
                         decoration: InputDecoration(
-                          labelText: '${l10n.city} (${l10n.optional})',
                           prefixIcon: const Icon(Icons.place_outlined),
                         ),
-                      ),
+                      )),
 
                       const SizedBox(height: 26),
                       _sectionTitle(l10n.yourAccount, Icons.person_outline),
-                      TextField(
+                      AppLabeledField(label: l10n.yourName, child: TextField(
                         controller: nameController,
                         textCapitalization: TextCapitalization.words,
                         decoration: InputDecoration(
-                          labelText: l10n.yourName,
                           prefixIcon: const Icon(Icons.badge_outlined),
                         ),
-                      ),
+                      )),
                       const SizedBox(height: 12),
-                      TextField(
+                      AppLabeledField(label: l10n.email, child: TextField(
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
-                          labelText: l10n.email,
                           prefixIcon: const Icon(Icons.mail_outline),
                         ),
-                      ),
+                      )),
                       const SizedBox(height: 12),
-                      TextField(
+                      AppLabeledField(label: '${l10n.phone} (${l10n.optional})', child: TextField(
                         controller: phoneController,
                         keyboardType: TextInputType.phone,
                         decoration: InputDecoration(
-                          labelText: '${l10n.phone} (${l10n.optional})',
                           prefixIcon: const Icon(Icons.phone_outlined),
                         ),
-                      ),
+                      )),
                       const SizedBox(height: 12),
-                      TextField(
+                      AppLabeledField(label: l10n.password, child: TextField(
                         controller: passwordController,
                         obscureText: obscurePassword,
                         decoration: InputDecoration(
-                          labelText: l10n.password,
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
+                            tooltip: obscurePassword ? l10n.showPassword : l10n.hidePassword,
                             icon: Icon(obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined),
@@ -250,17 +230,16 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                                     () => obscurePassword = !obscurePassword),
                           ),
                         ),
-                      ),
+                      )),
                       const SizedBox(height: 12),
-                      TextField(
+                      AppLabeledField(label: l10n.confirmPassword, child: TextField(
                         controller: confirmController,
                         obscureText: obscurePassword,
                         decoration: InputDecoration(
-                          labelText: l10n.confirmPassword,
                           prefixIcon: const Icon(Icons.check),
                           errorText: validationError,
                         ),
-                      ),
+                      )),
 
                       const SizedBox(height: 16),
                       Container(
@@ -276,9 +255,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(l10n.signUpDisclaimer,
-                                  style: const TextStyle(
-                                      fontSize: 11.5,
-                                      color: AppColors.textSecondary)),
+                                  style: AppTheme.font(size: 12, color: AppColors.textSecondary)),
                             ),
                           ],
                         ),
@@ -289,13 +266,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         height: 52,
                         child: authState.isLoading
                             ? const Center(child: CircularProgressIndicator())
-                            : FilledButton(
+                            : AppBlockButton(height: 52, child: FilledButton(
                           onPressed: () => _submit(l10n),
                           child: Text(l10n.createMyAccount,
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700)),
-                        ),
+                              style: AppTheme.font(size: 15, weight: FontWeight.w700)),
+                        )),
                       ),
 
                       const SizedBox(height: 16),
@@ -303,14 +278,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(l10n.alreadyHaveAccount,
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary)),
+                              style: AppTheme.font(size: 13, color: AppColors.textSecondary)),
                           TextButton(
                             onPressed: () => context.go('/login'),
                             child: Text(l10n.backToLogin,
-                                style: const TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.w700)),
+                                style: AppTheme.font(size: 13, weight: FontWeight.w700)),
                           ),
                         ],
                       ),

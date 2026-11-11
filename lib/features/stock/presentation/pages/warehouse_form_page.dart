@@ -91,8 +91,12 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
         color: AppColors.stock,
         showMenuButton: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           AppFormSection(
             title: l10n.generalInfo,
@@ -100,6 +104,7 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
               AppTextField(
                 controller: nameController,
                 label: l10n.name,
+                required: true,
                 icon: Icons.label_outline,
                 autofocus: !isEdit,
               ),
@@ -115,7 +120,6 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.contact,
             children: [
@@ -138,7 +142,6 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.notes,
             children: [
@@ -157,6 +160,8 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
             ],
           ),
         ],
+      ),
+        ),
       ),
       bottomNavigationBar: AppBottomActionBar(
         child: FilledButton(

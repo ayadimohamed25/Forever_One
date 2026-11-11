@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../providers/product_provider.dart';
 import '../providers/stock_movement_provider.dart';
 import '../providers/warehouse_provider.dart';
+import '../../../../shared/widgets/app_snack.dart';
 
 typedef _MovementType = ({String label, IconData icon, Color color});
 
@@ -92,7 +92,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
     return Material(
       color: selected ? AppColors.soft(t.color) : AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         side: BorderSide(
           color: selected ? t.color : AppColors.track,
           width: selected ? 1.5 : 1,
@@ -148,12 +148,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
     ref.listen(stockMovementProvider, (previous, next) {
       if (next.lastCurrentStock != null &&
           previous?.lastCurrentStock != next.lastCurrentStock) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.movementRecorded(next.lastCurrentStock!)),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        AppSnack.success(context, l10n.movementRecorded(next.lastCurrentStock!));
         quantityController.clear();
         noteController.clear();
         // Refresh so the stock shown in the product list is current.
@@ -161,25 +156,23 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
         setState(() {});
       }
       if (next.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppSnack.error(context, next.error!);
       }
     });
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/stock-movement'),
       appBar: AppPageHeader(
         title: l10n.stockMovement,
         icon: Icons.swap_vert_outlined,
         color: AppColors.stock,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 10),
@@ -199,8 +192,6 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
               for (final e in types.entries) _typeCard(e.key, e.value),
             ],
           ),
-
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.details,
             children: [
@@ -258,10 +249,10 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
             height: 56,
             child: Center(child: CircularProgressIndicator()),
           )
-              : FilledButton(
+              : AppBlockButton(child: FilledButton(
             onPressed: _canSubmit ? _submit : null,
             child: Text(l10n.recordMovement),
-          ),
+          )),
 
           if (state.lastCurrentStock != null) ...[
             const SizedBox(height: 16),
@@ -269,7 +260,7 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.successSoft,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(AppRadius.card),
               ),
               child: Row(
                 children: [
@@ -287,6 +278,8 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
             ),
           ],
         ],
+      ),
+        ),
       ),
     );
   }

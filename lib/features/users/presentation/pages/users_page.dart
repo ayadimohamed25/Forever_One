@@ -1,13 +1,16 @@
+import '../../../../core/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../providers/user_provider.dart';
-import '../widgets/user_form_dialog.dart';
+import '../widgets/user_form_route.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../shared/widgets/app_data_table.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
   const UsersPage({super.key});
@@ -33,12 +36,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   /// Turns a backend error code into a message the user understands.
@@ -64,7 +62,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   }
 
   Future<void> _create(AppLocalizations l10n) async {
-    final input = await showUserFormDialog(context);
+    final input = await openUserForm(context);
     if (input == null) return;
 
     final error = await ref.read(userListProvider.notifier).add(input);
@@ -78,7 +76,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   }
 
   Future<void> _edit(UserEntity u, AppLocalizations l10n) async {
-    final input = await showUserFormDialog(context, existing: u);
+    final input = await openUserForm(context, existing: u);
     if (input == null) return;
 
     final error = await ref.read(userListProvider.notifier).update(u.id, input);
@@ -104,24 +102,23 @@ class _UsersPageState extends ConsumerState<UsersPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(u.email,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textSecondary)),
+                  style: AppTheme.font(size: 13, color: AppColors.textSecondary)),
               const SizedBox(height: 16),
-              TextField(
+              AppLabeledField(label: l10n.newPassword, child: TextField(
                 controller: passwordController,
                 obscureText: obscure,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: l10n.newPassword,
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
+                    tooltip: obscure ? l10n.showPassword : l10n.hidePassword,
                     icon: Icon(obscure
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined),
                     onPressed: () => setState(() => obscure = !obscure),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
           actions: [
@@ -187,10 +184,57 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     }
   }
 
-  String _lastLoginLabel(DateTime? date, AppLocalizations l10n) {
-    if (date == null) return l10n.neverLoggedIn;
-    return '${l10n.lastLogin}: ${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
+  List<AppTableColumn<UserEntity>> _columns(AppLocalizations l10n) => [
+        AppTableColumn(
+          label: l10n.user,
+          flex: 4,
+          sortValue: (u) => u.displayName.toLowerCase(),
+          cell: (u) => Opacity(
+            opacity: u.isActive ? 1 : 0.55,
+            child: AppCellText(u.displayName, strong: true, sub: u.email),
+          ),
+        ),
+        AppTableColumn(
+          label: l10n.lastLogin,
+          width: 112,
+          showFrom: 760,
+          sortValue: (u) => u.lastLoginAt ?? DateTime(1970),
+          cell: (u) => AppCellText(
+              u.lastLoginAt == null
+                  ? l10n.neverLoggedIn
+                  : formatDate(u.lastLoginAt!),
+              color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.role,
+          width: 112,
+          sortValue: (u) => roleLabel(u.role, l10n),
+          cell: (u) => AppBadge(label: roleLabel(u.role, l10n), tone: roleTone(u.role)),
+        ),
+        AppTableColumn(
+          label: l10n.status,
+          width: 84,
+          showFrom: 520,
+          sortValue: (u) => u.isActive ? 0 : 1,
+          cell: (u) => u.isActive
+              ? AppBadge(label: l10n.active, tone: BadgeTone.success)
+              : AppBadge(label: l10n.inactive, tone: BadgeTone.neutral),
+        ),
+      ];
+
+  Widget _rowMenu(UserEntity u, AppLocalizations l10n) => AppRowMenu(actions: [
+        AppMenuAction(
+            label: l10n.edit, icon: Icons.edit_outlined, onTap: () => _edit(u, l10n)),
+        AppMenuAction(
+            label: l10n.resetPassword,
+            icon: Icons.key_outlined,
+            onTap: () => _resetPassword(u, l10n)),
+        AppMenuAction(
+            label: l10n.delete,
+            icon: Icons.delete_outline,
+            destructive: true,
+            onTap: () => _delete(u, l10n)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -204,8 +248,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
-      drawer: const AppDrawer(currentRoute: '/users'),
+      backgroundColor: AppColors.canvas,
       appBar: searchVisible
           ? AppSearchHeader(
         controller: searchController,
@@ -235,10 +278,18 @@ class _UsersPageState extends ConsumerState<UsersPage> {
             tooltip: l10n.refresh,
             onTap: () => ref.read(userListProvider.notifier).load(),
           ),
+          AppHeaderAddButton(onPressed: () => _create(l10n), label: l10n.user),
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(semanticLabel: l10n.loading)
+          : state.error != null && state.users.isEmpty
+          ? AppErrorState(
+              title: l10n.loadFailedTitle,
+              message: l10n.serverUnreachable,
+              retryLabel: l10n.retry,
+              onRetry: () => ref.read(userListProvider.notifier).load(),
+            )
           : state.users.isEmpty
           ? AppEmptyState(
         icon: state.hasSearched
@@ -247,159 +298,22 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         title: state.hasSearched ? l10n.noResults : l10n.noUsers,
         subtitle: state.hasSearched
             ? l10n.tryDifferentSearch
-            : l10n.tapPlusToAdd,
+            : '',
+          actionLabel: state.hasSearched ? null : l10n.user,
+          onAction: () => _create(l10n),
         color: AppColors.primary,
       )
           : RefreshIndicator(
         onRefresh: () => ref.read(userListProvider.notifier).load(),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-          itemCount: state.users.length,
-          itemBuilder: (context, index) {
-            final u = state.users[index];
-            final color = roleColor(u.role);
-
-            return Opacity(
-              opacity: u.isActive ? 1 : 0.55,
-              child: AppCard(
-                onTap: () => _edit(u, l10n),
-                padding: const EdgeInsets.fromLTRB(14, 14, 4, 12),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        AppInitialsBadge(
-                            name: u.displayName, color: color),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            children: [
-                              Text(u.displayName,
-                                  style: const TextStyle(
-                                      fontSize: 14.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary),
-                                  overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 3),
-                              Text(u.email,
-                                  style: const TextStyle(
-                                      fontSize: 11.5,
-                                      color:
-                                      AppColors.textSecondary),
-                                  overflow: TextOverflow.ellipsis),
-                            ],
-                          ),
-                        ),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert,
-                              size: 19,
-                              color: AppColors.textSecondary),
-                          shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(14)),
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              _edit(u, l10n);
-                            } else if (value == 'password') {
-                              _resetPassword(u, l10n);
-                            } else if (value == 'delete') {
-                              _delete(u, l10n);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Row(children: [
-                                const Icon(Icons.edit_outlined,
-                                    size: 18),
-                                const SizedBox(width: 10),
-                                Text(l10n.edit),
-                              ]),
-                            ),
-                            PopupMenuItem(
-                              value: 'password',
-                              child: Row(children: [
-                                const Icon(Icons.key_outlined,
-                                    size: 18),
-                                const SizedBox(width: 10),
-                                Text(l10n.resetPassword),
-                              ]),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Row(children: [
-                                const Icon(Icons.delete_outline,
-                                    size: 18,
-                                    color: AppColors.danger),
-                                const SizedBox(width: 10),
-                                Text(l10n.delete,
-                                    style: const TextStyle(
-                                        color: AppColors.danger)),
-                              ]),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 4),
-                            decoration: BoxDecoration(
-                              gradient:
-                              AppColors.tintGradient(color),
-                              borderRadius:
-                              BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: color.withValues(
-                                      alpha: 0.22)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(roleIcon(u.role),
-                                    size: 12, color: color),
-                                const SizedBox(width: 5),
-                                Text(roleLabel(u.role, l10n),
-                                    style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: color)),
-                              ],
-                            ),
-                          ),
-                          if (!u.isActive) ...[
-                            const SizedBox(width: 6),
-                            AppStatusChip(
-                                label: l10n.inactive,
-                                color: AppColors.textSecondary),
-                          ],
-                          const Spacer(),
-                          Text(_lastLoginLabel(u.lastLoginAt, l10n),
-                              style: const TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+        child: AppDataTable<UserEntity>(
+          columns: _columns(l10n),
+          rows: state.users,
+          initialSortColumn: 0,
+          onRowTap: (u) => _edit(u, l10n),
+          rowMenu: (u) => _rowMenu(u, l10n),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _create(l10n),
-        icon: const Icon(Icons.add),
-        label: Text(l10n.user),
-      ),
+      floatingActionButton: AppAddFab(onPressed: () => _create(l10n), label: l10n.user),
     );
   }
 }

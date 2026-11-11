@@ -80,7 +80,7 @@ class _UserFormPageState extends State<UserFormPage> {
     return Material(
       color: selected ? AppColors.accentSoft : AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.control),
         side: BorderSide(
           color: selected ? AppColors.accent : AppColors.track,
           width: selected ? 1.5 : 1,
@@ -105,7 +105,7 @@ class _UserFormPageState extends State<UserFormPage> {
                   style: AppTheme.font(
                     size: 14,
                     weight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? AppColors.accent : AppColors.textPrimary,
+                    color: selected ? AppColors.accentText : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -133,8 +133,12 @@ class _UserFormPageState extends State<UserFormPage> {
         color: AppColors.primary,
         showMenuButton: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           AppFormSection(
             title: l10n.generalInfo,
@@ -148,6 +152,7 @@ class _UserFormPageState extends State<UserFormPage> {
               AppTextField(
                 controller: emailController,
                 label: l10n.email,
+                required: true,
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -161,7 +166,6 @@ class _UserFormPageState extends State<UserFormPage> {
           ),
 
           if (!isEdit) ...[
-            const SizedBox(height: 24),
             AppFormSection(
               title: l10n.password,
               children: [
@@ -170,13 +174,14 @@ class _UserFormPageState extends State<UserFormPage> {
                   obscureText: obscurePassword,
                   style: AppTheme.font(size: 15),
                   decoration: InputDecoration(
-                    labelText: l10n.password,
+                    hintText: '••••••••',
                     prefixIcon: const Icon(Icons.lock_outline),
                     // Explains the rule as soon as it's broken, not on save.
                     errorText: password.isNotEmpty && password.length < 8
                         ? l10n.passwordTooShort
                         : null,
                     suffixIcon: IconButton(
+                      tooltip: obscurePassword ? l10n.showPassword : l10n.hidePassword,
                       icon: Icon(obscurePassword
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined),
@@ -188,15 +193,11 @@ class _UserFormPageState extends State<UserFormPage> {
               ],
             ),
           ],
-
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.role,
             spacing: 8,
             children: [for (final r in roleKeys) _roleOption(r, l10n)],
           ),
-
-          const SizedBox(height: 24),
           AppFormSection(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             children: [
@@ -209,6 +210,8 @@ class _UserFormPageState extends State<UserFormPage> {
             ],
           ),
         ],
+      ),
+        ),
       ),
       bottomNavigationBar: AppBottomActionBar(
         child: FilledButton(

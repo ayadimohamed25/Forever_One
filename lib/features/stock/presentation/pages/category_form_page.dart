@@ -5,19 +5,21 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/category_entity.dart';
+import '../../../../shared/widgets/app_pressable.dart';
 
 /// What the form gives back to the categories page.
 typedef CategoryFormResult = ({String name, String? description, String? colorHex});
 
 /// The only colours a category can take — all from the app palette.
-const categoryPalette = [
-  '#C8553D', // terracotta
-  '#3F7D4E', // green
-  '#A16207', // amber
-  '#B42318', // red
-  '#2A1F1A', // dark
-  '#8F8078', // gray
-];
+const categoryPalette = AppColors.categorySwatches;
+
+/// Swatches saved before the palette retune, mapped to their new value so an
+/// edited category keeps its colour instead of resetting to the first swatch.
+const _legacySwatches = {
+  '#3F7D4E': '#356E45',
+  '#A16207': '#925807',
+  '#8F8078': '#6B6258',
+};
 
 Color colorFromHex(String hex) {
   final value = int.tryParse(hex.replaceAll('#', ''), radix: 16);
@@ -52,7 +54,9 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
 
     // Keep the saved colour when it is one of ours, otherwise start on the accent.
     final saved = e?.colorHex?.toUpperCase();
-    colorHex = categoryPalette.contains(saved) ? saved! : categoryPalette.first;
+    final current = _legacySwatches[saved?.toUpperCase()] ?? saved?.toUpperCase();
+    colorHex =
+        categoryPalette.contains(current) ? current! : categoryPalette.first;
   }
 
   @override
@@ -77,14 +81,17 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
     final color = colorFromHex(hex);
     final selected = colorHex == hex;
 
-    return GestureDetector(
+    return AppPressable(
       onTap: () => setState(() => colorHex = hex),
+      selected: selected,
+      borderRadius: BorderRadius.circular(AppRadius.control),
+      semanticLabel: hex,
       child: Container(
         width: 46,
         height: 46,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(AppRadius.control),
           border: selected
               ? Border.all(color: AppColors.textPrimary, width: 2.5)
               : null,
@@ -110,8 +117,12 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
         color: AppColors.accent,
         showMenuButton: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           AppFormSection(
             title: l10n.generalInfo,
@@ -119,6 +130,7 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
               AppTextField(
                 controller: nameController,
                 label: l10n.name,
+                required: true,
                 icon: Icons.label_outline,
                 autofocus: !isEdit,
               ),
@@ -129,8 +141,6 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.color,
             children: [
@@ -167,6 +177,8 @@ class _CategoryFormPageState extends State<CategoryFormPage> {
             ],
           ),
         ],
+      ),
+        ),
       ),
       bottomNavigationBar: AppBottomActionBar(
         child: FilledButton(

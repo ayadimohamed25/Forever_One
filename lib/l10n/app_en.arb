@@ -241,8 +241,8 @@
        "contact": "Contact",
        "callCustomer": "Call",
        "sendEmail": "Email",
-       "paid": "paid",
-       "unpaid": "unpaid"
+       "paid": "Paid",
+       "unpaid": "Unpaid"
 
          ,"taxId": "Tax ID",
          "contactPerson": "Contact person",
@@ -477,4 +477,83 @@
                                  "aiUnavailable": "The AI assistant is temporarily unavailable.",
                                  "andOtherProducts": "and {count} other products",
                                  "@andOtherProducts": { "placeholders": { "count": { "type": "int" } } }
- }
+                                   ,"localData": "Local data"
+  ,"back": "Back"
+  ,"openMenu": "Open menu"
+  ,"loading": "Loading"
+  ,"collapseSidebar": "Collapse sidebar"
+  ,"expandSidebar": "Expand sidebar"
+  ,"serverUnreachable": "Couldn't reach the server. Check your connection and try again."
+  ,"loadFailedTitle": "Couldn't load this page"
+  ,"clearSearch": "Clear search"
+  ,"close": "Close"
+  ,"moreActions": "More actions"
+  ,"send": "Send"
+  ,"showPassword": "Show password"
+  ,"hidePassword": "Hide password"
+  ,"removeLine": "Remove line"
+  ,"notifications": "Notifications"
+  ,"notificationsTooltip": "Notifications"
+  ,"noNotifications": "You're all caught up"
+  ,"noNotificationsHint": "Stock, payment and delivery alerts will appear here."
+  ,"notifOutOfStock": "Out of stock"
+  ,"notifLowStock": "Low stock"
+  ,"notifOverduePayments": "Overdue customer payments"
+  ,"notifCreditExceeded": "Credit limit exceeded"
+  ,"notifSupplierPaymentsDue": "Supplier payments due"
+  ,"notifPendingDeliveries": "Pending deliveries"
+  ,"notifStockLeft": "{count} left · minimum {min}"
+  ,"@notifStockLeft": {"placeholders":{"count":{"type":"String"},"min":{"type":"String"}}}
+  ,"notifDaysOverdue": "{days} days overdue"
+  ,"@notifDaysOverdue": {"placeholders":{"days":{"type":"int"}}}
+  ,"notifDueInDays": "Due in {days} days"
+  ,"@notifDueInDays": {"placeholders":{"days":{"type":"int"}}}
+  ,"notifDueToday": "Due today"
+  ,"notifExpectedInDays": "Expected in {days} days"
+  ,"@notifExpectedInDays": {"placeholders":{"days":{"type":"int"}}}
+  ,"notifDeliveryLate": "{days} days late"
+  ,"@notifDeliveryLate": {"placeholders":{"days":{"type":"int"}}}
+  ,"notifNoDate": "No delivery date"
+  ,"notifOverLimit": "Limit {limit}"
+  ,"@notifOverLimit": {"placeholders":{"limit":{"type":"String"}}}
+  ,"alertsBanner": "{count, plural, =1{1 alert} other{{count} alerts}}"
+  ,"@alertsBanner": {"placeholders":{"count":{"type":"int"}}}
+  ,"alertsOutOfStock": "{count} out of stock"
+  ,"@alertsOutOfStock": {"placeholders":{"count":{"type":"int"}}}
+  ,"alertsLowStock": "{count} low stock"
+  ,"@alertsLowStock": {"placeholders":{"count":{"type":"int"}}}
+  ,"alertsOverdue": "{count} overdue payments"
+  ,"@alertsOverdue": {"placeholders":{"count":{"type":"int"}}}
+  ,"alertsOther": "{count} other"
+  ,"@alertsOther": {"placeholders":{"count":{"type":"int"}}}
+  ,"tabHome": "Home"
+  ,"tabCopilot": "Copilot"
+  ,"addProduct": "Add product"
+  ,"scanShort": "Scan"
+  ,"seeAll": "See all"
+  ,"revenueThisMonth": "Revenue this month"
+  ,"downloadPdfReport": "Download PDF report"
+  ,"colVat": "VAT"
+  ,"colMargin": "Margin"
+  ,"colBalance": "Balance"
+  ,"colProducts": "Products"
+  ,"colPriceInclVat": "Price incl. VAT"
+  ,"colTotalInclVat": "Total incl. VAT"
+  ,"colSku": "SKU"
+  ,"statusOutOfStock": "Out of stock"
+  ,"statusLowStock": "Low stock"
+  ,"statusUpToDate": "Up to date"
+  ,"statusOverLimit": "Over limit"
+  ,"statusToPay": "To pay"
+  ,"statusPendingDelivery": "Pending delivery"
+  ,"statusNoBalance": "Settled"
+  ,"statusLateDelivery": "Late delivery"
+  ,"requiredField": "Required"
+  ,"lines": "Lines"
+  ,"qtyShort": "Qty"
+  ,"removeLineTooltip": "Remove line"
+  ,"minimum": "Min."
+  ,"suggestedOrder": "To order"
+  ,"lastSale": "Last sale"
+  ,"score": "Score"
+}

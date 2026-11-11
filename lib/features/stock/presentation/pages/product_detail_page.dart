@@ -8,7 +8,7 @@ import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/product_entity.dart';
 import '../providers/product_provider.dart';
-import '../widgets/product_form_dialog.dart';
+import '../widgets/product_form_route.dart';
 
 class ProductDetailPage extends ConsumerStatefulWidget {
   final String productId;
@@ -28,7 +28,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
   }
 
   Future<void> _edit(ProductEntity p) async {
-    final input = await showProductFormDialog(context, ref, existing: p);
+    final input = await openProductForm(context, ref, existing: p);
     if (input == null) return;
     await ref.read(productListProvider.notifier).update(p.id, input);
     if (mounted) ref.read(productDetailProvider.notifier).load(p.id);
@@ -54,8 +54,8 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
               value,
               style: AppTheme.font(
                 size: 16,
-                weight: FontWeight.w700,
-                color: color,
+                weight: FontWeight.w600,
+                color: AppColors.textOn(color),
                 tabularFigures: true,
               ),
             ),
@@ -73,7 +73,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
   }
 
   Widget _statDivider() =>
-      Container(width: 1, height: 36, color: AppColors.track);
+      Container(width: 1, height: 36, color: AppColors.border);
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +99,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(rows: 4, semanticLabel: AppLocalizations.of(context)!.loading)
           : p == null
           ? AppEmptyState(
         icon: Icons.error_outline,
@@ -107,12 +107,11 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         subtitle: '',
       )
           : RefreshIndicator(
-        color: AppColors.accent,
         onRefresh: () => ref
             .read(productDetailProvider.notifier)
             .load(widget.productId),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          padding: const EdgeInsets.all(AppSpacing.page),
           children: [
             // ── Identity ──
             AppCard(
@@ -172,8 +171,6 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
                 ],
               ),
             ),
-
-            const SizedBox(height: 12),
 
             // ── General ──
             AppFormSection(
@@ -352,9 +349,9 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
                         style: AppTheme.font(
                           size: 15,
                           weight: FontWeight.w700,
-                          color: h.isIncoming
+                          color: AppColors.textOn(h.isIncoming
                               ? AppColors.success
-                              : AppColors.warning,
+                              : AppColors.warning),
                           tabularFigures: true,
                         ),
                       ),

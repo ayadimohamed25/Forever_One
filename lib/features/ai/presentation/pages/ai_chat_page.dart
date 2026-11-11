@@ -5,7 +5,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/ai_message_entity.dart';
@@ -116,7 +115,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.dangerSoft,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,11 +240,30 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
                   ),
-                  boxShadow: AppColors.cardShadow,
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (m.isLocal) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.neutralSoft,
+                          borderRadius: BorderRadius.circular(AppRadius.chip),
+                        ),
+                        child: Text(
+                          l10n.localData,
+                          style: AppTheme.font(
+                            size: 11,
+                            weight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     if (parsed.tags.isNotEmpty) ...[
                       Wrap(
                         spacing: 6,
@@ -272,7 +290,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                   padding: const EdgeInsets.only(top: 6, left: 4),
                   child: Text(
                     formatDateTime(m.createdAt!),
-                    style: AppTheme.font(size: 12, color: AppColors.textMuted),
+                    style: AppTheme.font(size: 12, color: AppColors.textSecondary),
                   ),
                 ),
             ],
@@ -287,7 +305,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       padding: const EdgeInsets.only(right: 8),
       child: Material(
         color: AppColors.surface,
-        shape: const StadiumBorder(side: BorderSide(color: AppColors.track)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.chip), side: const BorderSide(color: AppColors.fieldBorder)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: disabled ? null : () => _send(text),
@@ -320,7 +338,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               height: 64,
               decoration: BoxDecoration(
                 color: AppColors.accentSoft,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.card),
               ),
               child: const Icon(Icons.auto_awesome_outlined,
                   size: 30, color: AppColors.accent),
@@ -343,7 +361,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Material(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: () => _send(s),
@@ -404,7 +422,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/ai'),
       appBar: AppPageHeader(
         title: l10n.aiCopilot,
         subtitle: l10n.aiAssistant,
@@ -480,7 +497,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(26),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
                       ),
                       child: TextField(
                         controller: questionController,

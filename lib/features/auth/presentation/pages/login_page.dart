@@ -6,6 +6,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
+import '../../../../shared/widgets/app_pressable.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../shared/widgets/app_widgets.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -15,8 +18,8 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final emailController = TextEditingController(text: 'admin@demo.com');
-  final passwordController = TextEditingController(text: 'test1234');
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
   bool obscurePassword = true;
 
   @override
@@ -41,37 +44,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final locale = ref.watch(localeProvider);
 
     ref.listen(authNotifierProvider, (previous, next) {
-      if (next.user != null) context.go('/dashboard');
+      // After a successful sign-in the router guard redirects (to where the
+      // user was headed, or their home screen).
       if (next.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+        AppSnack.error(context, next.error!);
       }
     });
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Column(
           children: [
             // EN / FR switch
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Container(
-                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: AppColors.fieldBorder),
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  clipBehavior: Clip.antiAlias,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _langChip('en', 'EN', locale.languageCode),
+                      Container(width: 1, height: 36, color: AppColors.fieldBorder),
                       _langChip('fr', 'FR', locale.languageCode),
                     ],
                   ),
@@ -80,134 +81,141 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
 
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                children: [
-                  const SizedBox(height: 36),
-
-                  // Logo: 64×64, accentSoft, terracotta icon
-                  Center(
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: AppColors.accentSoft,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(Icons.all_inclusive,
-                          size: 30, color: AppColors.accent),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-                  Text(
-                    l10n.appTitle,
-                    style: AppTheme.greeting,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.appTagline,
-                    style: AppTheme.body
-                        .copyWith(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                  ),
-
-                  const SizedBox(height: 36),
-
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: AppColors.cardShadow,
-                    ),
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(l10n.login, style: AppTheme.sectionTitle),
-                        const SizedBox(height: 4),
-                        Text(l10n.loginSubtitle,
-                            style: AppTheme.label, maxLines: 2),
-
-                        const SizedBox(height: 24),
-                        TextField(
-                          controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          decoration: InputDecoration(
-                            labelText: l10n.email,
-                            prefixIcon: const Icon(Icons.mail_outline),
+                        // Logo
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(AppRadius.card),
+                            ),
+                            child: const Icon(Icons.all_inclusive,
+                                size: 26, color: Colors.white),
                           ),
                         ),
+                        const SizedBox(height: 20),
+                        Text(l10n.appTitle,
+                            style: AppTheme.font(
+                                size: 13,
+                                weight: FontWeight.w600,
+                                color: AppColors.primary)),
+                        const SizedBox(height: 6),
+                        Text(l10n.login,
+                            style: AppTheme.font(
+                                size: 24,
+                                weight: FontWeight.w600,
+                                letterSpacing: -0.3)),
+                        const SizedBox(height: 6),
+                        Text(l10n.loginSubtitle,
+                            style: AppTheme.font(
+                                size: 14, color: AppColors.textSecondary),
+                            maxLines: 2),
 
+                        if (authState.restoreFailedOffline) ...[
+                          const SizedBox(height: 20),
+                          _OfflineBanner(
+                            message: l10n.serverUnreachable,
+                            retryLabel: l10n.retry,
+                            onRetry: () =>
+                                ref.read(authNotifierProvider.notifier).restore(),
+                          ),
+                        ],
+
+                        const SizedBox(height: 28),
+                        AppLabeledField(
+                          label: l10n.email,
+                          child: TextField(
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.email],
+                            decoration: const InputDecoration(
+                              // Example placeholder: shown while empty, gone as soon as you type.
+                              hintText: 'name@company.com',
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 16),
-                        TextField(
-                          controller: passwordController,
-                          obscureText: obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _submit(),
-                          decoration: InputDecoration(
-                            labelText: l10n.password,
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined),
-                              onPressed: () => setState(
-                                      () => obscurePassword = !obscurePassword),
+                        AppLabeledField(
+                          label: l10n.password,
+                          child: TextField(
+                            controller: passwordController,
+                            obscureText: obscurePassword,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.password],
+                            onSubmitted: (_) => _submit(),
+                            decoration: InputDecoration(
+                              hintText: '••••••••',
+                              suffixIcon: IconButton(
+                                tooltip: obscurePassword
+                                    ? l10n.showPassword
+                                    : l10n.hidePassword,
+                                icon: Icon(obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined),
+                                onPressed: () => setState(
+                                    () => obscurePassword = !obscurePassword),
+                              ),
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 24),
-                        authState.isLoading
-                            ? const SizedBox(
-                          height: 56,
-                          child:
-                          Center(child: CircularProgressIndicator()),
-                        )
-                            : FilledButton(
-                          onPressed: _submit,
-                          child: Text(l10n.signIn),
+                        SizedBox(
+                          height: 48,
+                          child: authState.isLoading
+                              ? const Center(
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                                  ),
+                                )
+                              : FilledButton(
+                                  onPressed: _submit,
+                                  child: Text(l10n.signIn),
+                                ),
+                        ),
+
+                        const SizedBox(height: 20),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(l10n.noAccountYet,
+                                style: AppTheme.font(
+                                    size: 14, color: AppColors.textSecondary)),
+                            TextButton(
+                              onPressed: () => context.push('/signup'),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                              child: Text(l10n.signUp),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
+                ),
+              ),
+            ),
 
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(l10n.noAccountYet, style: AppTheme.label),
-                      TextButton(
-                        onPressed: () => context.push('/signup'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.accent,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                        child: Text(
-                          l10n.signUp,
-                          style: AppTheme.font(
-                            size: 14,
-                            weight: FontWeight.w600,
-                            color: AppColors.accent,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      l10n.copyright,
-                      style: AppTheme.font(
-                          size: 13, color: AppColors.textMuted),
-                    ),
-                  ),
-                ],
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                l10n.copyright,
+                style: AppTheme.font(size: 12, color: AppColors.textSecondary),
               ),
             ),
           ],
@@ -216,26 +224,67 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  /// Selected language: accentSoft background, terracotta text.
+  /// Language switch segment: selected on a light grey fill.
   Widget _langChip(String code, String label, String current) {
     final selected = current == code;
-    return GestureDetector(
+    return AppPressable(
       onTap: () => ref.read(localeProvider.notifier).setLocale(Locale(code)),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.accentSoft : Colors.transparent,
-          borderRadius: BorderRadius.circular(100),
-        ),
+      selected: selected,
+      borderRadius: BorderRadius.zero,
+      semanticLabel: label,
+      child: Container(
+        width: 48,
+        height: 36,
+        color: selected ? AppColors.fill : Colors.transparent,
+        alignment: Alignment.center,
         child: Text(
           label,
           style: AppTheme.font(
             size: 13,
             weight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? AppColors.accent : AppColors.textSecondary,
+            color: selected ? AppColors.textPrimary : AppColors.textSecondary,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown when the saved session couldn't be checked because the server was
+/// unreachable. The session is kept; Retry checks again.
+class _OfflineBanner extends StatelessWidget {
+  final String message;
+  final String retryLabel;
+  final VoidCallback onRetry;
+
+  const _OfflineBanner({
+    required this.message,
+    required this.retryLabel,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+      decoration: BoxDecoration(
+        color: AppColors.warningSoft,
+        borderRadius: BorderRadius.circular(AppRadius.control),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_outlined, size: 20, color: AppColors.warningText),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(message,
+                style: AppTheme.font(size: 13, color: AppColors.textPrimary)),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(foregroundColor: AppColors.accentText),
+            child: Text(retryLabel),
+          ),
+        ],
       ),
     );
   }

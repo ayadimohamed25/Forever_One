@@ -682,10 +682,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendEmail => 'Email';
 
   @override
-  String get paid => 'paid';
+  String get paid => 'Paid';
 
   @override
-  String get unpaid => 'unpaid';
+  String get unpaid => 'Unpaid';
 
   @override
   String get taxId => 'Tax ID';
@@ -1349,4 +1349,238 @@ class AppLocalizationsEn extends AppLocalizations {
   String andOtherProducts(int count) {
     return 'and $count other products';
   }
+
+  @override
+  String get localData => 'Local data';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get openMenu => 'Open menu';
+
+  @override
+  String get loading => 'Loading';
+
+  @override
+  String get collapseSidebar => 'Collapse sidebar';
+
+  @override
+  String get expandSidebar => 'Expand sidebar';
+
+  @override
+  String get serverUnreachable =>
+      'Couldn\'t reach the server. Check your connection and try again.';
+
+  @override
+  String get loadFailedTitle => 'Couldn\'t load this page';
+
+  @override
+  String get clearSearch => 'Clear search';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get moreActions => 'More actions';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get removeLine => 'Remove line';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get notificationsTooltip => 'Notifications';
+
+  @override
+  String get noNotifications => 'You\'re all caught up';
+
+  @override
+  String get noNotificationsHint =>
+      'Stock, payment and delivery alerts will appear here.';
+
+  @override
+  String get notifOutOfStock => 'Out of stock';
+
+  @override
+  String get notifLowStock => 'Low stock';
+
+  @override
+  String get notifOverduePayments => 'Overdue customer payments';
+
+  @override
+  String get notifCreditExceeded => 'Credit limit exceeded';
+
+  @override
+  String get notifSupplierPaymentsDue => 'Supplier payments due';
+
+  @override
+  String get notifPendingDeliveries => 'Pending deliveries';
+
+  @override
+  String notifStockLeft(String count, String min) {
+    return '$count left · minimum $min';
+  }
+
+  @override
+  String notifDaysOverdue(int days) {
+    return '$days days overdue';
+  }
+
+  @override
+  String notifDueInDays(int days) {
+    return 'Due in $days days';
+  }
+
+  @override
+  String get notifDueToday => 'Due today';
+
+  @override
+  String notifExpectedInDays(int days) {
+    return 'Expected in $days days';
+  }
+
+  @override
+  String notifDeliveryLate(int days) {
+    return '$days days late';
+  }
+
+  @override
+  String get notifNoDate => 'No delivery date';
+
+  @override
+  String notifOverLimit(String limit) {
+    return 'Limit $limit';
+  }
+
+  @override
+  String alertsBanner(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alerts',
+      one: '1 alert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String alertsOutOfStock(int count) {
+    return '$count out of stock';
+  }
+
+  @override
+  String alertsLowStock(int count) {
+    return '$count low stock';
+  }
+
+  @override
+  String alertsOverdue(int count) {
+    return '$count overdue payments';
+  }
+
+  @override
+  String alertsOther(int count) {
+    return '$count other';
+  }
+
+  @override
+  String get tabHome => 'Home';
+
+  @override
+  String get tabCopilot => 'Copilot';
+
+  @override
+  String get addProduct => 'Add product';
+
+  @override
+  String get scanShort => 'Scan';
+
+  @override
+  String get seeAll => 'See all';
+
+  @override
+  String get revenueThisMonth => 'Revenue this month';
+
+  @override
+  String get downloadPdfReport => 'Download PDF report';
+
+  @override
+  String get colVat => 'VAT';
+
+  @override
+  String get colMargin => 'Margin';
+
+  @override
+  String get colBalance => 'Balance';
+
+  @override
+  String get colProducts => 'Products';
+
+  @override
+  String get colPriceInclVat => 'Price incl. VAT';
+
+  @override
+  String get colTotalInclVat => 'Total incl. VAT';
+
+  @override
+  String get colSku => 'SKU';
+
+  @override
+  String get statusOutOfStock => 'Out of stock';
+
+  @override
+  String get statusLowStock => 'Low stock';
+
+  @override
+  String get statusUpToDate => 'Up to date';
+
+  @override
+  String get statusOverLimit => 'Over limit';
+
+  @override
+  String get statusToPay => 'To pay';
+
+  @override
+  String get statusPendingDelivery => 'Pending delivery';
+
+  @override
+  String get statusNoBalance => 'Settled';
+
+  @override
+  String get statusLateDelivery => 'Late delivery';
+
+  @override
+  String get requiredField => 'Required';
+
+  @override
+  String get lines => 'Lines';
+
+  @override
+  String get qtyShort => 'Qty';
+
+  @override
+  String get removeLineTooltip => 'Remove line';
+
+  @override
+  String get minimum => 'Min.';
+
+  @override
+  String get suggestedOrder => 'To order';
+
+  @override
+  String get lastSale => 'Last sale';
+
+  @override
+  String get score => 'Score';
 }

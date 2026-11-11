@@ -8,6 +8,7 @@ import '../../../suppliers/presentation/providers/supplier_provider.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../providers/product_provider.dart';
+import '../../../../shared/widgets/app_widgets.dart';
 
 /// Tunisian VAT rates.
 const _vatRates = [0.0, 7.0, 13.0, 19.0];
@@ -142,37 +143,22 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
 
   // ── Building blocks ──
 
-  Widget _section(String title, List<Widget> fields) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            title,
-            style: AppTheme.font(size: 16, weight: FontWeight.w600),
-          ),
-        ),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: AppColors.cardShadow,
-          ),
-          child: Column(
-            children: [
-              for (var i = 0; i < fields.length; i++) ...[
-                if (i > 0) const SizedBox(height: 12),
-                fields[i],
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _section(String title, List<Widget> fields) =>
+      AppFormSection(title: title, children: fields);
+
+  /// Two short fields side by side (stacked on very narrow phones).
+  Widget _pair(Widget left, Widget right) => LayoutBuilder(
+        builder: (context, box) => box.maxWidth >= 360
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: left),
+                  const SizedBox(width: 12),
+                  Expanded(child: right),
+                ],
+              )
+            : Column(children: [left, const SizedBox(height: 14), right]),
+      );
 
   Widget _field(
       TextEditingController controller,
@@ -181,20 +167,19 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
         TextInputType? keyboard,
         int maxLines = 1,
         String? suffix,
+        bool required = false,
       }) {
-    return TextField(
+    return AppLabeledField(label: label, required: required, child: TextField(
       controller: controller,
       keyboardType: keyboard,
       maxLines: maxLines,
-      style: AppTheme.font(size: 15),
+      style: AppTheme.font(size: 14),
       decoration: InputDecoration(
-        labelText: label,
-        alignLabelWithHint: maxLines > 1,
-        prefixIcon: icon != null ? Icon(icon) : null,
+        prefixIcon: icon != null ? Icon(icon, size: 20) : null,
         suffixText: suffix,
         suffixStyle: AppTheme.font(size: 14, color: AppColors.textSecondary),
       ),
-    );
+    ));
   }
 
   Widget _dropdown<T>({
@@ -205,21 +190,20 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
     required List<DropdownMenuItem<T>> items,
     required ValueChanged<T?> onChanged,
   }) {
-    return DropdownButtonFormField<T>(
+    return AppLabeledField(label: label, child: DropdownButtonFormField<T>(
       key: key,
       initialValue: value,
       isExpanded: true,
       items: items,
       onChanged: onChanged,
-      style: AppTheme.font(size: 15),
+      style: AppTheme.font(size: 14),
       dropdownColor: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.control),
       icon: const Icon(Icons.expand_more, color: AppColors.iconMuted),
       decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, size: 20),
       ),
-    );
+    ));
   }
 
   @override
@@ -245,15 +229,19 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
         color: AppColors.stock,
         showMenuButton: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           _section(l10n.generalInfo, [
-            _field(nameController, l10n.name,
-                icon: Icons.label_outline),
-            _field(skuController, l10n.sku, icon: Icons.tag),
-            _field(barcodeController, l10n.barcode,
-                icon: Icons.qr_code_2),
+            _field(nameController, l10n.name, required: true),
+            _pair(
+              _field(skuController, l10n.sku),
+              _field(barcodeController, l10n.barcode),
+            ),
             _field(descriptionController, l10n.description, maxLines: 3),
             _dropdown<String?>(
               key: ValueKey('category-${categories.length}'),
@@ -290,20 +278,13 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
               onChanged: (v) => setState(() => supplierId = v),
             ),
           ]),
-
-          const SizedBox(height: 24),
           _section(l10n.pricingAndVat, [
-            _field(priceController, l10n.priceHt,
-                icon: Icons.sell_outlined,
-                keyboard:
-                const TextInputType.numberWithOptions(decimal: true),
-                suffix: 'DT'),
-            _field(costController, l10n.cost,
-                icon: Icons.shopping_bag_outlined,
-                keyboard:
-                const TextInputType.numberWithOptions(decimal: true),
-                suffix: 'DT'),
-            _dropdown<double>(
+            _pair(
+              _field(priceController, l10n.priceHt,
+                  keyboard:
+                  const TextInputType.numberWithOptions(decimal: true),
+                  suffix: 'DT'),
+              _dropdown<double>(
               key: const ValueKey('vat'),
               label: l10n.vatRate,
               icon: Icons.percent,
@@ -316,50 +297,50 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                   .toList(),
               onChanged: (v) => setState(() => vatRate = v ?? 19),
             ),
+            ),
+            _field(costController, l10n.cost,
+                keyboard:
+                const TextInputType.numberWithOptions(decimal: true),
+                suffix: 'DT'),
           ]),
-
-          const SizedBox(height: 24),
           _section(l10n.stockSettings, [
-            _field(minController, l10n.minThreshold,
-                icon: Icons.south, keyboard: TextInputType.number),
-            _field(maxController, l10n.maxThreshold,
-                icon: Icons.north, keyboard: TextInputType.number),
-            _field(shelfController, l10n.shelfLocation,
-                icon: Icons.place_outlined),
+            _pair(
+              _field(minController, l10n.minThreshold,
+                  keyboard: TextInputType.number),
+              _field(maxController, l10n.maxThreshold,
+                  keyboard: TextInputType.number),
+            ),
+            _field(shelfController, l10n.shelfLocation),
           ]),
-
-          const SizedBox(height: 24),
           _section(l10n.unitsAndPackaging, [
-            _field(unitController, l10n.saleUnit,
-                icon: Icons.straighten),
-            _field(purchaseUnitController, l10n.purchaseUnit,
-                icon: Icons.all_inbox_outlined),
+            _pair(
+              _field(unitController, l10n.saleUnit),
+              _field(purchaseUnitController, l10n.purchaseUnit),
+            ),
             _field(unitsPerPurchaseController, l10n.unitsPerPurchase,
-                icon: Icons.numbers, keyboard: TextInputType.number),
+                keyboard: TextInputType.number),
           ]),
-
-          const SizedBox(height: 24),
           _section(l10n.notes, [
             _field(notesController, l10n.notes, maxLines: 3),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: isActive,
               title: Text(l10n.productActive,
-                  style: AppTheme.font(size: 15)),
+                  style: AppTheme.font(size: 14)),
               onChanged: (v) => setState(() => isActive = v),
             ),
           ]),
+          const SizedBox(height: 4),
+          Text('* ${l10n.requiredField}',
+              style: AppTheme.font(size: 12, color: AppColors.textSecondary)),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          color: AppColors.canvas,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: FilledButton(
-            onPressed: canSave ? _save : null,
-            child: Text(l10n.save),
-          ),
+      ),
+      ),
+      bottomNavigationBar: AppBottomActionBar(
+        child: FilledButton(
+          onPressed: canSave ? _save : null,
+          child: Text(l10n.save),
         ),
       ),
     );

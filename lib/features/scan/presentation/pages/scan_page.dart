@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../providers/document_provider.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_widgets.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/app_snack.dart';
 
 class ScanPage extends ConsumerStatefulWidget {
   const ScanPage({super.key});
@@ -62,12 +64,12 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.control),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             gradient: AppColors.tintGradient(color),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.control),
             border: Border.all(color: color.withValues(alpha: 0.22)),
           ),
           child: Column(
@@ -75,10 +77,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
               Icon(icon, size: 22, color: color),
               const SizedBox(height: 7),
               Text(label,
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: color)),
+                  style: AppTheme.font(size: 13, weight: FontWeight.w700, color: color)),
             ],
           ),
         ),
@@ -102,15 +101,12 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                 Text(l10n.documentValidated),
               ],
             ),
-            backgroundColor: AppColors.success,
+            backgroundColor: AppColors.successText,
           ),
         );
       }
       if (next.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(next.error!), backgroundColor: AppColors.danger),
-        );
+        AppSnack.error(context, next.error!);
       }
     });
 
@@ -118,13 +114,16 @@ class _ScanPageState extends ConsumerState<ScanPage> {
 
     return Scaffold(
       backgroundColor: AppColors.surfaceAlt,
-      drawer: const AppDrawer(currentRoute: '/scan'),
       appBar: AppPageHeader(
         title: l10n.scanDocument,
         icon: Icons.document_scanner_rounded,
         color: AppColors.info,
       ),
-      body: ListView(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           if (pickedImage == null)
@@ -132,9 +131,8 @@ class _ScanPageState extends ConsumerState<ScanPage> {
               height: 200,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(color: AppColors.border),
-                boxShadow: AppColors.cardShadow,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -151,24 +149,20 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(l10n.photographInvoice,
-                      style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary)),
+                      style: AppTheme.font(size: 15, weight: FontWeight.w700, color: AppColors.textPrimary)),
                   const SizedBox(height: 4),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Text(l10n.amountsExtractedAutomatically,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary)),
+                        style: AppTheme.font(size: 12, color: AppColors.textSecondary)),
                   ),
                 ],
               ),
             )
           else
             ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               child: Image.file(pickedImage!, height: 200, fit: BoxFit.cover),
             ),
 
@@ -198,8 +192,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
             const SizedBox(height: 14),
             Center(
               child: Text(l10n.analyzingDocument,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textSecondary)),
+                  style: AppTheme.font(size: 13, color: AppColors.textSecondary)),
             ),
           ],
 
@@ -210,7 +203,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 gradient: AppColors.tintGradient(_confidenceColor(doc.confidence)),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.control),
                 border: Border.all(
                     color: _confidenceColor(doc.confidence)
                         .withValues(alpha: 0.25)),
@@ -232,15 +225,10 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(_confidenceLabel(doc.confidence, l10n),
-                            style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: _confidenceColor(doc.confidence))),
+                            style: AppTheme.font(size: 14, weight: FontWeight.w700, color: _confidenceColor(doc.confidence))),
                         const SizedBox(height: 1),
                         Text(l10n.extractionConfidence(doc.confidence),
-                            style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textSecondary)),
+                            style: AppTheme.font(size: 12, color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
@@ -250,39 +238,33 @@ class _ScanPageState extends ConsumerState<ScanPage> {
 
             const SizedBox(height: 22),
             Text(l10n.checkAndCorrect,
-                style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary)),
+                style: AppTheme.font(size: 15, weight: FontWeight.w700, color: AppColors.textPrimary)),
             const SizedBox(height: 14),
 
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(color: AppColors.border),
-                boxShadow: AppColors.cardShadow,
               ),
               child: Column(
                 children: [
-                  TextField(
+                  AppLabeledField(label: l10n.amount, child: TextField(
                     controller: amountController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: l10n.amount,
                       prefixIcon: const Icon(Icons.payments_outlined),
                       suffixText: 'DT',
                     ),
-                  ),
+                  )),
                   const SizedBox(height: 14),
-                  TextField(
+                  AppLabeledField(label: l10n.date, child: TextField(
                     controller: dateController,
                     decoration: InputDecoration(
-                      labelText: l10n.date,
                       prefixIcon: const Icon(Icons.calendar_today_outlined),
                     ),
-                  ),
+                  )),
                 ],
               ),
             ),
@@ -290,7 +272,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
             const SizedBox(height: 20),
             SizedBox(
               height: 52,
-              child: FilledButton.icon(
+              child: AppBlockButton(height: 52, child: FilledButton.icon(
                 onPressed: () {
                   final amount = double.tryParse(amountController.text) ?? 0;
                   if (amount <= 0) return;
@@ -304,8 +286,8 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                 },
                 icon: const Icon(Icons.check),
                 label: Text(l10n.validateAndSave,
-                    style: const TextStyle(fontSize: 15)),
-              ),
+                    style: AppTheme.font(size: 15)),
+              )),
             ),
 
             const SizedBox(height: 18),
@@ -320,10 +302,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                         size: 20, color: AppColors.textSecondary),
                     const SizedBox(width: 6),
                     Text(l10n.rawExtractedText,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary)),
+                        style: AppTheme.font(size: 13, weight: FontWeight.w600, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
@@ -335,14 +314,14 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.control),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: SingleChildScrollView(
                   child: Text(
                     doc.rawText.isEmpty ? l10n.noTextDetected : doc.rawText,
                     style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontFamily: 'monospace',
                         color: AppColors.textSecondary),
                   ),
@@ -351,6 +330,8 @@ class _ScanPageState extends ConsumerState<ScanPage> {
             const SizedBox(height: 24),
           ],
         ],
+      ),
+        ),
       ),
     );
   }

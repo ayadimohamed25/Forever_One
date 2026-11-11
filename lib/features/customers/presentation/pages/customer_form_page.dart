@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
@@ -101,8 +102,12 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
         color: AppColors.finance,
         showMenuButton: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.page),
         children: [
           AppFormSection(
             title: l10n.customerType,
@@ -126,14 +131,13 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.generalInfo,
             children: [
               AppTextField(
                 controller: nameController,
                 label: l10n.name,
+                required: true,
                 icon: Icons.badge_outlined,
                 autofocus: !isEdit,
               ),
@@ -144,8 +148,6 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.contact,
             children: [
@@ -169,8 +171,6 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.commercialInfo,
             children: [
@@ -191,8 +191,6 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
           AppFormSection(
             title: l10n.notes,
             children: [
@@ -204,6 +202,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
             ],
           ),
         ],
+      ),
+        ),
       ),
       bottomNavigationBar: AppBottomActionBar(
         child: FilledButton(

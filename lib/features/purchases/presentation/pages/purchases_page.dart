@@ -1,16 +1,16 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/purchase_entity.dart';
 import '../providers/purchase_provider.dart';
 import 'create_purchase_page.dart';
+import '../../../../shared/widgets/app_snack.dart';
+import '../../../../shared/widgets/app_data_table.dart';
 
 class PurchasesPage extends ConsumerStatefulWidget {
   const PurchasesPage({super.key});
@@ -36,16 +36,11 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
   }
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppColors.danger : AppColors.success,
-      ),
-    );
+    AppSnack.show(context, message, error: isError);
   }
 
   Future<void> _openPayment(PurchaseEntity p, AppLocalizations l10n) async {
-    await Navigator.of(context).push(MaterialPageRoute(
+    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
       builder: (_) => PaymentPage(
         purchaseId: p.id,
         title: '${l10n.payment} — ${p.supplierName}',
@@ -55,14 +50,14 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
   }
 
   Future<void> _create() async {
-    await Navigator.of(context).push(
+    await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => const CreatePurchasePage()),
     );
     if (mounted) ref.read(purchaseListProvider.notifier).load();
   }
 
   Future<void> _edit(PurchaseEntity p, AppLocalizations l10n) async {
-    final changed = await Navigator.of(context).push<bool>(
+    final changed = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
           builder: (_) => CreatePurchasePage(existingPurchaseId: p.id)),
     );
@@ -119,133 +114,87 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
     }
   }
 
-  ({String label, BadgeTone tone}) _paymentStatus(
+  /// ONE combined status per purchase (delivery + payment), most urgent
+  /// first: cancelled, not yet delivered (late or pending), then payment.
+  ({String label, BadgeTone tone, int rank}) _status(
       PurchaseEntity p, AppLocalizations l10n) {
-    if (p.isFullyPaid) return (label: l10n.paid, tone: BadgeTone.success);
-    if (p.paid > 0.009) {
-      return (label: l10n.partiallyPaid, tone: BadgeTone.warning);
+    if (p.status == 'cancelled') {
+      return (label: l10n.cancelled, tone: BadgeTone.neutral, rank: 0);
     }
-    return (label: l10n.unpaid, tone: BadgeTone.warning);
+    if (p.isPending) {
+      final late = (p.daysUntilExpected ?? 1) < 0;
+      return late
+          ? (label: l10n.statusLateDelivery, tone: BadgeTone.danger, rank: 5)
+          : (label: l10n.statusPendingDelivery, tone: BadgeTone.accent, rank: 4);
+    }
+    if (p.isFullyPaid) return (label: l10n.paid, tone: BadgeTone.success, rank: 1);
+    if (p.paid > 0.009) {
+      return (label: l10n.partiallyPaid, tone: BadgeTone.warning, rank: 2);
+    }
+    return (label: l10n.statusToPay, tone: BadgeTone.warning, rank: 3);
   }
 
-  Widget _card(PurchaseEntity p, AppLocalizations l10n) {
-    final payment = _paymentStatus(p, l10n);
-    final hasVatBreakdown = p.subtotalHt > 0.009 || p.totalVat > 0.009;
-    final expectedPassed = p.isPending && (p.daysUntilExpected ?? 1) < 0;
+  List<AppTableColumn<PurchaseEntity>> _columns(AppLocalizations l10n) => [
+        AppTableColumn(
+          label: l10n.supplier,
+          flex: 4,
+          sortValue: (p) => p.supplierName.toLowerCase(),
+          cell: (p) => AppCellText(p.supplierName,
+              strong: true, sub: formatDate(p.createdAt)),
+        ),
+        AppTableColumn(
+          label: l10n.date,
+          width: 96,
+          showFrom: 760,
+          sortValue: (p) => p.createdAt,
+          cell: (p) => AppCellText(formatDate(p.createdAt),
+              color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.colBalance,
+          width: 108,
+          numeric: true,
+          showFrom: 600,
+          sortValue: (p) => p.balance,
+          cell: (p) => AppCellText(p.isFullyPaid ? '—' : formatDT(p.balance),
+              numeric: true, color: AppColors.textSecondary),
+        ),
+        AppTableColumn(
+          label: l10n.total,
+          width: 112,
+          numeric: true,
+          sortValue: (p) => p.total,
+          cell: (p) => AppCellText(formatDT(p.total), numeric: true),
+        ),
+        AppTableColumn(
+          label: l10n.status,
+          width: 116,
+          sortValue: (p) => _status(p, l10n).rank,
+          cell: (p) {
+            final st = _status(p, l10n);
+            return AppBadge(label: st.label, tone: st.tone);
+          },
+        ),
+      ];
 
-    final details = [
-      if (p.reference != null && p.reference!.trim().isNotEmpty) p.reference!,
-      formatDate(p.createdAt),
-    ].join(' · ');
-
-    return AppCard(
-      onTap: () => _openPayment(p, l10n),
-      padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppLeadingTile.icon(Icons.local_shipping_outlined),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(p.supplierName,
-                        style: AppTheme.rowTitle, maxLines: 2),
-                    const SizedBox(height: 4),
-                    Text(details, style: AppTheme.label, maxLines: 2),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        AppBadge(
-                          label: p.isReceived
-                              ? l10n.received
-                              : l10n.pendingDelivery,
-                          tone: p.isReceived
-                              ? BadgeTone.success
-                              : BadgeTone.warning,
-                        ),
-                        AppBadge(label: payment.label, tone: payment.tone),
-                        if (p.wasLate == true || expectedPassed)
-                          AppBadge(
-                              label: l10n.overdue, tone: BadgeTone.danger)
-                        else if (p.isPending && p.expectedDate != null)
-                          AppBadge(
-                            label: l10n.expectedOn(formatDate(p.expectedDate!)),
-                            tone: BadgeTone.warning,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(formatDT(p.total), style: AppTheme.money),
-                  if (!p.isFullyPaid) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      formatDT(p.balance),
-                      style: AppTheme.font(
-                        size: 13,
-                        weight: FontWeight.w600,
-                        color: AppColors.danger,
-                        tabularFigures: true,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              AppRowMenu(actions: [
-                if (p.isPending)
-                  AppMenuAction(
-                    label: l10n.markAsReceived,
-                    icon: Icons.inventory_outlined,
-                    color: AppColors.success,
-                    onTap: () => _receive(p, l10n),
-                  ),
-                AppMenuAction(
-                  label: l10n.edit,
-                  icon: Icons.edit_outlined,
-                  onTap: () => _edit(p, l10n),
-                ),
-                AppMenuAction(
-                  label: l10n.delete,
-                  icon: Icons.delete_outline,
-                  destructive: true,
-                  onTap: () => _delete(p, l10n),
-                ),
-              ]),
-            ],
-          ),
-          if (hasVatBreakdown)
-            AppCardFooter(
-              color: AppColors.textSecondary,
-              children: [
-                Expanded(
-                  child: Text(
-                    '${formatDT(p.subtotalHt)} ${l10n.exclVatShort}  ·  '
-                        '${l10n.totalVat} ${formatDT(p.totalVat)}',
-                    maxLines: 2,
-                    style: AppTheme.font(
-                      size: 12,
-                      color: AppColors.textSecondary,
-                      tabularFigures: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
+  Widget _rowMenu(PurchaseEntity p, AppLocalizations l10n) => AppRowMenu(actions: [
+        if (p.isPending)
+          AppMenuAction(
+              label: l10n.markAsReceived,
+              icon: Icons.inventory_outlined,
+              onTap: () => _receive(p, l10n)),
+        AppMenuAction(
+            label: l10n.payment,
+            icon: Icons.payments_outlined,
+            onTap: () => _openPayment(p, l10n)),
+        AppMenuAction(
+            label: l10n.edit, icon: Icons.edit_outlined, onTap: () => _edit(p, l10n)),
+        AppMenuAction(
+            label: l10n.delete,
+            icon: Icons.delete_outline,
+            destructive: true,
+            onTap: () => _delete(p, l10n)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -265,7 +214,6 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      drawer: const AppDrawer(currentRoute: '/purchases'),
       appBar: searchVisible
           ? AppSearchHeader(
         controller: searchController,
@@ -289,10 +237,18 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
             tooltip: l10n.search,
             onTap: () => setState(() => searchVisible = true),
           ),
+          AppHeaderAddButton(onPressed: _create, label: l10n.newPurchase),
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? AppSkeletonList(semanticLabel: l10n.loading)
+          : state.error != null && state.purchases.isEmpty
+          ? AppErrorState(
+              title: l10n.loadFailedTitle,
+              message: l10n.serverUnreachable,
+              retryLabel: l10n.retry,
+              onRetry: () => ref.read(purchaseListProvider.notifier).load(),
+            )
           : state.purchases.isEmpty
           ? AppEmptyState(
         icon: state.hasSearched
@@ -305,22 +261,18 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
             : l10n.tapPlusToRecord,
       )
           : RefreshIndicator(
-        color: AppColors.accent,
         onRefresh: () =>
             ref.read(purchaseListProvider.notifier).load(),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          itemCount: state.purchases.length,
-          itemBuilder: (context, index) =>
-              _card(state.purchases[index], l10n),
+        child: AppDataTable<PurchaseEntity>(
+          columns: _columns(l10n),
+          rows: state.purchases,
+          initialSortColumn: 1,
+          initialAscending: false,
+          onRowTap: (p) => _openPayment(p, l10n),
+          rowMenu: (p) => _rowMenu(p, l10n),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _create,
-        backgroundColor: AppColors.black,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.newPurchase),
-      ),
+      floatingActionButton: AppAddFab(onPressed: _create, label: l10n.newPurchase),
     );
   }
 }
