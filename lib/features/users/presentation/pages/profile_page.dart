@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_shell.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../providers/user_provider.dart';
@@ -30,7 +31,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     AppSnack.show(context, message, error: isError);
   }
 
-
   Future<void> _edit(UserEntity user, AppLocalizations l10n) async {
     final changed = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(builder: (_) => ProfileEditPage(user: user)),
@@ -54,34 +54,43 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppLabeledField(label: l10n.currentPassword, child: TextField(
-                  controller: currentController,
-                  obscureText: true,
-                  autofocus: true,
-                  style: AppTheme.font(size: 15),
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.lock_outline),
+                AppLabeledField(
+                  label: l10n.currentPassword,
+                  child: TextField(
+                    controller: currentController,
+                    obscureText: true,
+                    autofocus: true,
+                    style: AppTheme.font(size: 15),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.lock_outline),
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: 12),
-                AppLabeledField(label: l10n.newPassword, child: TextField(
-                  controller: newController,
-                  obscureText: true,
-                  style: AppTheme.font(size: 15),
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.lock_reset),
+                AppLabeledField(
+                  label: l10n.newPassword,
+                  child: TextField(
+                    controller: newController,
+                    obscureText: true,
+                    style: AppTheme.font(size: 15),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.lock_reset),
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: 12),
-                AppLabeledField(label: l10n.confirmPassword, child: TextField(
-                  controller: confirmController,
-                  obscureText: true,
-                  style: AppTheme.font(size: 15),
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.check),
-                    errorText: localError,
+                AppLabeledField(
+                  label: l10n.confirmPassword,
+                  child: TextField(
+                    controller: confirmController,
+                    obscureText: true,
+                    style: AppTheme.font(size: 15),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.check),
+                      errorText: localError,
+                    ),
                   ),
-                )),
+                ),
               ],
             ),
           ),
@@ -102,7 +111,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 }
                 Navigator.of(context).pop(true);
               },
-              style: TextButton.styleFrom(foregroundColor: AppColors.accentText),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accentText,
+              ),
               child: Text(l10n.save),
             ),
           ],
@@ -149,105 +160,122 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       body: state.isLoading || user == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-        color: AppColors.accent,
-        onRefresh: () => ref.read(profileProvider.notifier).load(),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          children: [
-            // ── Identity ──
-            AppCard(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppLeadingTile.initials(user.displayName, size: 56),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              color: AppColors.accent,
+              onRefresh: () => ref.read(profileProvider.notifier).load(),
+              child: AppContentFrame(
+                maxWidth: 760,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                  children: [
+                    // ── Identity ──
+                    AppCard(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppLeadingTile.initials(user.displayName, size: 56),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user.displayName,
+                                  maxLines: 2,
+                                  style: AppTheme.font(
+                                    size: 18,
+                                    weight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  user.email,
+                                  style: AppTheme.label,
+                                  maxLines: 2,
+                                ),
+                                const SizedBox(height: 10),
+                                AppBadge(
+                                  label: roleLabel(user.role, l10n),
+                                  tone: roleTone(user.role),
+                                  icon: roleIcon(user.role),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // ── Details ──
+                    AppFormSection(
+                      title: l10n.generalInfo,
+                      spacing: 0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
                       children: [
-                        Text(
-                          user.displayName,
-                          maxLines: 2,
-                          style: AppTheme.font(
-                              size: 18, weight: FontWeight.w600),
+                        AppInfoRow(
+                          icon: Icons.mail_outline,
+                          label: l10n.email,
+                          value: user.email,
                         ),
-                        const SizedBox(height: 3),
-                        Text(user.email,
-                            style: AppTheme.label, maxLines: 2),
-                        const SizedBox(height: 10),
-                        AppBadge(
-                          label: roleLabel(user.role, l10n),
-                          tone: roleTone(user.role),
-                          icon: roleIcon(user.role),
+                        if (user.phone != null && user.phone!.trim().isNotEmpty)
+                          AppInfoRow(
+                            icon: Icons.phone_outlined,
+                            label: l10n.phone,
+                            value: user.phone!,
+                          ),
+                        AppInfoRow(
+                          icon: Icons.business_outlined,
+                          label: l10n.company,
+                          value: user.companyName.isEmpty
+                              ? '—'
+                              : user.companyName,
+                        ),
+                        AppInfoRow(
+                          icon: Icons.verified_user_outlined,
+                          label: l10n.accessRights,
+                          value: l10n.permissionsCount(user.permissions.length),
                         ),
                       ],
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 24),
+
+                    // ── Security ──
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 10),
+                      child: Text(
+                        l10n.accountSecurity,
+                        style: AppTheme.font(size: 16, weight: FontWeight.w600),
+                      ),
+                    ),
+                    AppCard(
+                      onTap: () => _changePassword(l10n),
+                      child: Row(
+                        children: [
+                          const AppLeadingTile.icon(Icons.key_outlined),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              l10n.changePassword,
+                              style: AppTheme.rowTitle,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            size: 22,
+                            color: AppColors.textMuted,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            const SizedBox(height: 12),
-
-            // ── Details ──
-            AppFormSection(
-              title: l10n.generalInfo,
-              spacing: 0,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              children: [
-                AppInfoRow(
-                  icon: Icons.mail_outline,
-                  label: l10n.email,
-                  value: user.email,
-                ),
-                if (user.phone != null && user.phone!.trim().isNotEmpty)
-                  AppInfoRow(
-                    icon: Icons.phone_outlined,
-                    label: l10n.phone,
-                    value: user.phone!,
-                  ),
-                AppInfoRow(
-                  icon: Icons.business_outlined,
-                  label: l10n.company,
-                  value: user.companyName.isEmpty ? '—' : user.companyName,
-                ),
-                AppInfoRow(
-                  icon: Icons.verified_user_outlined,
-                  label: l10n.accessRights,
-                  value: l10n.permissionsCount(user.permissions.length),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // ── Security ──
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 10),
-              child: Text(
-                l10n.accountSecurity,
-                style: AppTheme.font(size: 16, weight: FontWeight.w600),
-              ),
-            ),
-            AppCard(
-              onTap: () => _changePassword(l10n),
-              child: Row(
-                children: [
-                  const AppLeadingTile.icon(Icons.key_outlined),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(l10n.changePassword,
-                        style: AppTheme.rowTitle),
-                  ),
-                  const Icon(Icons.chevron_right,
-                      size: 22, color: AppColors.textMuted),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

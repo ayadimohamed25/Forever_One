@@ -40,7 +40,8 @@ BadgeTone toneForColor(Color color) {
   return BadgeTone.neutral;
 }
 
-/// Status chip: radius 6, 12px medium text, tinted background.
+/// Status chip: a rounded pill with a dot in the status colour, 12px medium
+/// text on a tinted background.
 /// Labels are always sentence case ("Partially paid"); see [statusLabel].
 class AppBadge extends StatelessWidget {
   final String label;
@@ -58,18 +59,23 @@ class AppBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = badgeColors(tone);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: icon != null ? 6 : 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: c.bg,
-        borderRadius: BorderRadius.circular(AppRadius.chip),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: c.fg),
-            const SizedBox(width: 5),
-          ],
+          if (icon != null)
+            Icon(icon, size: 12, color: c.fg)
+          else
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: c.fg, shape: BoxShape.circle),
+            ),
+          const SizedBox(width: 6),
           Text(
             label,
             style: AppTheme.font(size: 12, weight: FontWeight.w500, color: c.fg),

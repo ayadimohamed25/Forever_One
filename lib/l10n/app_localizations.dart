@@ -3133,6 +3133,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile updated'**
   String get auditProfileUpdated;
+
+  /// No description provided for @tableResults.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No results} =1{1 result} other{{count} results}}'**
+  String tableResults(int count);
+
+  /// No description provided for @tableRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}–{to} of {total}'**
+  String tableRange(int from, int to, int total);
+
+  /// No description provided for @previousPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get previousPage;
+
+  /// No description provided for @nextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get nextPage;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @periodThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get periodThisMonth;
+
+  /// No description provided for @periodLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get periodLast30Days;
+
+  /// No description provided for @periodAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get periodAll;
+
+  /// No description provided for @statusReorderSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder soon'**
+  String get statusReorderSoon;
+
+  /// No description provided for @activeFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get activeFilter;
+
+  /// No description provided for @navOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get navOverview;
+
+  /// No description provided for @navInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get navInvoices;
+
+  /// No description provided for @navGroupSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get navGroupSales;
+
+  /// No description provided for @navGroupPurchasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchasing'**
+  String get navGroupPurchasing;
+
+  /// No description provided for @navGroupInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get navGroupInventory;
+
+  /// No description provided for @navGroupIntelligence.
+  ///
+  /// In en, this message translates to:
+  /// **'Intelligence'**
+  String get navGroupIntelligence;
+
+  /// No description provided for @navGroupAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Administration'**
+  String get navGroupAdmin;
+
+  /// No description provided for @askAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI'**
+  String get askAi;
+
+  /// No description provided for @openProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open my profile'**
+  String get openProfile;
+
+  /// No description provided for @statInvoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiced'**
+  String get statInvoiced;
+
+  /// No description provided for @statPurchased.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchased'**
+  String get statPurchased;
+
+  /// No description provided for @toCollect.
+  ///
+  /// In en, this message translates to:
+  /// **'To collect'**
+  String get toCollect;
+
+  /// No description provided for @issuedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued {date}'**
+  String issuedOn(String date);
+
+  /// No description provided for @period7d.
+  ///
+  /// In en, this message translates to:
+  /// **'7D'**
+  String get period7d;
+
+  /// No description provided for @period30d.
+  ///
+  /// In en, this message translates to:
+  /// **'30D'**
+  String get period30d;
+
+  /// No description provided for @period90d.
+  ///
+  /// In en, this message translates to:
+  /// **'90D'**
+  String get period90d;
+
+  /// No description provided for @period12m.
+  ///
+  /// In en, this message translates to:
+  /// **'12M'**
+  String get period12m;
+
+  /// No description provided for @chartPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart period'**
+  String get chartPeriod;
+
+  /// No description provided for @thisPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'This period'**
+  String get thisPeriod;
+
+  /// No description provided for @previousPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous period'**
+  String get previousPeriod;
+
+  /// No description provided for @netPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Net position'**
+  String get netPosition;
+
+  /// No description provided for @needsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get needsAttention;
+
+  /// No description provided for @allClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs your attention.'**
+  String get allClear;
+
+  /// No description provided for @noSalesInPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales in this period'**
+  String get noSalesInPeriod;
+
+  /// No description provided for @chartLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this period.'**
+  String get chartLoadFailed;
+
+  /// No description provided for @overdueInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No overdue invoice} =1{1 overdue invoice} other{{count} overdue invoices}}'**
+  String overdueInvoices(int count);
+
+  /// No description provided for @lowStockProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{All products in stock} =1{1 product to reorder} other{{count} products to reorder}}'**
+  String lowStockProducts(int count);
+
+  /// No description provided for @revenueTrendLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue trend, {amount} in this period'**
+  String revenueTrendLabel(String amount);
+
+  /// No description provided for @greetingWithName.
+  ///
+  /// In en, this message translates to:
+  /// **'{greeting}, {name}'**
+  String greetingWithName(String greeting, String name);
 }
 
 class _AppLocalizationsDelegate

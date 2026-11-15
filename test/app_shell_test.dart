@@ -73,10 +73,23 @@ void main() {
     await tester.tap(find.byTooltip('Open menu'));
     await tester.pumpAndSettle();
     expect(find.byType(AppDrawer), findsOneWidget);
-    // Only permitted items are listed.
+    // The current page's group (Inventory) opens by itself; the others are
+    // closed; a group with nothing the user may open is hidden.
     expect(find.text('Products'), findsWidgets);
+    expect(find.text('Categories'), findsOneWidget);
+    expect(find.text('Users'), findsNothing);
+    expect(find.text('Purchasing'), findsNothing);
+
+    await tester.tap(find.text('Administration'));
+    await tester.pumpAndSettle();
+    // Only permitted items are listed.
     expect(find.text('Users'), findsOneWidget);
     expect(find.text('Audit log'), findsNothing);
+
+    // Closing the page's own group works too.
+    await tester.tap(find.text('Inventory'));
+    await tester.pumpAndSettle();
+    expect(find.text('Categories'), findsNothing);
   });
 
   testWidgets('from 840px the sidebar is permanent and the menu button goes',

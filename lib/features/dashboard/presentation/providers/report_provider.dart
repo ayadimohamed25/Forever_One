@@ -18,18 +18,28 @@ class ReportState {
   /// An error CODE, translated by the screen (never user-facing text here).
   final String? error;
 
-  const ReportState({this.isLoading = false, this.deliveredCount = 0, this.error});
+  const ReportState({
+    this.isLoading = false,
+    this.deliveredCount = 0,
+    this.error,
+  });
 }
 
 class ReportNotifier extends StateNotifier<ReportState> {
   final ReportRemoteDatasource datasource;
   ReportNotifier(this.datasource) : super(const ReportState());
 
-  Future<void> download({String locale = 'en'}) async {
+  /// [lang]: the language selected in the app (the EN/FR switch).
+  Future<void> download({required String lang}) async {
     final delivered = state.deliveredCount;
     state = ReportState(isLoading: true, deliveredCount: delivered);
     try {
-      final report = await datasource.downloadDirectorReport(locale: locale);
+      final report = await datasource.downloadDirectorReport(lang: lang);
+      if (report.language != null && report.language != lang) {
+        debugPrint(
+          '[report] asked for $lang, server answered ${report.language}',
+        );
+      }
       if (report.bytes.isEmpty) throw StateError('empty report');
       await saveAndOpenFile(report.bytes, report.filename, 'application/pdf');
       state = ReportState(deliveredCount: delivered + 1);
@@ -40,6 +50,8 @@ class ReportNotifier extends StateNotifier<ReportState> {
   }
 }
 
-final reportProvider = StateNotifierProvider<ReportNotifier, ReportState>((ref) {
+final reportProvider = StateNotifierProvider<ReportNotifier, ReportState>((
+  ref,
+) {
   return ReportNotifier(ref.read(reportDatasourceProvider));
 });

@@ -118,9 +118,15 @@ class CustomerDetailNotifier extends StateNotifier<CustomerDetailState> {
   final CustomerRepositoryImpl repository;
   CustomerDetailNotifier(this.repository) : super(const CustomerDetailState());
 
+  /// Latest request wins: selecting customer A then B quickly must never
+  /// show A because its answer arrived last.
+  int _seq = 0;
+
   Future<void> load(String id) async {
+    final seq = ++_seq;
     state = const CustomerDetailState(isLoading: true);
     final result = await repository.getCustomerDetail(id);
+    if (seq != _seq || !mounted) return;
     result.fold(
           (failure) => state = CustomerDetailState(error: failure.message),
           (detail) => state = CustomerDetailState(

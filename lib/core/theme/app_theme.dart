@@ -42,24 +42,45 @@ class AppTheme {
     );
   }
 
-  // ── Type scale: page title 20, section 15, body 14, caption 12 ──
+  /// A heading style: Plus Jakarta Sans for titles and large figures; body
+  /// text and table numbers stay in Inter.
+  static TextStyle heading({
+    double size = 20,
+    FontWeight weight = FontWeight.w700,
+    Color color = AppColors.textPrimary,
+    double? height,
+    bool tabularFigures = false,
+  }) {
+    return GoogleFonts.plusJakartaSans(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      letterSpacing: -0.01 * size,
+      height: height,
+      fontFeatures: tabularFigures ? tabular : null,
+    );
+  }
 
-  static TextStyle get pageTitle =>
-      font(size: 20, weight: FontWeight.w600, letterSpacing: -0.2, height: 1.2);
+  // ── Type scale: page title 20 (28 on wide), section 16, body 14, caption 12 ──
+
+  static TextStyle get pageTitle => heading(size: 20, height: 1.2);
+
+  /// Page title on wide screens, above the content.
+  static TextStyle get pageTitleWide => heading(size: 28, height: 1.2);
+
+  /// The big money figure of a hero card.
+  static TextStyle get hero =>
+      heading(size: 40, height: 1.1, tabularFigures: true);
 
   /// Kept name: the dashboard greeting is now a page-title-sized line.
   static TextStyle get greeting => pageTitle;
 
   /// Large KPI figure on a card.
-  static TextStyle get kpi => font(
-      size: 22,
-      weight: FontWeight.w600,
-      letterSpacing: -0.3,
-      height: 1.15,
-      tabularFigures: true);
+  static TextStyle get kpi =>
+      heading(size: 24, height: 1.15, tabularFigures: true);
 
   static TextStyle get sectionTitle =>
-      font(size: 15, weight: FontWeight.w600, height: 1.3);
+      heading(size: 16, weight: FontWeight.w600, height: 1.3);
 
   /// Caption / secondary line.
   static TextStyle get label =>

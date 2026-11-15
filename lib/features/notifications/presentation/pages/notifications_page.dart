@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_shell.dart';
 import '../../../../shared/widgets/app_pressable.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../customers/presentation/pages/customer_detail_page.dart';
@@ -14,10 +15,81 @@ import '../../../stock/presentation/pages/product_detail_page.dart';
 import '../providers/notification_provider.dart';
 
 /// Opens the Notifications screen above the shell.
-Future<void> openNotifications(BuildContext context) =>
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(builder: (_) => const NotificationsPage()),
-    );
+Future<void> openNotifications(BuildContext context) => Navigator.of(
+  context,
+  rootNavigator: true,
+).push(MaterialPageRoute(builder: (_) => const NotificationsPage()));
+
+String _qty(double v) =>
+    v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+
+/// The second line: what is wrong, in words.
+String notificationDetail(NotificationItem n, AppLocalizations l10n) {
+  switch (n.type) {
+    case NotificationType.outOfStock:
+    case NotificationType.lowStock:
+      return l10n.notifStockLeft(_qty(n.value), _qty(n.threshold ?? 0));
+    case NotificationType.overduePayment:
+      return l10n.notifDaysOverdue(n.days ?? 0);
+    case NotificationType.creditExceeded:
+      return l10n.notifOverLimit(formatDT(n.threshold ?? 0));
+    case NotificationType.supplierPaymentDue:
+      final d = n.days ?? 0;
+      if (d < 0) return l10n.notifDaysOverdue(-d);
+      if (d == 0) return l10n.notifDueToday;
+      return l10n.notifDueInDays(d);
+    case NotificationType.pendingDelivery:
+      final d = n.days;
+      if (d == null) return l10n.notifNoDate;
+      if (d < 0) return l10n.notifDeliveryLate(-d);
+      return l10n.notifExpectedInDays(d);
+  }
+}
+
+/// The right-hand figure: a quantity for stock, an amount otherwise.
+String notificationFigure(NotificationItem n) {
+  switch (n.type) {
+    case NotificationType.outOfStock:
+    case NotificationType.lowStock:
+      return _qty(n.value);
+    default:
+      return formatDT(n.value);
+  }
+}
+
+/// Opens the record a notification is about (product, customer, sale or
+/// purchase). Returns after the user comes back.
+Future<void> openNotificationItem(
+  BuildContext context,
+  NotificationItem n,
+  AppLocalizations l10n,
+) async {
+  final Widget page;
+  switch (n.entity) {
+    case 'product':
+      page = ProductDetailPage(productId: n.entityId);
+    case 'customer':
+      page = CustomerDetailPage(customerId: n.entityId);
+    case 'sale':
+      page = PaymentPage(
+        saleId: n.entityId,
+        title: '${l10n.payment} — ${n.title}',
+      );
+    case 'purchase':
+      page = n.type == NotificationType.pendingDelivery
+          ? CreatePurchasePage(existingPurchaseId: n.entityId)
+          : PaymentPage(
+              purchaseId: n.entityId,
+              title: '${l10n.payment} — ${n.title}',
+            );
+    default:
+      return;
+  }
+  await Navigator.of(
+    context,
+    rootNavigator: true,
+  ).push(MaterialPageRoute(builder: (_) => page));
+}
 
 /// All active alerts, grouped by type. Each line opens the record it is
 /// about. In-app only: nothing is pushed to the device.
@@ -69,61 +141,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     }
   }
 
-  String _qty(double v) =>
-      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
-
-  /// The second line: what is wrong, in words.
-  String _detail(NotificationItem n, AppLocalizations l10n) {
-    switch (n.type) {
-      case NotificationType.outOfStock:
-      case NotificationType.lowStock:
-        return l10n.notifStockLeft(_qty(n.value), _qty(n.threshold ?? 0));
-      case NotificationType.overduePayment:
-        return l10n.notifDaysOverdue(n.days ?? 0);
-      case NotificationType.creditExceeded:
-        return l10n.notifOverLimit(formatDT(n.threshold ?? 0));
-      case NotificationType.supplierPaymentDue:
-        final d = n.days ?? 0;
-        if (d < 0) return l10n.notifDaysOverdue(-d);
-        if (d == 0) return l10n.notifDueToday;
-        return l10n.notifDueInDays(d);
-      case NotificationType.pendingDelivery:
-        final d = n.days;
-        if (d == null) return l10n.notifNoDate;
-        if (d < 0) return l10n.notifDeliveryLate(-d);
-        return l10n.notifExpectedInDays(d);
-    }
-  }
-
-  /// The right-hand figure: a quantity for stock, an amount otherwise.
-  String _figure(NotificationItem n) {
-    switch (n.type) {
-      case NotificationType.outOfStock:
-      case NotificationType.lowStock:
-        return _qty(n.value);
-      default:
-        return formatDT(n.value);
-    }
-  }
-
   Future<void> _open(NotificationItem n, AppLocalizations l10n) async {
-    final Widget page;
-    switch (n.entity) {
-      case 'product':
-        page = ProductDetailPage(productId: n.entityId);
-      case 'customer':
-        page = CustomerDetailPage(customerId: n.entityId);
-      case 'sale':
-        page = PaymentPage(saleId: n.entityId, title: '${l10n.payment} — ${n.title}');
-      case 'purchase':
-        page = n.type == NotificationType.pendingDelivery
-            ? CreatePurchasePage(existingPurchaseId: n.entityId)
-            : PaymentPage(
-                purchaseId: n.entityId, title: '${l10n.payment} — ${n.title}');
-      default:
-        return;
-    }
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    await openNotificationItem(context, n, l10n);
     if (mounted) ref.read(notificationProvider.notifier).load();
   }
 
@@ -151,45 +170,54 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     } else {
       body = RefreshIndicator(
         onRefresh: () => ref.read(notificationProvider.notifier).load(),
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.page),
-          children: [
-            for (final (type, items) in state.grouped)
-              Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.gap),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: AppColors.border),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                      child: Row(
-                        children: [
-                          Icon(_icon(type), size: 18, color: AppColors.iconMuted),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(_groupTitle(type, l10n),
-                                style: AppTheme.sectionTitle),
-                          ),
-                          AppBadge(
-                            label: '${items.length}',
-                            tone: items.any((i) => i.isCritical)
-                                ? BadgeTone.danger
-                                : BadgeTone.warning,
-                          ),
-                        ],
+        child: AppContentFrame(
+          maxWidth: 1248,
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.page),
+            children: [
+              for (final (type, items) in state.grouped)
+                Container(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.gap),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _icon(type),
+                              size: 18,
+                              color: AppColors.iconMuted,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _groupTitle(type, l10n),
+                                style: AppTheme.sectionTitle,
+                              ),
+                            ),
+                            AppBadge(
+                              label: '${items.length}',
+                              tone: items.any((i) => i.isCritical)
+                                  ? BadgeTone.danger
+                                  : BadgeTone.warning,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    for (final n in items) _row(n, l10n),
-                  ],
+                      for (final n in items) _row(n, l10n),
+                    ],
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -211,7 +239,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     return AppPressable(
       onTap: () => _open(n, l10n),
       borderRadius: BorderRadius.zero,
-      semanticLabel: '${n.title}, ${_detail(n, l10n)}',
+      semanticLabel: '${n.title}, ${notificationDetail(n, l10n)}',
       child: Container(
         constraints: const BoxConstraints(minHeight: 58),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -233,27 +261,38 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(n.title,
-                      style: AppTheme.rowTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    n.title,
+                    style: AppTheme.rowTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 2),
-                  Text(_detail(n, l10n),
-                      style: AppTheme.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    notificationDetail(n, l10n),
+                    style: AppTheme.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
             const SizedBox(width: 12),
-            Text(_figure(n),
-                style: AppTheme.font(
-                    size: 14,
-                    weight: FontWeight.w600,
-                    color: tone,
-                    tabularFigures: true)),
+            Text(
+              notificationFigure(n),
+              style: AppTheme.font(
+                size: 14,
+                weight: FontWeight.w600,
+                color: tone,
+                tabularFigures: true,
+              ),
+            ),
             const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 20, color: AppColors.iconMuted),
+            const Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: AppColors.iconMuted,
+            ),
           ],
         ),
       ),

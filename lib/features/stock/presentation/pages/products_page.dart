@@ -6,6 +6,9 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_data_table.dart';
 import '../../../../shared/widgets/app_pressable.dart';
+import '../../../../shared/widgets/app_shell.dart';
+import '../../../../shared/widgets/app_side_panel.dart';
+import '../widgets/product_detail_body.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/product_entity.dart';
 import '../providers/product_provider.dart';
@@ -26,6 +29,9 @@ class ProductsPage extends ConsumerStatefulWidget {
 class _ProductsPageState extends ConsumerState<ProductsPage> {
   final searchController = TextEditingController();
   bool searchVisible = false;
+
+  /// The product open in the side panel (wide screens only).
+  String? selectedId;
 
   @override
   void initState() {
@@ -53,8 +59,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   }
 
   Future<void> _edit(ProductEntity product, AppLocalizations l10n) async {
-    final input =
-    await openProductForm(context, ref, existing: product);
+    final input = await openProductForm(context, ref, existing: product);
     if (input == null) return;
     await ref.read(productListProvider.notifier).update(product.id, input);
     if (mounted) _showSnack(l10n.productUpdated);
@@ -82,8 +87,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
     if (confirmed != true) return;
 
-    final error =
-    await ref.read(productListProvider.notifier).remove(product.id);
+    final error = await ref
+        .read(productListProvider.notifier)
+        .remove(product.id);
     if (!mounted) return;
 
     if (error == null) {
@@ -95,17 +101,25 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     }
   }
 
+  /// Wide: open the side panel. Phone: open the detail page.
   Future<void> _openDetail(ProductEntity product) async {
-    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => ProductDetailPage(productId: product.id),
-    ));
+    if (AppBreakpoints.isWide(context)) {
+      setState(() => selectedId = product.id);
+      return;
+    }
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => ProductDetailPage(productId: product.id),
+      ),
+    );
     if (mounted) ref.read(productListProvider.notifier).load();
   }
 
   Future<void> _openCategories() async {
-    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => const CategoriesPage(),
-    ));
+    await Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => const CategoriesPage()));
     if (mounted) {
       ref.read(categoryListProvider.notifier).load();
       ref.read(productListProvider.notifier).load();
@@ -132,7 +146,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             border: Border.all(
-                color: selected ? AppColors.primary : AppColors.fieldBorder),
+              color: selected ? AppColors.primary : AppColors.fieldBorder,
+            ),
             borderRadius: BorderRadius.circular(AppRadius.chip),
           ),
           child: Text(
@@ -154,91 +169,109 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   Color _stockColor(ProductEntity p) => p.currentStock <= 0
       ? AppColors.dangerText
       : p.isLowStock
-          ? AppColors.warningText
-          : AppColors.textPrimary;
+      ? AppColors.warningText
+      : AppColors.textPrimary;
 
+  Color? _categoryColor(ProductEntity p) => productCategoryColor(p);
+
+  String _margin(ProductEntity p) => p.price > 0
+      ? '${((p.price - p.cost) / p.price * 100).toStringAsFixed(0)}%'
+      : '—';
+
+  // Order: name, information, amounts (there is no status column here; the
+  // stock figure carries its own colour).
   List<AppTableColumn<ProductEntity>> _columns(AppLocalizations l10n) => [
-        AppTableColumn(
-          label: l10n.product,
-          flex: 4,
-          sortValue: (p) => p.name.toLowerCase(),
-          cell: (p) => Opacity(
-            opacity: p.isActive ? 1 : 0.55,
-            child: AppCellText(p.name,
-                strong: true, sub: p.categoryName ?? l10n.noCategory),
+    AppTableColumn(
+      label: l10n.product,
+      sortValue: (p) => p.name.toLowerCase(),
+      cell: (p) {
+        final dot = _categoryColor(p);
+        return Opacity(
+          opacity: p.isActive ? 1 : 0.55,
+          child: AppCellText(
+            p.name,
+            strong: true,
+            maxLines: 2,
+            sub: p.categoryName ?? l10n.noCategory,
+            subLeading: dot == null ? null : AppColorDot(dot),
           ),
+        );
+      },
+    ),
+    AppTableColumn(
+      label: l10n.colSku,
+      showFrom: 600,
+      maxWidth: 110,
+      measure: (p) => p.sku ?? '—',
+      sortValue: (p) => p.sku ?? '',
+      cell: (p) => AppCellText(p.sku ?? '—', color: AppColors.textSecondary),
+    ),
+    AppTableColumn(
+      label: l10n.supplier,
+      showFrom: 760,
+      maxWidth: 200,
+      measure: (p) => p.supplierName ?? '—',
+      sortValue: (p) => (p.supplierName ?? '').toLowerCase(),
+      cell: (p) => AppCellText(p.supplierName ?? '—'),
+    ),
+    AppTableColumn(
+      label: l10n.stock,
+      numeric: true,
+      measure: (p) => '${p.currentStock}',
+      sortValue: (p) => p.currentStock,
+      cell: (p) => Text(
+        '${p.currentStock}',
+        style: AppTheme.font(
+          size: 14,
+          weight: p.isLowStock || p.currentStock <= 0
+              ? FontWeight.w600
+              : FontWeight.w400,
+          color: _stockColor(p),
+          tabularFigures: true,
         ),
-        AppTableColumn(
-          label: l10n.colSku,
-          flex: 2,
-          showFrom: 600,
-          sortValue: (p) => p.sku ?? '',
-          cell: (p) => AppCellText(p.sku ?? '—', color: AppColors.textSecondary),
-        ),
-        AppTableColumn(
-          label: l10n.supplier,
-          flex: 3,
-          showFrom: 760,
-          sortValue: (p) => (p.supplierName ?? '').toLowerCase(),
-          cell: (p) => AppCellText(p.supplierName ?? '—'),
-        ),
-        AppTableColumn(
-          label: l10n.stock,
-          width: 64,
-          numeric: true,
-          sortValue: (p) => p.currentStock,
-          cell: (p) => Text(
-            '${p.currentStock}',
-            style: AppTheme.font(
-              size: 14,
-              weight: p.isLowStock || p.currentStock <= 0
-                  ? FontWeight.w600
-                  : FontWeight.w400,
-              color: _stockColor(p),
-              tabularFigures: true,
-            ),
-          ),
-        ),
-        AppTableColumn(
-          label: l10n.colVat,
-          width: 56,
-          numeric: true,
-          showFrom: 600,
-          sortValue: (p) => p.vatRate,
-          cell: (p) => AppCellText('${p.vatRate.toStringAsFixed(0)}%', numeric: true),
-        ),
-        AppTableColumn(
-          label: l10n.colMargin,
-          width: 72,
-          numeric: true,
-          showFrom: 900,
-          sortValue: (p) => p.price > 0 ? (p.price - p.cost) / p.price : 0,
-          cell: (p) => AppCellText(
-              p.price > 0
-                  ? '${((p.price - p.cost) / p.price * 100).toStringAsFixed(0)}%'
-                  : '—',
-              numeric: true),
-        ),
-        AppTableColumn(
-          label: l10n.colPriceInclVat,
-          width: 112,
-          numeric: true,
-          sortValue: (p) => _priceTtc(p),
-          cell: (p) => AppCellText(formatDT(_priceTtc(p)), numeric: true),
-        ),
-      ];
+      ),
+    ),
+    AppTableColumn(
+      label: l10n.colVat,
+      numeric: true,
+      showFrom: 600,
+      measure: (p) => '${p.vatRate.toStringAsFixed(0)}%',
+      sortValue: (p) => p.vatRate,
+      cell: (p) =>
+          AppCellText('${p.vatRate.toStringAsFixed(0)}%', numeric: true),
+    ),
+    AppTableColumn(
+      label: l10n.colMargin,
+      numeric: true,
+      showFrom: 900,
+      measure: _margin,
+      sortValue: (p) => p.price > 0 ? (p.price - p.cost) / p.price : 0,
+      cell: (p) => AppCellText(_margin(p), numeric: true),
+    ),
+    AppTableColumn(
+      label: l10n.colPriceInclVat,
+      numeric: true,
+      measure: (p) => formatDT(_priceTtc(p)),
+      sortValue: (p) => _priceTtc(p),
+      cell: (p) => AppCellText(formatDT(_priceTtc(p)), numeric: true),
+    ),
+  ];
 
-  Widget _rowMenu(ProductEntity p, AppLocalizations l10n) => AppRowMenu(actions: [
-        AppMenuAction(
-            label: l10n.edit,
-            icon: Icons.edit_outlined,
-            onTap: () => _edit(p, l10n)),
-        AppMenuAction(
-            label: l10n.delete,
-            icon: Icons.delete_outline,
-            destructive: true,
-            onTap: () => _delete(p, l10n)),
-      ]);
+  Widget _rowMenu(ProductEntity p, AppLocalizations l10n) => AppRowMenu(
+    actions: [
+      AppMenuAction(
+        label: l10n.edit,
+        icon: Icons.edit_outlined,
+        onTap: () => _edit(p, l10n),
+      ),
+      AppMenuAction(
+        label: l10n.delete,
+        icon: Icons.delete_outline,
+        destructive: true,
+        onTap: () => _delete(p, l10n),
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +280,9 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(productListProvider, (previous, next) {
-      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
+      if (next.error != null) {
+        _showSnack(errorText(next.error, l10n), isError: true);
+      }
     });
 
     final lowStockCount = state.products.where((p) => p.isLowStock).length;
@@ -261,35 +296,35 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       backgroundColor: AppColors.canvas,
       appBar: searchVisible
           ? AppSearchHeader(
-        controller: searchController,
-        hint: l10n.searchProducts,
-        onChanged: (v) =>
-            ref.read(productListProvider.notifier).search(v),
-        onClose: () {
-          setState(() => searchVisible = false);
-          searchController.clear();
-          ref.read(productListProvider.notifier).clearSearch();
-        },
-      )
+              controller: searchController,
+              hint: l10n.searchProducts,
+              onChanged: (v) =>
+                  ref.read(productListProvider.notifier).search(v),
+              onClose: () {
+                setState(() => searchVisible = false);
+                searchController.clear();
+                ref.read(productListProvider.notifier).clearSearch();
+              },
+            )
           : AppPageHeader(
-        title: l10n.products,
-        subtitle: subtitle,
-        icon: Icons.inventory_2_outlined,
-        color: AppColors.stock,
-        actions: [
-          AppHeaderAction(
-            icon: Icons.search,
-            tooltip: l10n.search,
-            onTap: () => setState(() => searchVisible = true),
-          ),
-          AppHeaderAction(
-            icon: Icons.category_outlined,
-            tooltip: l10n.categories,
-            onTap: _openCategories,
-          ),
-          AppHeaderAddButton(onPressed: _create, label: l10n.product),
-        ],
-      ),
+              title: l10n.products,
+              subtitle: subtitle,
+              icon: Icons.inventory_2_outlined,
+              color: AppColors.stock,
+              actions: [
+                AppHeaderAction(
+                  icon: Icons.search,
+                  phoneOnly: true,
+                  tooltip: l10n.search,
+                  onTap: () => setState(() => searchVisible = true),
+                ),
+                AppHeaderAction(
+                  icon: Icons.category_outlined,
+                  tooltip: l10n.categories,
+                  onTap: _openCategories,
+                ),
+              ],
+            ),
       body: Column(
         children: [
           if (categories.isNotEmpty && !searchVisible)
@@ -306,14 +341,17 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                         .read(productListProvider.notifier)
                         .filterByCategory(null),
                   ),
-                  ...categories.map((c) => _categoryChip(
-                    label: c.name,
-                    selected: state.categoryFilter == c.id,
-                    onTap: () => ref
-                        .read(productListProvider.notifier)
-                        .filterByCategory(
-                        state.categoryFilter == c.id ? null : c.id),
-                  )),
+                  ...categories.map(
+                    (c) => _categoryChip(
+                      label: c.name,
+                      selected: state.categoryFilter == c.id,
+                      onTap: () => ref
+                          .read(productListProvider.notifier)
+                          .filterByCategory(
+                            state.categoryFilter == c.id ? null : c.id,
+                          ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -330,29 +368,93 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                   )
                 : state.products.isEmpty
                 ? AppEmptyState(
-              icon: state.hasSearched
-                  ? Icons.search_off
-                  : Icons.inventory_2_outlined,
-              title: state.hasSearched
-                  ? l10n.noResults
-                  : l10n.noProducts,
-              subtitle: state.hasSearched
-                  ? l10n.tryDifferentSearch
-                  : '',
-              actionLabel: state.hasSearched ? null : l10n.product,
-              onAction: _create,
-            )
+                    icon: state.hasSearched
+                        ? Icons.search_off
+                        : Icons.inventory_2_outlined,
+                    title: state.hasSearched ? l10n.noResults : l10n.noProducts,
+                    subtitle: state.hasSearched ? l10n.tryDifferentSearch : '',
+                    actionLabel: state.hasSearched ? null : l10n.product,
+                    onAction: _create,
+                  )
                 : RefreshIndicator(
-              onRefresh: () =>
-                  ref.read(productListProvider.notifier).load(),
-              child: AppDataTable<ProductEntity>(
-                columns: _columns(l10n),
-                rows: state.products,
-                initialSortColumn: 0,
-                onRowTap: _openDetail,
-                rowMenu: (p) => _rowMenu(p, l10n),
-              ),
-            ),
+                    onRefresh: () =>
+                        ref.read(productListProvider.notifier).load(),
+                    child: AppDataTable<ProductEntity>(
+                      columns: _columns(l10n),
+                      rows: state.products,
+                      initialSortColumn: 0,
+                      onRowTap: _openDetail,
+                      rowMenu: (p) => _rowMenu(p, l10n),
+                      searchText: (p) =>
+                          '${p.name} ${p.sku ?? ''} ${p.barcode ?? ''} ${p.supplierName ?? ''}',
+                      searchHint: l10n.searchProducts,
+                      tabs: AppTableFilter(
+                        label: l10n.stock,
+                        options: [
+                          AppFilterOption(l10n.filterAll),
+                          AppFilterOption(
+                            l10n.statusLowStock,
+                            (p) => p.currentStock > 0 && p.isLowStock,
+                          ),
+                          AppFilterOption(
+                            l10n.statusOutOfStock,
+                            (p) => p.currentStock <= 0,
+                          ),
+                          AppFilterOption(l10n.inactive, (p) => !p.isActive),
+                        ],
+                      ),
+                      summary: [
+                        AppTableStat(
+                          label: l10n.products,
+                          value: '${state.products.length}',
+                          tab: 0,
+                        ),
+                        AppTableStat(
+                          label: l10n.stockValue,
+                          value: formatDT(state.products.fold<double>(
+                              0,
+                              (t, p) =>
+                                  t +
+                                  (p.currentStock > 0
+                                      ? p.currentStock * p.cost
+                                      : 0))),
+                        ),
+                        AppTableStat(
+                          label: l10n.statusLowStock,
+                          value:
+                              '${state.products.where((p) => p.currentStock > 0 && p.isLowStock).length}',
+                          color: AppColors.warningText,
+                          tab: 1,
+                        ),
+                        AppTableStat(
+                          label: l10n.statusOutOfStock,
+                          value:
+                              '${state.products.where((p) => p.currentStock <= 0).length}',
+                          color: AppColors.dangerText,
+                          tab: 2,
+                        ),
+                      ],
+                      isSelected: (p) => p.id == selectedId,
+                      onSelectionHidden: () =>
+                          setState(() => selectedId = null),
+                      detailPanel: selectedId == null
+                          ? null
+                          : AppSidePanel(
+                              closeLabel: l10n.close,
+                              onClose: () =>
+                                  setState(() => selectedId = null),
+                              child: ProductDetailBody(
+                                productId: selectedId!,
+                                compact: true,
+                                onChanged: () => ref
+                                    .read(productListProvider.notifier)
+                                    .load(),
+                              ),
+                            ),
+                      onAdd: _create,
+                      addLabel: l10n.product,
+                    ),
+                  ),
           ),
         ],
       ),

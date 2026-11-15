@@ -5,6 +5,7 @@ import '../../core/router/app_destinations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import 'app_drawer.dart';
+import 'app_motion.dart';
 
 /// Window-size breakpoints (Material 3 window classes).
 class AppBreakpoints {
@@ -87,7 +88,11 @@ class _AppShellState extends ConsumerState<AppShell> {
       final page = AppShellScope(
         sidebarVisible: sidebarVisible,
         openNavigation: () => _scaffoldKey.currentState?.openDrawer(),
-        child: widget.child,
+        // The one place section navigation animates (see AppSectionSwitcher).
+        child: AppSectionSwitcher(
+          switchKey: destinationFor(widget.location)?.route,
+          child: widget.child,
+        ),
       );
 
       final body = sidebarVisible

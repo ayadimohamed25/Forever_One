@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'app_notification_bell.dart';
 import 'app_pressable.dart';
@@ -54,55 +57,62 @@ class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+      // On wide screens the title and actions line up with the page content
+      // (max 1200px, centred); the white bar itself stays full width.
       child: SizedBox(
         height: 63,
-        child: Padding(
-          padding: EdgeInsets.only(left: hideMenu ? 24 : 8, right: 8),
-          child: Row(
-            children: [
-              if (hideMenu)
-                const SizedBox.shrink()
-              else if (menu)
-                AppMenuButton(tooltip: l10n.openMenu)
-              else
-                AppIconButton(
-                  icon: Icons.arrow_back,
-                  tooltip: l10n.back,
-                  onTap: () => Navigator.of(context).maybePop(),
-                ),
-              if (!hideMenu) const SizedBox(width: 4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.fade,
-                      style: AppTheme.pageTitle,
-                    ),
-                    if (subtitle != null && subtitle!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+        child: AppContentFrame(
+          maxWidth: hideMenu ? 1200 + 48 : double.infinity,
+          child: Padding(
+            padding: EdgeInsets.only(left: hideMenu ? 24 : 8, right: 8),
+            child: Row(
+              children: [
+                if (hideMenu)
+                  const SizedBox.shrink()
+                else if (menu)
+                  AppMenuButton(tooltip: l10n.openMenu)
+                else
+                  AppIconButton(
+                    icon: Icons.arrow_back,
+                    tooltip: l10n.back,
+                    onTap: () => Navigator.of(context).maybePop(),
+                  ),
+                if (!hideMenu) const SizedBox(width: 4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       Text(
-                        subtitle!,
+                        title,
                         maxLines: 1,
                         softWrap: false,
                         overflow: TextOverflow.fade,
-                        style: AppTheme.font(
-                          size: 12,
-                          height: 1.25,
-                          color: AppColors.textSecondary,
-                        ),
+                        style: AppTheme.heading(size: 17, height: 1.2),
                       ),
+                      if (subtitle != null && subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle!,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.fade,
+                          style: AppTheme.font(
+                            size: 12,
+                            height: 1.25,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              ...actions,
-              if (bell) const AppNotificationBell(),
-            ],
+                ...actions,
+                // Wide main screens: a visible way into the AI copilot.
+                if (bell && hideMenu) const _AskAiButton(),
+                if (bell) const AppNotificationBell(),
+              ],
+            ),
           ),
         ),
       ),
@@ -126,7 +136,8 @@ class AppAddFab extends StatelessWidget {
     }
     return FloatingActionButton.extended(
       onPressed: onPressed,
-      backgroundColor: AppColors.black,
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
       icon: const Icon(Icons.add),
       label: Text(label),
     );
@@ -138,8 +149,11 @@ class AppHeaderAddButton extends StatelessWidget {
   final VoidCallback onPressed;
   final String label;
 
-  const AppHeaderAddButton(
-      {super.key, required this.onPressed, required this.label});
+  const AppHeaderAddButton({
+    super.key,
+    required this.onPressed,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -224,16 +238,25 @@ class AppHeaderAction extends StatelessWidget {
   final String? tooltip;
   final Color? color;
 
+  /// Hidden when the sidebar is shown, e.g. the list search icon: on wide
+  /// screens the table toolbar has a visible search box instead.
+  final bool phoneOnly;
+
   const AppHeaderAction({
     super.key,
     required this.icon,
     required this.onTap,
     this.tooltip,
     this.color,
+    this.phoneOnly = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (phoneOnly &&
+        (AppShellScope.maybeOf(context)?.sidebarVisible ?? false)) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.only(left: 2),
       child: AppIconButton(
@@ -289,8 +312,11 @@ class AppSearchHeader extends StatelessWidget implements PreferredSizeWidget {
                   child: Row(
                     children: [
                       const SizedBox(width: 16),
-                      const Icon(Icons.search,
-                          size: 18, color: AppColors.iconMuted),
+                      const Icon(
+                        Icons.search,
+                        size: 18,
+                        color: AppColors.iconMuted,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextField(
@@ -307,7 +333,9 @@ class AppSearchHeader extends StatelessWidget implements PreferredSizeWidget {
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
                             hintStyle: AppTheme.font(
-                                size: 14, color: AppColors.textMuted),
+                              size: 14,
+                              color: AppColors.textMuted,
+                            ),
                           ),
                         ),
                       ),
@@ -324,6 +352,31 @@ class AppSearchHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Ask AI" in the wide header, for users allowed to use the copilot.
+class _AskAiButton extends ConsumerWidget {
+  const _AskAiButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authNotifierProvider).user;
+    if (!(user?.can('use_ai') ?? false)) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, right: 4),
+      child: OutlinedButton.icon(
+        onPressed: () => context.go('/ai'),
+        icon: const Icon(Icons.auto_awesome_outlined,
+            size: 17, color: AppColors.primary),
+        label: Text(l10n.askAi),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 38),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
         ),
       ),
     );

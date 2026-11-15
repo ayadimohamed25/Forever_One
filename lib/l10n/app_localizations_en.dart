@@ -1654,4 +1654,156 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get auditProfileUpdated => 'Profile updated';
+
+  @override
+  String tableResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+      zero: 'No results',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tableRange(int from, int to, int total) {
+    return '$from–$to of $total';
+  }
+
+  @override
+  String get previousPage => 'Previous page';
+
+  @override
+  String get nextPage => 'Next page';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get periodThisMonth => 'This month';
+
+  @override
+  String get periodLast30Days => 'Last 30 days';
+
+  @override
+  String get periodAll => 'All time';
+
+  @override
+  String get statusReorderSoon => 'Reorder soon';
+
+  @override
+  String get activeFilter => 'Active';
+
+  @override
+  String get navOverview => 'Overview';
+
+  @override
+  String get navInvoices => 'Invoices';
+
+  @override
+  String get navGroupSales => 'Sales';
+
+  @override
+  String get navGroupPurchasing => 'Purchasing';
+
+  @override
+  String get navGroupInventory => 'Inventory';
+
+  @override
+  String get navGroupIntelligence => 'Intelligence';
+
+  @override
+  String get navGroupAdmin => 'Administration';
+
+  @override
+  String get askAi => 'Ask AI';
+
+  @override
+  String get openProfile => 'Open my profile';
+
+  @override
+  String get statInvoiced => 'Invoiced';
+
+  @override
+  String get statPurchased => 'Purchased';
+
+  @override
+  String get toCollect => 'To collect';
+
+  @override
+  String issuedOn(String date) {
+    return 'Issued $date';
+  }
+
+  @override
+  String get period7d => '7D';
+
+  @override
+  String get period30d => '30D';
+
+  @override
+  String get period90d => '90D';
+
+  @override
+  String get period12m => '12M';
+
+  @override
+  String get chartPeriod => 'Chart period';
+
+  @override
+  String get thisPeriod => 'This period';
+
+  @override
+  String get previousPeriod => 'Previous period';
+
+  @override
+  String get netPosition => 'Net position';
+
+  @override
+  String get needsAttention => 'Needs attention';
+
+  @override
+  String get allClear => 'Nothing needs your attention.';
+
+  @override
+  String get noSalesInPeriod => 'No sales in this period';
+
+  @override
+  String get chartLoadFailed => 'Couldn\'t load this period.';
+
+  @override
+  String overdueInvoices(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count overdue invoices',
+      one: '1 overdue invoice',
+      zero: 'No overdue invoice',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lowStockProducts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count products to reorder',
+      one: '1 product to reorder',
+      zero: 'All products in stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String revenueTrendLabel(String amount) {
+    return 'Revenue trend, $amount in this period';
+  }
+
+  @override
+  String greetingWithName(String greeting, String name) {
+    return '$greeting, $name';
+  }
 }

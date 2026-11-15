@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_shell.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/ai_message_entity.dart';
 import '../providers/ai_provider.dart';
@@ -13,8 +14,7 @@ import '../providers/ai_provider.dart';
 /// Status tags the model sometimes emits, e.g. [ALERTE RUPTURE].
 /// They are pulled out of the text and drawn as pills, so a raw tag can
 /// never reach the screen.
-final _tagPattern =
-RegExp(r"\[([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ0-9 _'\-]{1,40})\](?!\()");
+final _tagPattern = RegExp(r"\[([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ0-9 _'\-]{1,40})\](?!\()");
 
 ({String text, List<String> tags}) _splitTags(String answer) {
   final tags = <String>[];
@@ -129,7 +129,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 Text(
                   _errorLabel(state.error!, l10n),
                   style: AppTheme.font(
-                      size: 13.5, height: 1.4, color: AppColors.danger),
+                    size: 13.5,
+                    height: 1.4,
+                    color: AppColors.danger,
+                  ),
                 ),
                 if (state.pendingQuestion != null) ...[
                   const SizedBox(height: 8),
@@ -192,7 +195,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: const BoxDecoration(
-          color: AppColors.black,
+          color: AppColors.primary,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
@@ -222,8 +225,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
             color: AppColors.accentSoft,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.auto_awesome_outlined,
-              size: 16, color: AppColors.accent),
+          child: const Icon(
+            Icons.auto_awesome_outlined,
+            size: 16,
+            color: AppColors.accent,
+          ),
         ),
         const SizedBox(width: 10),
         Flexible(
@@ -248,7 +254,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     if (m.isLocal) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.neutralSoft,
                           borderRadius: BorderRadius.circular(AppRadius.chip),
@@ -290,7 +298,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                   padding: const EdgeInsets.only(top: 6, left: 4),
                   child: Text(
                     formatDateTime(m.createdAt!),
-                    style: AppTheme.font(size: 12, color: AppColors.textSecondary),
+                    style: AppTheme.font(
+                      size: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
             ],
@@ -305,7 +316,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       padding: const EdgeInsets.only(right: 8),
       child: Material(
         color: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.chip), side: const BorderSide(color: AppColors.fieldBorder)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+          side: const BorderSide(color: AppColors.fieldBorder),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: disabled ? null : () => _send(text),
@@ -314,11 +328,16 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.auto_awesome_outlined,
-                    size: 14, color: AppColors.accent),
+                const Icon(
+                  Icons.auto_awesome_outlined,
+                  size: 14,
+                  color: AppColors.accent,
+                ),
                 const SizedBox(width: 6),
-                Text(text,
-                    style: AppTheme.font(size: 13, weight: FontWeight.w500)),
+                Text(
+                  text,
+                  style: AppTheme.font(size: 13, weight: FontWeight.w500),
+                ),
               ],
             ),
           ),
@@ -340,8 +359,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 color: AppColors.accentSoft,
                 borderRadius: BorderRadius.circular(AppRadius.card),
               ),
-              child: const Icon(Icons.auto_awesome_outlined,
-                  size: 30, color: AppColors.accent),
+              child: const Icon(
+                Icons.auto_awesome_outlined,
+                size: 30,
+                color: AppColors.accent,
+              ),
             ),
             const SizedBox(height: 20),
             Text(
@@ -376,8 +398,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                               color: AppColors.accentSoft,
                               borderRadius: BorderRadius.circular(11),
                             ),
-                            child: const Icon(Icons.auto_awesome_outlined,
-                                size: 17, color: AppColors.accent),
+                            child: const Icon(
+                              Icons.auto_awesome_outlined,
+                              size: 17,
+                              color: AppColors.accent,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -385,11 +410,16 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                               s,
                               maxLines: 2,
                               style: AppTheme.font(
-                                  size: 14, weight: FontWeight.w500),
+                                size: 14,
+                                weight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right,
-                              size: 20, color: AppColors.textMuted),
+                          const Icon(
+                            Icons.chevron_right,
+                            size: 20,
+                            color: AppColors.textMuted,
+                          ),
                         ],
                       ),
                     ),
@@ -428,119 +458,133 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
         icon: Icons.auto_awesome_outlined,
         color: AppColors.accent,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: state.messages.isEmpty && !state.isLoading
-                ? _emptyState(suggestions, l10n)
-                : ListView.builder(
-              controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              itemCount: state.messages.length,
-              itemBuilder: (context, index) {
-                final m = state.messages[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _userBubble(m.question),
-                      _assistantBubble(m, l10n),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-
-          if (state.isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    width: 15,
-                    height: 15,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.accent),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(l10n.analyzingData, style: AppTheme.label),
-                ],
-              ),
+      body: AppContentFrame(
+        maxWidth: 920,
+        child: Column(
+          children: [
+            Expanded(
+              child: state.messages.isEmpty && !state.isLoading
+                  ? _emptyState(suggestions, l10n)
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      itemCount: state.messages.length,
+                      itemBuilder: (context, index) {
+                        final m = state.messages[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _userBubble(m.question),
+                              _assistantBubble(m, l10n),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
             ),
 
-          if (state.error != null) _errorCard(state, l10n),
-
-          if (state.messages.isNotEmpty)
-            SizedBox(
-              height: 44,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                children: [
-                  for (final s in suggestions)
-                    _suggestionChip(s, state.isLoading),
-                ],
-              ),
-            ),
-
-          Container(
-            color: AppColors.canvas,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: SafeArea(
-              top: false,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.card),
+            if (state.isLoading)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.accent,
                       ),
-                      child: TextField(
-                        controller: questionController,
-                        textInputAction: TextInputAction.send,
-                        minLines: 1,
-                        maxLines: 4,
-                        onSubmitted: _send,
-                        style: AppTheme.font(size: 15),
-                        decoration: InputDecoration(
-                          hintText: l10n.askYourQuestion,
-                          filled: false,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 14),
-                          hintStyle: AppTheme.font(
-                              size: 15, color: AppColors.textMuted),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(l10n.analyzingData, style: AppTheme.label),
+                  ],
+                ),
+              ),
+
+            if (state.error != null) _errorCard(state, l10n),
+
+            if (state.messages.isNotEmpty)
+              SizedBox(
+                height: 44,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                  children: [
+                    for (final s in suggestions)
+                      _suggestionChip(s, state.isLoading),
+                  ],
+                ),
+              ),
+
+            Container(
+              color: AppColors.canvas,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                        child: TextField(
+                          controller: questionController,
+                          textInputAction: TextInputAction.send,
+                          minLines: 1,
+                          maxLines: 4,
+                          onSubmitted: _send,
+                          style: AppTheme.font(size: 15),
+                          decoration: InputDecoration(
+                            hintText: l10n.askYourQuestion,
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 14,
+                            ),
+                            hintStyle: AppTheme.font(
+                              size: 15,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Material(
-                    color: state.isLoading ? AppColors.track : AppColors.black,
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: state.isLoading
-                          ? null
-                          : () => _send(questionController.text),
-                      child: const Padding(
-                        padding: EdgeInsets.all(14),
-                        child: Icon(Icons.arrow_upward,
-                            size: 20, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Material(
+                      color: state.isLoading
+                          ? AppColors.track
+                          : AppColors.primary,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: state.isLoading
+                            ? null
+                            : () => _send(questionController.text),
+                        child: const Padding(
+                          padding: EdgeInsets.all(14),
+                          child: Icon(
+                            Icons.arrow_upward,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

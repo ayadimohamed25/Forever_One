@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:foreverone/l10n/app_localizations.dart';
 import 'package:foreverone/shared/widgets/app_data_table.dart';
 
 typedef _Row = ({String name, int stock});
@@ -10,6 +11,9 @@ Future<void> _pump(WidgetTester tester, double width, List<_Row> rows,
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
       body: AppDataTable<_Row>(
         rows: rows,

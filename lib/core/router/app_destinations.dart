@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../features/auth/domain/entities/user_entity.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Which sidebar group a destination belongs to.
-enum NavSection { home, business, intelligence, system }
+/// Which sidebar group a destination belongs to, in sidebar order.
+/// [overview] items sit at the top level; [account] lives in the account
+/// block at the foot of the sidebar instead of the list.
+enum NavGroup { overview, sales, purchasing, inventory, intelligence, admin, account }
 
 /// One top-level screen: its route, the permission that opens it, and how it
 /// appears in the navigation.
@@ -19,19 +21,27 @@ class AppDestination {
 
   /// Null means every signed-in user may open it.
   final String? permission;
-  final NavSection section;
+  final NavGroup group;
 
-  /// Drawn as a sub-item of the entry above it (Categories under Products).
-  final bool indent;
+  /// Position inside its group in the sidebar. The list order itself stays
+  /// the home-screen priority used by [homeFor].
+  final int navOrder;
+
+  /// Sidebar label when it differs from the page title ("Overview" for the
+  /// dashboard, "Invoices" for sales inside the Sales group).
+  final String Function(AppLocalizations l10n)? navLabel;
 
   const AppDestination({
     required this.route,
     required this.icon,
     required this.label,
-    required this.section,
+    required this.group,
+    this.navOrder = 0,
+    this.navLabel,
     this.permission,
-    this.indent = false,
   });
+
+  String sidebarLabel(AppLocalizations l10n) => (navLabel ?? label)(l10n);
 
   bool allows(UserEntity? user) =>
       permission == null || (user?.can(permission!) ?? false);
@@ -39,95 +49,126 @@ class AppDestination {
 
 final List<AppDestination> appDestinations = [
   AppDestination(
-      route: '/dashboard',
-      icon: Icons.grid_view_outlined,
-      label: (l) => l.dashboard,
-      permission: 'view_dashboard',
-      section: NavSection.home),
+    route: '/dashboard',
+    icon: Icons.grid_view_outlined,
+    label: (l) => l.dashboard,
+    permission: 'view_dashboard',
+    group: NavGroup.overview,
+    navOrder: 0,
+    navLabel: (l) => l.navOverview,
+  ),
   AppDestination(
-      route: '/products',
-      icon: Icons.inventory_2_outlined,
-      label: (l) => l.products,
-      permission: 'view_products',
-      section: NavSection.business),
+    route: '/products',
+    icon: Icons.inventory_2_outlined,
+    label: (l) => l.products,
+    permission: 'view_products',
+    group: NavGroup.inventory,
+    navOrder: 0,
+  ),
   AppDestination(
-      route: '/categories',
-      icon: Icons.category_outlined,
-      label: (l) => l.categories,
-      permission: 'view_products',
-      section: NavSection.business,
-      indent: true),
+    route: '/categories',
+    icon: Icons.category_outlined,
+    label: (l) => l.categories,
+    permission: 'view_products',
+    group: NavGroup.inventory,
+    navOrder: 1,
+  ),
   AppDestination(
-      route: '/warehouses',
-      icon: Icons.warehouse_outlined,
-      label: (l) => l.warehouses,
-      permission: 'view_warehouses',
-      section: NavSection.business),
+    route: '/warehouses',
+    icon: Icons.warehouse_outlined,
+    label: (l) => l.warehouses,
+    permission: 'view_warehouses',
+    group: NavGroup.inventory,
+    navOrder: 2,
+  ),
   AppDestination(
-      route: '/stock-movement',
-      icon: Icons.swap_vert_outlined,
-      label: (l) => l.movements,
-      permission: 'manage_stock',
-      section: NavSection.business),
+    route: '/stock-movement',
+    icon: Icons.swap_vert_outlined,
+    label: (l) => l.movements,
+    permission: 'manage_stock',
+    group: NavGroup.inventory,
+    navOrder: 3,
+  ),
   AppDestination(
-      route: '/customers',
-      icon: Icons.people_outline,
-      label: (l) => l.customers,
-      permission: 'view_customers',
-      section: NavSection.business),
+    route: '/customers',
+    icon: Icons.people_outline,
+    label: (l) => l.customers,
+    permission: 'view_customers',
+    group: NavGroup.sales,
+    navOrder: 1,
+  ),
   AppDestination(
-      route: '/suppliers',
-      icon: Icons.local_shipping_outlined,
-      label: (l) => l.suppliers,
-      permission: 'view_suppliers',
-      section: NavSection.business),
+    route: '/suppliers',
+    icon: Icons.local_shipping_outlined,
+    label: (l) => l.suppliers,
+    permission: 'view_suppliers',
+    group: NavGroup.purchasing,
+    navOrder: 1,
+  ),
   AppDestination(
-      route: '/sales',
-      icon: Icons.point_of_sale_outlined,
-      label: (l) => l.sales,
-      permission: 'view_sales',
-      section: NavSection.business),
+    route: '/sales',
+    icon: Icons.point_of_sale_outlined,
+    label: (l) => l.sales,
+    permission: 'view_sales',
+    group: NavGroup.sales,
+    navOrder: 0,
+    navLabel: (l) => l.navInvoices,
+  ),
   AppDestination(
-      route: '/purchases',
-      icon: Icons.shopping_cart_outlined,
-      label: (l) => l.purchases,
-      permission: 'view_purchases',
-      section: NavSection.business),
+    route: '/purchases',
+    icon: Icons.shopping_cart_outlined,
+    label: (l) => l.purchases,
+    permission: 'view_purchases',
+    group: NavGroup.purchasing,
+    navOrder: 0,
+  ),
   AppDestination(
-      route: '/ai',
-      icon: Icons.auto_awesome_outlined,
-      label: (l) => l.aiCopilot,
-      permission: 'use_ai',
-      section: NavSection.intelligence),
+    route: '/ai',
+    icon: Icons.auto_awesome_outlined,
+    label: (l) => l.aiCopilot,
+    permission: 'use_ai',
+    group: NavGroup.intelligence,
+    navOrder: 1,
+  ),
   AppDestination(
-      route: '/insights',
-      icon: Icons.insights_outlined,
-      label: (l) => l.insights,
-      permission: 'view_insights',
-      section: NavSection.intelligence),
+    route: '/insights',
+    icon: Icons.insights_outlined,
+    label: (l) => l.insights,
+    permission: 'view_insights',
+    group: NavGroup.intelligence,
+    navOrder: 0,
+  ),
   AppDestination(
-      route: '/scan',
-      icon: Icons.document_scanner_outlined,
-      label: (l) => l.scanner,
-      permission: 'scan_documents',
-      section: NavSection.intelligence),
+    route: '/scan',
+    icon: Icons.document_scanner_outlined,
+    label: (l) => l.scanner,
+    permission: 'scan_documents',
+    group: NavGroup.intelligence,
+    navOrder: 2,
+  ),
   AppDestination(
-      route: '/users',
-      icon: Icons.group_outlined,
-      label: (l) => l.users,
-      permission: 'manage_users',
-      section: NavSection.system),
+    route: '/users',
+    icon: Icons.group_outlined,
+    label: (l) => l.users,
+    permission: 'manage_users',
+    group: NavGroup.admin,
+    navOrder: 0,
+  ),
   AppDestination(
-      route: '/audit',
-      icon: Icons.history_outlined,
-      label: (l) => l.auditLog,
-      permission: 'view_audit',
-      section: NavSection.system),
+    route: '/audit',
+    icon: Icons.history_outlined,
+    label: (l) => l.auditLog,
+    permission: 'view_audit',
+    group: NavGroup.admin,
+    navOrder: 1,
+  ),
   AppDestination(
-      route: '/profile',
-      icon: Icons.person_outline,
-      label: (l) => l.myProfile,
-      section: NavSection.system),
+    route: '/profile',
+    icon: Icons.person_outline,
+    label: (l) => l.myProfile,
+    group: NavGroup.account,
+    navOrder: 0,
+  ),
 ];
 
 /// The five screens in the phone's bottom bar, in tab order. Each is a branch
@@ -146,6 +187,11 @@ AppDestination? destinationFor(String location) {
   }
   return null;
 }
+
+/// The sidebar items of [group] that [user] may open, in sidebar order.
+List<AppDestination> navItems(NavGroup group, UserEntity? user) =>
+    appDestinations.where((d) => d.group == group && d.allows(user)).toList()
+      ..sort((a, b) => a.navOrder.compareTo(b.navOrder));
 
 /// Where to send a signed-in user who has nowhere better to go: the first
 /// screen they are allowed to open (Dashboard for most roles), else Profile,

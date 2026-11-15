@@ -82,24 +82,31 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(u.email,
-                  style: AppTheme.font(size: 13, color: AppColors.textSecondary)),
+              Text(
+                u.email,
+                style: AppTheme.font(size: 13, color: AppColors.textSecondary),
+              ),
               const SizedBox(height: 16),
-              AppLabeledField(label: l10n.newPassword, child: TextField(
-                controller: passwordController,
-                obscureText: obscure,
-                autofocus: true,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    tooltip: obscure ? l10n.showPassword : l10n.hidePassword,
-                    icon: Icon(obscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () => setState(() => obscure = !obscure),
+              AppLabeledField(
+                label: l10n.newPassword,
+                child: TextField(
+                  controller: passwordController,
+                  obscureText: obscure,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      tooltip: obscure ? l10n.showPassword : l10n.hidePassword,
+                      icon: Icon(
+                        obscure
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                      onPressed: () => setState(() => obscure = !obscure),
+                    ),
                   ),
                 ),
-              )),
+              ),
             ],
           ),
           actions: [
@@ -165,57 +172,78 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     }
   }
 
+  // Order: name, information, Status, ⋮.
   List<AppTableColumn<UserEntity>> _columns(AppLocalizations l10n) => [
-        AppTableColumn(
-          label: l10n.user,
-          flex: 4,
-          sortValue: (u) => u.displayName.toLowerCase(),
-          cell: (u) => Opacity(
-            opacity: u.isActive ? 1 : 0.55,
-            child: AppCellText(u.displayName, strong: true, sub: u.email),
+    AppTableColumn(
+      label: l10n.user,
+      sortValue: (u) => u.displayName.toLowerCase(),
+      cell: (u) => Row(
+        children: [
+          AppAvatar(u.displayName),
+          const SizedBox(width: 10),
+          Expanded(
+            child: AppCellText(
+              u.displayName,
+              strong: true,
+              maxLines: 2,
+              sub: u.email,
+            ),
           ),
-        ),
-        AppTableColumn(
-          label: l10n.lastLogin,
-          width: 112,
-          showFrom: 760,
-          sortValue: (u) => u.lastLoginAt ?? DateTime(1970),
-          cell: (u) => AppCellText(
-              u.lastLoginAt == null
-                  ? l10n.neverLoggedIn
-                  : formatDate(u.lastLoginAt!),
-              color: AppColors.textSecondary),
-        ),
-        AppTableColumn(
-          label: l10n.role,
-          width: 112,
-          sortValue: (u) => roleLabel(u.role, l10n),
-          cell: (u) => AppBadge(label: roleLabel(u.role, l10n), tone: roleTone(u.role)),
-        ),
-        AppTableColumn(
-          label: l10n.status,
-          width: 84,
-          showFrom: 520,
-          sortValue: (u) => u.isActive ? 0 : 1,
-          cell: (u) => u.isActive
-              ? AppBadge(label: l10n.active, tone: BadgeTone.success)
-              : AppBadge(label: l10n.inactive, tone: BadgeTone.neutral),
-        ),
-      ];
+        ],
+      ),
+    ),
+    AppTableColumn(
+      label: l10n.lastLogin,
+      showFrom: 760,
+      measure: (u) => u.lastLoginAt == null
+          ? l10n.neverLoggedIn
+          : formatDate(u.lastLoginAt!),
+      sortValue: (u) => u.lastLoginAt ?? DateTime(1970),
+      cell: (u) => AppCellText(
+        u.lastLoginAt == null ? l10n.neverLoggedIn : formatDate(u.lastLoginAt!),
+        color: AppColors.textSecondary,
+      ),
+    ),
+    AppTableColumn(
+      label: l10n.role,
+      chip: true,
+      showFrom: 480,
+      measure: (u) => roleLabel(u.role, l10n),
+      sortValue: (u) => roleLabel(u.role, l10n),
+      cell: (u) =>
+          AppBadge(label: roleLabel(u.role, l10n), tone: roleTone(u.role)),
+    ),
+    AppTableColumn(
+      label: l10n.status,
+      chip: true,
+      measure: (u) => u.isActive ? l10n.active : l10n.inactive,
+      sortValue: (u) => u.isActive ? 0 : 1,
+      cell: (u) => u.isActive
+          ? AppBadge(label: l10n.active, tone: BadgeTone.success)
+          : AppBadge(label: l10n.inactive, tone: BadgeTone.neutral),
+    ),
+  ];
 
-  Widget _rowMenu(UserEntity u, AppLocalizations l10n) => AppRowMenu(actions: [
-        AppMenuAction(
-            label: l10n.edit, icon: Icons.edit_outlined, onTap: () => _edit(u, l10n)),
-        AppMenuAction(
-            label: l10n.resetPassword,
-            icon: Icons.key_outlined,
-            onTap: () => _resetPassword(u, l10n)),
-        AppMenuAction(
-            label: l10n.delete,
-            icon: Icons.delete_outline,
-            destructive: true,
-            onTap: () => _delete(u, l10n)),
-      ]);
+  Widget _rowMenu(UserEntity u, AppLocalizations l10n) => AppRowMenu(
+    actions: [
+      AppMenuAction(
+        label: l10n.edit,
+        icon: Icons.edit_outlined,
+        onTap: () => _edit(u, l10n),
+      ),
+      AppMenuAction(
+        label: l10n.resetPassword,
+        icon: Icons.key_outlined,
+        onTap: () => _resetPassword(u, l10n),
+      ),
+      AppMenuAction(
+        label: l10n.delete,
+        icon: Icons.delete_outline,
+        destructive: true,
+        onTap: () => _delete(u, l10n),
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -232,36 +260,35 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       backgroundColor: AppColors.canvas,
       appBar: searchVisible
           ? AppSearchHeader(
-        controller: searchController,
-        hint: l10n.searchUsers,
-        onChanged: (v) => ref.read(userListProvider.notifier).search(v),
-        onClose: () {
-          setState(() => searchVisible = false);
-          searchController.clear();
-          ref.read(userListProvider.notifier).clearSearch();
-        },
-      )
+              controller: searchController,
+              hint: l10n.searchUsers,
+              onChanged: (v) => ref.read(userListProvider.notifier).search(v),
+              onClose: () {
+                setState(() => searchVisible = false);
+                searchController.clear();
+                ref.read(userListProvider.notifier).clearSearch();
+              },
+            )
           : AppPageHeader(
-        title: l10n.users,
-        subtitle: state.users.isEmpty
-            ? null
-            : '${state.users.length} · ${state.users.where((u) => u.isActive).length} ${l10n.active.toLowerCase()}',
-        icon: Icons.group_rounded,
-        color: AppColors.primary,
-        actions: [
-          AppHeaderAction(
-            icon: Icons.search_rounded,
-            tooltip: l10n.search,
-            onTap: () => setState(() => searchVisible = true),
-          ),
-          AppHeaderAction(
-            icon: Icons.refresh_rounded,
-            tooltip: l10n.refresh,
-            onTap: () => ref.read(userListProvider.notifier).load(),
-          ),
-          AppHeaderAddButton(onPressed: () => _create(l10n), label: l10n.user),
-        ],
-      ),
+              title: l10n.users,
+              subtitle: state.users.isEmpty
+                  ? null
+                  : '${state.users.length} · ${state.users.where((u) => u.isActive).length} ${l10n.active.toLowerCase()}',
+              icon: Icons.group_rounded,
+              color: AppColors.primary,
+              actions: [
+                AppHeaderAction(
+                  icon: Icons.search_rounded,
+                  tooltip: l10n.search,
+                  onTap: () => setState(() => searchVisible = true),
+                ),
+                AppHeaderAction(
+                  icon: Icons.refresh_rounded,
+                  tooltip: l10n.refresh,
+                  onTap: () => ref.read(userListProvider.notifier).load(),
+                ),
+              ],
+            ),
       body: state.isLoading
           ? AppSkeletonList(semanticLabel: l10n.loading)
           : state.error != null && state.users.isEmpty
@@ -273,28 +300,39 @@ class _UsersPageState extends ConsumerState<UsersPage> {
             )
           : state.users.isEmpty
           ? AppEmptyState(
-        icon: state.hasSearched
-            ? Icons.search_off
-            : Icons.group_outlined,
-        title: state.hasSearched ? l10n.noResults : l10n.noUsers,
-        subtitle: state.hasSearched
-            ? l10n.tryDifferentSearch
-            : '',
-          actionLabel: state.hasSearched ? null : l10n.user,
-          onAction: () => _create(l10n),
-        color: AppColors.primary,
-      )
+              icon: state.hasSearched ? Icons.search_off : Icons.group_outlined,
+              title: state.hasSearched ? l10n.noResults : l10n.noUsers,
+              subtitle: state.hasSearched ? l10n.tryDifferentSearch : '',
+              actionLabel: state.hasSearched ? null : l10n.user,
+              onAction: () => _create(l10n),
+              color: AppColors.primary,
+            )
           : RefreshIndicator(
-        onRefresh: () => ref.read(userListProvider.notifier).load(),
-        child: AppDataTable<UserEntity>(
-          columns: _columns(l10n),
-          rows: state.users,
-          initialSortColumn: 0,
-          onRowTap: (u) => _edit(u, l10n),
-          rowMenu: (u) => _rowMenu(u, l10n),
-        ),
+              onRefresh: () => ref.read(userListProvider.notifier).load(),
+              child: AppDataTable<UserEntity>(
+                columns: _columns(l10n),
+                rows: state.users,
+                initialSortColumn: 0,
+                onRowTap: (u) => _edit(u, l10n),
+                rowMenu: (u) => _rowMenu(u, l10n),
+                searchText: (u) => '${u.displayName} ${u.email}',
+                searchHint: l10n.searchUsers,
+                tabs: AppTableFilter(
+                  label: l10n.status,
+                  options: [
+                    AppFilterOption(l10n.filterAll),
+                    AppFilterOption(l10n.active, (u) => u.isActive),
+                    AppFilterOption(l10n.inactive, (u) => !u.isActive),
+                  ],
+                ),
+                onAdd: () => _create(l10n),
+                addLabel: l10n.user,
+              ),
+            ),
+      floatingActionButton: AppAddFab(
+        onPressed: () => _create(l10n),
+        label: l10n.user,
       ),
-      floatingActionButton: AppAddFab(onPressed: () => _create(l10n), label: l10n.user),
     );
   }
 }

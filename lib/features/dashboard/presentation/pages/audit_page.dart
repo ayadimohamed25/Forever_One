@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_shell.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../users/presentation/widgets/user_roles.dart';
 import '../../domain/entities/audit_log_entity.dart';
@@ -181,7 +182,9 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       return formatDT(amount);
     }
     if (key == 'quantity') return '× $value';
-    if (key == 'role') return roleLabel('$value', AppLocalizations.of(context)!);
+    if (key == 'role') {
+      return roleLabel('$value', AppLocalizations.of(context)!);
+    }
     if (key == 'type') {
       final l10n = AppLocalizations.of(context)!;
       switch ('$value') {
@@ -206,7 +209,10 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       child: Text(
         text,
         style: AppTheme.font(
-            size: 12, weight: FontWeight.w500, color: AppColors.textLabel),
+          size: 12,
+          weight: FontWeight.w500,
+          color: AppColors.textLabel,
+        ),
       ),
     );
   }
@@ -248,82 +254,111 @@ class _AuditPageState extends ConsumerState<AuditPage> {
     );
   }
 
-  Widget _entry(AuditLogEntity log, bool isLast, AppLocalizations l10n) {
+  /// One compact row per entry, all rows in one bordered list:
+  ///   wide:  [icon] Title · user · date time ............ [chips]
+  ///   phone: [icon] Title ........................ [chip]
+  ///                 user · date time
+  Widget _entry(
+    AuditLogEntity log,
+    bool isFirst,
+    bool isLast,
+    AppLocalizations l10n,
+  ) {
     final date = DateTime.tryParse(log.createdAt);
     final pills = _detailPills(log.details);
+    final tone = badgeColors(_tone(log.action));
+    final who = log.userEmail ?? l10n.system;
+    final when = date != null ? formatDateTime(date) : '';
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              AppLeadingTile.icon(_icon(log.action), tone: _tone(log.action)),
-              if (!isLast)
+    final icon = Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: tone.bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(_icon(log.action), size: 17, color: tone.fg),
+    );
+    final title = Text(
+      _actionLabel(log.action, l10n),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AppTheme.font(size: 14, weight: FontWeight.w500),
+    );
+    final meta = Text(
+      when.isEmpty ? who : '$who · $when',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AppTheme.font(
+        size: 12,
+        color: AppColors.textSecondary,
+        tabularFigures: true,
+      ),
+    );
+    final chips = Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      alignment: WrapAlignment.end,
+      children: [for (final p in pills) _detailPill(p)],
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          left: const BorderSide(color: AppColors.border),
+          right: const BorderSide(color: AppColors.border),
+          top: isFirst
+              ? const BorderSide(color: AppColors.border)
+              : BorderSide.none,
+          bottom: const BorderSide(color: AppColors.border),
+        ),
+        borderRadius: BorderRadius.vertical(
+          top: isFirst ? const Radius.circular(AppRadius.card) : Radius.zero,
+          bottom: isLast ? const Radius.circular(AppRadius.card) : Radius.zero,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      constraints: const BoxConstraints(minHeight: 52),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          if (box.maxWidth >= 720) {
+            return Row(
+              children: [
+                icon,
+                const SizedBox(width: 12),
+                Flexible(flex: 3, child: title),
+                const SizedBox(width: 12),
+                Flexible(flex: 4, child: meta),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Container(
-                    width: 2,
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    color: AppColors.track,
-                  ),
+                  flex: 4,
+                  child: Align(alignment: Alignment.centerRight, child: chips),
                 ),
-            ],
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: AppColors.border),
-                ),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              icon,
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _actionLabel(log.action, l10n),
-                      style: AppTheme.rowTitle,
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      log.userEmail ?? l10n.system,
-                      style: AppTheme.label,
-                      maxLines: 2,
-                    ),
-                    if (date != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        formatDateTime(date),
-                        maxLines: 1,
-                        softWrap: false,
-                        style: AppTheme.font(
-                          size: 12,
-                          color: AppColors.textSecondary,
-                          tabularFigures: true,
-                        ),
-                      ),
-                    ],
-                    if (pills.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (final p in pills) _detailPill(p)
-                        ],
-                      ),
-                    ],
-                  ],
+                  mainAxisSize: MainAxisSize.min,
+                  children: [title, const SizedBox(height: 2), meta],
                 ),
               ),
-            ),
-          ),
-        ],
+              if (pills.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: box.maxWidth * 0.4),
+                  child: chips,
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -342,7 +377,9 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       backgroundColor: AppColors.canvas,
       appBar: AppPageHeader(
         title: l10n.auditLog,
-        subtitle: state.logs.isEmpty ? null : '${logs.length} / ${state.logs.length}',
+        subtitle: state.logs.isEmpty
+            ? null
+            : '${logs.length} / ${state.logs.length}',
         icon: Icons.history,
         color: AppColors.info,
         actions: [
@@ -366,59 +403,66 @@ class _AuditPageState extends ConsumerState<AuditPage> {
             )
           : state.logs.isEmpty
           ? AppEmptyState(
-        icon: Icons.history,
-        title: l10n.noActionsRecorded,
-        subtitle: '',
-      )
-          : Column(
-        children: [
-          SizedBox(
-            height: 54,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-              children: [
-                _filterChip(
-                  label: l10n.all,
-                  selected: selectedFilter == null,
-                  onTap: () =>
-                      setState(() => selectedFilter = null),
-                ),
-                for (final f in filters)
-                  _filterChip(
-                    label: f.label,
-                    selected: selectedFilter == f.key,
-                    onTap: () => setState(() => selectedFilter =
-                    selectedFilter == f.key ? null : f.key),
-                  ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: logs.isEmpty
-                ? AppEmptyState(
-              icon: Icons.filter_alt_off_outlined,
-              title: l10n.noActionsOfThisType,
+              icon: Icons.history,
+              title: l10n.noActionsRecorded,
               subtitle: '',
             )
-                : RefreshIndicator(
-              color: AppColors.accent,
-              onRefresh: () =>
-                  ref.read(auditProvider.notifier).load(),
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(
-                    20, 4, 20, 28),
-                itemCount: logs.length,
-                itemBuilder: (context, index) => _entry(
-                  logs[index],
-                  index == logs.length - 1,
-                  l10n,
+          : Column(
+              children: [
+                SizedBox(
+                  height: 58,
+                  child: AppContentFrame(
+                    maxWidth: 1248,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      children: [
+                        _filterChip(
+                          label: l10n.all,
+                          selected: selectedFilter == null,
+                          onTap: () => setState(() => selectedFilter = null),
+                        ),
+                        for (final f in filters)
+                          _filterChip(
+                            label: f.label,
+                            selected: selectedFilter == f.key,
+                            onTap: () => setState(
+                              () => selectedFilter = selectedFilter == f.key
+                                  ? null
+                                  : f.key,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                Expanded(
+                  child: logs.isEmpty
+                      ? AppEmptyState(
+                          icon: Icons.filter_alt_off_outlined,
+                          title: l10n.noActionsOfThisType,
+                          subtitle: '',
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () =>
+                              ref.read(auditProvider.notifier).load(),
+                          child: AppContentFrame(
+                            maxWidth: 1248,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                              itemCount: logs.length,
+                              itemBuilder: (context, index) => _entry(
+                                logs[index],
+                                index == 0,
+                                index == logs.length - 1,
+                                l10n,
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }

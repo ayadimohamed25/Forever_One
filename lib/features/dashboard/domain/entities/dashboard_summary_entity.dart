@@ -84,6 +84,12 @@ class ActivityItem {
 class DashboardSummaryEntity {
   final DashboardKpis kpis;
   final List<SalesTrendPoint> salesTrend;
+
+  /// The window of the same length just before [salesTrend] (dashed line).
+  final List<SalesTrendPoint> salesTrendPrevious;
+
+  /// 7, 30 or 90 (daily points) or 365 (monthly points).
+  final int trendDays;
   final List<TopProduct> topProducts;
   final List<DashboardAlert> alerts;
   final List<ActivityItem> recentActivity;
@@ -91,6 +97,8 @@ class DashboardSummaryEntity {
   const DashboardSummaryEntity({
     required this.kpis,
     required this.salesTrend,
+    this.salesTrendPrevious = const [],
+    this.trendDays = 30,
     required this.topProducts,
     required this.alerts,
     required this.recentActivity,

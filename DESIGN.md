@@ -1,9 +1,10 @@
 # Forever One design system
 
-Clean, neutral business software: light grey page, white bordered cards, one blue for action. Status colours mean status and nothing else. No beige, no brown, no gradients, no pill shapes.
+"Ledger": calm, data-dense business software. Light grey page, white bordered cards, an ink sidebar, one indigo for action. Status colours mean status and nothing else. Inspired by Mercury (dashboard), Stripe (invoices), Shopify (stock) and Attio (customers).
 
 - **Source of truth in code:** `lib/core/theme/app_colors.dart`, `app_theme.dart` and `lib/shared/widgets/`.
-- **Visual reference:** the Claude Design canvas "Forever One Redesign" (design-system sheet, phone screens and web dashboard).
+- **Visual reference:** the Claude Design canvas "Forever One — Web Redesign" (Dashboard, Sales, Stock, Customers and Phone boards).
+- **Plan and review:** `docs/plans/ledger-redesign-plan.md`.
 
 ## Colour
 
@@ -15,17 +16,20 @@ Clean, neutral business software: light grey page, white bordered cards, one blu
 | `surface` | #FFFFFF | Cards, headers, sidebar, fields |
 | `surfaceAlt` | #F9FAFB | Table header row, hover |
 | `fill` | #F2F4F7 | Neutral chip, selected segment, skeleton |
-| `border` | #E4E7EC | Card borders and dividers (1px) |
+| `border` | #E5E7EB | Card borders and dividers (1px) |
 | `fieldBorder` | #D0D5DD | Input and secondary-button borders |
 | `textPrimary` | #101828 | Main text |
-| `textSecondary` | #667085 | Secondary text, captions (4.97:1 on white) |
+| `textSecondary` | #5D6676 | Secondary text, captions |
 | `textLabel` | #344054 | Field labels, secondary-button text |
 | `textMuted` | #98A2B3 | Placeholders and disabled text only |
-| `primary` | #1D4ED8 | Buttons, active states, links, focus ring |
-| `primarySoft` | #EFF4FF | Selected nav item, selected chip |
-| `success` / `successText` / `successSoft` | #16A34A / #15803D / #F0FDF4 | Paid, in stock, positive |
-| `warning` / `warningText` / `warningSoft` | #D97706 / #B45309 / #FFFBEB | Low stock, partially paid, to pay |
-| `danger` / `dangerText` / `dangerSoft` | #DC2626 / #B91C1C / #FEF2F2 | Out of stock, overdue, errors |
+| `primary` | #4F46E5 | Buttons, active states, links, focus ring, chart line |
+| `primarySoft` / `primaryText` | #EEF2FF / #3730A3 | Selected chip, active tab count |
+| `sidebar` / `sidebarActive` / `sidebarText` | #0E1525 / #1E2840 / #B4BCCB | Ink sidebar and drawer |
+| `rowSelected` | #F5F5FF | Table row whose side panel is open |
+| `success` / `successText` / `successSoft` | #16A34A / #067647 / #ECFDF3 | Paid, in stock, positive |
+| `warning` / `warningText` / `warningSoft` | #D97706 / #B54708 / #FFFAEB | Low stock, partially paid, to pay |
+| `danger` / `dangerText` / `dangerSoft` | #DC2626 / #B42318 / #FEF3F2 | Out of stock, overdue, errors |
+| `info` / `infoSoft` | #3538CD / #EEF4FF | Deliveries, informational |
 
 The base status colours (#16A34A, #D97706) are for icons, dots and bars. Text uses the `*Text` shade, because the base colours reach only about 3.2:1 on white. Use `AppColors.textOn(color)` to get it. Old names such as `accent` and `black` still compile and resolve to the values above.
 
@@ -37,16 +41,17 @@ The base status colours (#16A34A, #D97706) are for icons, dots and bars. Text us
 | Spacing | 16 page padding · 12 between cards (`AppSpacing`) |
 | Cards | White, 1px `border`, no shadow |
 
-## Type: Inter
+## Type: Plus Jakarta Sans headings, Inter body
 
 | Role | Style |
 |---|---|
-| Page title | 20 semi-bold (`AppTheme.pageTitle`) |
-| Section title | 15 semi-bold (`AppTheme.sectionTitle`) |
+| Page title | Plus Jakarta Sans 20, 28 on wide (`AppTheme.pageTitle`, `pageTitleWide`) |
+| Hero figure | Plus Jakarta Sans 40, tabular (`AppTheme.hero`) |
+| Section title | Plus Jakarta Sans 16 (`AppTheme.sectionTitle`) |
 | Body | 14 (`AppTheme.body`) |
 | Caption | 12, secondary (`AppTheme.label`) |
 | Field label | 13 medium, above the field (`AppTheme.fieldLabel`) |
-| KPI figure | 22 semi-bold, tabular (`AppTheme.kpi`) |
+| KPI figure | Plus Jakarta Sans 24, tabular (`AppTheme.kpi`) |
 
 All amounts use tabular figures. Money always goes through `formatDT()` in `core/utils/formatters.dart`: a thousands separator, two decimals and a non-breaking space, e.g. `4 005.00 DT`.
 
@@ -60,9 +65,10 @@ All amounts use tabular figures. Money always goes through `formatDT()` in `core
 | Primary action | `FilledButton`, blue, 48 high; disabled shows as #E4E7EC on #98A2B3 |
 | Secondary action | `OutlinedButton`, white with a border |
 | Form save | `AppBottomActionBar`, fixed at the bottom |
-| A list of records | `AppDataTable`: header row, one-line rows of about 58px, sortable titles, extra columns from 600px, ⋮ menu |
+| A list of records | `AppDataTable`: optional summary strip (`summary`), status tabs with counts (`tabs`, chips on phones), toolbar, rows of about 58px, sortable titles, pagination, and on wide a side panel (`isSelected` + `detailPanel`, the page owns the selection) |
+| A record beside its list | `AppSidePanel` around the shared detail body (`CustomerDetailBody`, `SupplierDetailBody`, `ProductDetailBody`) or `AppDetailLoader` + `AppInvoicePanel` for sales and purchases; the phone detail page shows the same body |
 | Sale or purchase lines | `AppLinesTable`: Product · Qty · Price · Total · delete |
-| Status | `AppBadge` / `AppStatusChip`, radius 6, sentence case ("Partially paid") |
+| Status | `AppBadge`: rounded pill with a status dot, sentence case ("Partially paid") |
 | A detail row | `AppInfoRow`: label left, value right, divider below |
 | Loading · failed · empty | `AppSkeletonList` · `AppErrorState` (Retry) · `AppEmptyState` (with an action) |
 | Snackbar | `AppSnack.success / error` |
@@ -72,7 +78,7 @@ All amounts use tabular figures. Money always goes through `formatDT()` in `core
 | Window | Navigation |
 |---|---|
 | Phone (< 840px) | Bottom bar on the 5 main tabs (Home, Products, Sales, Customers, Copilot; a `StatefulShellRoute`, so each tab keeps its state). Menu button top-left opens the drawer with everything. |
-| Web (≥ 840px) | Permanent white sidebar, 248 or 264 wide, collapsible to a 72px rail; no bottom bar. |
+| Web (≥ 840px) | Permanent ink sidebar, 248 or 264 wide, collapsible to a 72px rail; no bottom bar. Overview, then collapsible groups: Sales (Invoices, Customers) · Purchasing (Purchases, Suppliers) · Inventory (Products, Categories, Warehouses, Stock movements) · Intelligence (Insights, AI Copilot, Scanner) · Administration (Users, Audit log). The current page's group opens itself; open/closed groups are remembered. Profile, language and sign-out sit in the account block. |
 
 - **Header:** a white bar with a bottom border. Menu (or Back on pushed screens) on the left, title and subtitle, actions, and the notification bell with a red count on the right.
 - **Forms and details:** pushed on the root navigator, full screen, with a Back arrow.
@@ -84,4 +90,4 @@ All amounts use tabular figures. Money always goes through `formatDT()` in `core
 - **Icon buttons:** every one has a tooltip, which is also its screen-reader label.
 - **Focus:** a keyboard focus ring (2px primary) via `AppPressable`.
 - **Contrast:** text at 4.5:1 or better.
-- **Motion:** respects reduced motion.
+- **Motion:** one rule set in `AppMotion` (`app_motion.dart`). Section switches fade and rise (180ms) in the shell; page sections and table rows stagger in once; the revenue line draws in, its last point pulses three times; bars and meters grow; side panels slide in. Everything shows its final state at once with OS reduced motion or the browser's `prefers-reduced-motion`.

@@ -1662,4 +1662,156 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get auditProfileUpdated => 'Profil modifié';
+
+  @override
+  String tableResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count résultats',
+      one: '1 résultat',
+      zero: 'Aucun résultat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tableRange(int from, int to, int total) {
+    return '$from–$to sur $total';
+  }
+
+  @override
+  String get previousPage => 'Page précédente';
+
+  @override
+  String get nextPage => 'Page suivante';
+
+  @override
+  String get filterAll => 'Tous';
+
+  @override
+  String get periodThisMonth => 'Ce mois-ci';
+
+  @override
+  String get periodLast30Days => '30 derniers jours';
+
+  @override
+  String get periodAll => 'Toute la période';
+
+  @override
+  String get statusReorderSoon => 'À recommander';
+
+  @override
+  String get activeFilter => 'Actif';
+
+  @override
+  String get navOverview => 'Vue d\'ensemble';
+
+  @override
+  String get navInvoices => 'Factures';
+
+  @override
+  String get navGroupSales => 'Ventes';
+
+  @override
+  String get navGroupPurchasing => 'Achats';
+
+  @override
+  String get navGroupInventory => 'Stock';
+
+  @override
+  String get navGroupIntelligence => 'Intelligence';
+
+  @override
+  String get navGroupAdmin => 'Administration';
+
+  @override
+  String get askAi => 'Demander à l\'IA';
+
+  @override
+  String get openProfile => 'Ouvrir mon profil';
+
+  @override
+  String get statInvoiced => 'Facturé';
+
+  @override
+  String get statPurchased => 'Acheté';
+
+  @override
+  String get toCollect => 'À encaisser';
+
+  @override
+  String issuedOn(String date) {
+    return 'Émise le $date';
+  }
+
+  @override
+  String get period7d => '7 j';
+
+  @override
+  String get period30d => '30 j';
+
+  @override
+  String get period90d => '90 j';
+
+  @override
+  String get period12m => '12 m';
+
+  @override
+  String get chartPeriod => 'Période du graphique';
+
+  @override
+  String get thisPeriod => 'Cette période';
+
+  @override
+  String get previousPeriod => 'Période précédente';
+
+  @override
+  String get netPosition => 'Position nette';
+
+  @override
+  String get needsAttention => 'À traiter';
+
+  @override
+  String get allClear => 'Rien à traiter pour le moment.';
+
+  @override
+  String get noSalesInPeriod => 'Aucune vente sur cette période';
+
+  @override
+  String get chartLoadFailed => 'Impossible de charger cette période.';
+
+  @override
+  String overdueInvoices(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count factures en retard',
+      one: '1 facture en retard',
+      zero: 'Aucune facture en retard',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lowStockProducts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count produits à recommander',
+      one: '1 produit à recommander',
+      zero: 'Tout est en stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String revenueTrendLabel(String amount) {
+    return 'Évolution du chiffre d\'affaires, $amount sur la période';
+  }
+
+  @override
+  String greetingWithName(String greeting, String name) {
+    return '$greeting, $name';
+  }
 }

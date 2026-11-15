@@ -19,6 +19,13 @@ class DashboardSummaryModel {
     return const [];
   }
 
+  static List<SalesTrendPoint> _trend(dynamic raw) => _asList(raw)
+      .map((t) => SalesTrendPoint(
+            day: DateTime.tryParse('${t['day']}') ?? DateTime.now(),
+            revenue: _d(t['revenue']),
+          ))
+      .toList();
+
   static DashboardSummaryEntity fromJson(Map<String, dynamic> json) {
     final k = json['kpis'] is Map
         ? Map<String, dynamic>.from(json['kpis'])
@@ -38,12 +45,9 @@ class DashboardSummaryModel {
         salesCountThisMonth: _i(k['sales_count_this_month']),
         lowStockCount: _i(k['low_stock_count']),
       ),
-      salesTrend: _asList(json['sales_trend'])
-          .map((t) => SalesTrendPoint(
-        day: DateTime.tryParse('${t['day']}') ?? DateTime.now(),
-        revenue: _d(t['revenue']),
-      ))
-          .toList(),
+      salesTrend: _trend(json['sales_trend']),
+      salesTrendPrevious: _trend(json['sales_trend_previous']),
+      trendDays: json['trend_days'] == null ? 30 : _i(json['trend_days']),
       topProducts: _asList(json['top_products'])
           .map((p) => TopProduct(
         name: '${p['name'] ?? ''}',

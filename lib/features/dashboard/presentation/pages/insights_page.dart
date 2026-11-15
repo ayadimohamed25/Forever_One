@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
+import '../../../../shared/widgets/app_shell.dart';
 import '../../../../shared/widgets/app_data_table.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../customers/domain/entities/customer_score_entity.dart';
@@ -28,9 +29,10 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
   }
 
   void _openProduct(String id) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(builder: (_) => ProductDetailPage(productId: id)),
-    );
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => ProductDetailPage(productId: id)));
   }
 
   void _openCustomer(String id) {
@@ -53,8 +55,9 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
   }
 
   PreferredSizeWidget _header(PredictionState state, AppLocalizations l10n) {
-    final outOfStock =
-        state.stockForecast.where((f) => f.currentStock <= 0).length;
+    final outOfStock = state.stockForecast
+        .where((f) => f.currentStock <= 0)
+        .length;
 
     return PreferredSize(
       preferredSize: const Size.fromHeight(64 + 48),
@@ -82,14 +85,27 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               color: AppColors.surface,
               border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
-            child: TabBar(
-              isScrollable: false,
-              dividerColor: Colors.transparent,
-              tabs: [
-                Tab(text: l10n.stock),
-                Tab(text: l10n.dormant),
-                Tab(text: l10n.followUps),
-              ],
+            // Tabs side by side on the left, aligned with the table below.
+            child: AppContentFrame(
+              maxWidth: 1248,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left:
+                      (AppShellScope.maybeOf(context)?.sidebarVisible ?? false)
+                      ? 8
+                      : 0,
+                ),
+                child: TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  dividerColor: Colors.transparent,
+                  tabs: [
+                    Tab(text: l10n.stock),
+                    Tab(text: l10n.dormant),
+                    Tab(text: l10n.followUps),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -111,28 +127,31 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
         body: state.isLoading
             ? AppSkeletonList(semanticLabel: l10n.loading)
             : state.error != null &&
-                    state.stockForecast.isEmpty &&
-                    state.dormantProducts.isEmpty &&
-                    state.customerScores.isEmpty
-                ? AppErrorState(
-                    title: l10n.loadFailedTitle,
-                    message: l10n.serverUnreachable,
-                    retryLabel: l10n.retry,
-                    onRetry: reload,
-                  )
-                : TabBarView(
-                    children: [
-                      RefreshIndicator(
-                          onRefresh: reload,
-                          child: _stockTab(state.stockForecast, l10n)),
-                      RefreshIndicator(
-                          onRefresh: reload,
-                          child: _dormantTab(state.dormantProducts, l10n)),
-                      RefreshIndicator(
-                          onRefresh: reload,
-                          child: _followUpTab(state.customerScores, l10n)),
-                    ],
+                  state.stockForecast.isEmpty &&
+                  state.dormantProducts.isEmpty &&
+                  state.customerScores.isEmpty
+            ? AppErrorState(
+                title: l10n.loadFailedTitle,
+                message: l10n.serverUnreachable,
+                retryLabel: l10n.retry,
+                onRetry: reload,
+              )
+            : TabBarView(
+                children: [
+                  RefreshIndicator(
+                    onRefresh: reload,
+                    child: _stockTab(state.stockForecast, l10n),
                   ),
+                  RefreshIndicator(
+                    onRefresh: reload,
+                    child: _dormantTab(state.dormantProducts, l10n),
+                  ),
+                  RefreshIndicator(
+                    onRefresh: reload,
+                    child: _followUpTab(state.customerScores, l10n),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -150,8 +169,19 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
     int rank(StockForecastEntity f) => f.currentStock <= 0
         ? 2
         : (f.urgency != 'ok' || f.currentStock <= f.minThreshold)
-            ? 1
-            : 0;
+        ? 1
+        : 0;
+    // Rank 1 splits in two so the label never contradicts the numbers:
+    // at or below the minimum is "Low stock"; above it, but with short
+    // coverage, it is "Reorder soon".
+    String stockLabel(StockForecastEntity f) => switch (rank(f)) {
+      2 => l10n.statusOutOfStock,
+      1 =>
+        f.currentStock <= f.minThreshold
+            ? l10n.statusLowStock
+            : l10n.statusReorderSoon,
+      _ => l10n.ok,
+    };
 
     return AppDataTable<StockForecastEntity>(
       bottomPadding: 24,
@@ -162,62 +192,67 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       columns: [
         AppTableColumn(
           label: l10n.product,
-          flex: 4,
           sortValue: (f) => f.name.toLowerCase(),
           cell: (f) => AppCellText(
             f.name,
             strong: true,
+            maxLines: 2,
             sub: f.daysOfCoverage != null
                 ? l10n.daysOfCoverage(
-                    f.daysOfCoverage!, f.dailySalesRate.toStringAsFixed(2))
+                    f.daysOfCoverage!,
+                    f.dailySalesRate.toStringAsFixed(2),
+                  )
                 : l10n.noRecentSales,
           ),
         ),
         AppTableColumn(
           label: l10n.stock,
-          width: 60,
           numeric: true,
+          measure: (f) => '${f.currentStock}',
           sortValue: (f) => f.currentStock,
-          cell: (f) => AppCellText('${f.currentStock}',
-              numeric: true,
-              color: f.currentStock <= 0
-                  ? AppColors.dangerText
-                  : rank(f) == 1
-                      ? AppColors.warningText
-                      : AppColors.textPrimary),
+          cell: (f) => AppCellText(
+            '${f.currentStock}',
+            numeric: true,
+            color: f.currentStock <= 0
+                ? AppColors.dangerText
+                : f.currentStock <= f.minThreshold
+                ? AppColors.warningText
+                : AppColors.textPrimary,
+          ),
         ),
         AppTableColumn(
           label: l10n.minimum,
-          width: 64,
           numeric: true,
+          measure: (f) => '${f.minThreshold}',
           showFrom: 600,
           sortValue: (f) => f.minThreshold,
-          cell: (f) => AppCellText('${f.minThreshold}',
-              numeric: true, color: AppColors.textSecondary),
+          cell: (f) => AppCellText(
+            '${f.minThreshold}',
+            numeric: true,
+            color: AppColors.textSecondary,
+          ),
         ),
         AppTableColumn(
           label: l10n.suggestedOrder,
-          width: 88,
           numeric: true,
+          measure: (f) => f.suggestedOrder > 0 ? '+${f.suggestedOrder}' : '—',
           showFrom: 600,
           sortValue: (f) => f.suggestedOrder,
           cell: (f) => AppCellText(
-              f.suggestedOrder > 0 ? '+${f.suggestedOrder}' : '—',
-              numeric: true,
-              color: f.suggestedOrder > 0
-                  ? AppColors.primary
-                  : AppColors.textSecondary),
+            f.suggestedOrder > 0 ? '+${f.suggestedOrder}' : '—',
+            numeric: true,
+            color: f.suggestedOrder > 0
+                ? AppColors.primary
+                : AppColors.textSecondary,
+          ),
         ),
         AppTableColumn(
           label: l10n.status,
-          width: 100,
+          chip: true,
+          measure: stockLabel,
           sortValue: rank,
           cell: (f) => AppBadge(
-            label: switch (rank(f)) {
-              2 => l10n.statusOutOfStock,
-              1 => l10n.statusLowStock,
-              _ => l10n.ok,
-            },
+            label: stockLabel(f),
             tone: switch (rank(f)) {
               2 => BadgeTone.danger,
               1 => BadgeTone.warning,
@@ -248,26 +283,29 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       columns: [
         AppTableColumn(
           label: l10n.product,
-          flex: 4,
           sortValue: (d) => d.name.toLowerCase(),
-          cell: (d) => AppCellText(d.name, strong: true),
+          cell: (d) => AppCellText(d.name, strong: true, maxLines: 2),
         ),
         AppTableColumn(
           label: l10n.lastSale,
-          width: 132,
           numeric: true,
+          measure: (d) => d.neverSold
+              ? l10n.neverSold
+              : l10n.lastSaleDaysAgo(d.daysSinceSale ?? 0),
           // Never sold sorts as the oldest.
           sortValue: (d) => d.neverSold ? 1 << 30 : (d.daysSinceSale ?? 0),
           cell: (d) => AppCellText(
-              d.neverSold
-                  ? l10n.neverSold
-                  : l10n.lastSaleDaysAgo(d.daysSinceSale ?? 0),
-              numeric: true,
-              color: AppColors.textSecondary),
+            d.neverSold
+                ? l10n.neverSold
+                : l10n.lastSaleDaysAgo(d.daysSinceSale ?? 0),
+            numeric: true,
+            color: AppColors.textSecondary,
+          ),
         ),
         AppTableColumn(
           label: l10n.status,
-          width: 92,
+          chip: true,
+          measure: (d) => l10n.dormant,
           cell: (d) => AppBadge(label: l10n.dormant, tone: BadgeTone.warning),
         ),
       ],
@@ -293,42 +331,54 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
       columns: [
         AppTableColumn(
           label: l10n.customer,
-          flex: 4,
           sortValue: (c) => c.name.toLowerCase(),
-          cell: (c) => AppCellText(c.name, strong: true, sub: _reason(c, l10n)),
+          cell: (c) => AppCellText(
+            c.name,
+            strong: true,
+            maxLines: 2,
+            sub: _reason(c, l10n),
+          ),
         ),
         AppTableColumn(
           label: l10n.score,
-          width: 56,
           numeric: true,
+          measure: (c) => '${c.score}',
           sortValue: (c) => c.score,
-          cell: (c) => AppCellText('${c.score}',
-              numeric: true,
-              color: c.score >= 70
-                  ? AppColors.dangerText
-                  : c.score >= 40
-                      ? AppColors.warningText
-                      : AppColors.textPrimary),
+          cell: (c) => AppCellText(
+            '${c.score}',
+            numeric: true,
+            color: c.score >= 70
+                ? AppColors.dangerText
+                : c.score >= 40
+                ? AppColors.warningText
+                : AppColors.textPrimary,
+          ),
         ),
         AppTableColumn(
           label: l10n.colBalance,
-          width: 112,
           numeric: true,
           showFrom: 600,
+          measure: (c) => c.balance > 0.009 ? formatDT(c.balance) : '—',
           sortValue: (c) => c.balance,
           cell: (c) => AppCellText(
-              c.balance > 0.009 ? formatDT(c.balance) : '—',
-              numeric: true),
+            c.balance > 0.009 ? formatDT(c.balance) : '—',
+            numeric: true,
+          ),
         ),
         AppTableColumn(
           label: l10n.status,
-          width: 104,
+          chip: true,
+          measure: (c) => c.overCreditLimit
+              ? l10n.statusOverLimit
+              : c.balance > 0.009
+              ? l10n.unpaid
+              : l10n.statusUpToDate,
           sortValue: (c) => c.overCreditLimit ? 2 : (c.balance > 0.009 ? 1 : 0),
           cell: (c) => c.overCreditLimit
               ? AppBadge(label: l10n.statusOverLimit, tone: BadgeTone.danger)
               : c.balance > 0.009
-                  ? AppBadge(label: l10n.unpaid, tone: BadgeTone.warning)
-                  : AppBadge(label: l10n.statusUpToDate, tone: BadgeTone.success),
+              ? AppBadge(label: l10n.unpaid, tone: BadgeTone.warning)
+              : AppBadge(label: l10n.statusUpToDate, tone: BadgeTone.success),
         ),
       ],
     );

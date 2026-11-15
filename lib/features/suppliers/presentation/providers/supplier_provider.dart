@@ -120,9 +120,14 @@ class SupplierDetailNotifier extends StateNotifier<SupplierDetailState> {
   final SupplierRepositoryImpl repository;
   SupplierDetailNotifier(this.repository) : super(const SupplierDetailState());
 
+  /// Latest request wins (fast row switching in the side panel).
+  int _seq = 0;
+
   Future<void> load(String id) async {
+    final seq = ++_seq;
     state = const SupplierDetailState(isLoading: true);
     final result = await repository.getSupplierDetail(id);
+    if (seq != _seq || !mounted) return;
     result.fold(
           (failure) => state = SupplierDetailState(error: failure.message),
           (detail) => state = SupplierDetailState(

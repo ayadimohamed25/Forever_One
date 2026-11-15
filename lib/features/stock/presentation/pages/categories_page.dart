@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_page_header.dart';
 import '../../../../shared/widgets/app_widgets.dart';
+import '../../../../shared/widgets/app_data_table.dart';
 import '../../domain/entities/category_entity.dart';
 import '../providers/product_provider.dart';
 import 'category_form_page.dart';
@@ -39,24 +39,31 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
   }
 
   Future<void> _openForm({CategoryEntity? existing}) async {
-    final result = await Navigator.of(context, rootNavigator: true).push<CategoryFormResult>(
-      MaterialPageRoute(builder: (_) => CategoryFormPage(existing: existing)),
-    );
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<CategoryFormResult>(
+          MaterialPageRoute(
+            builder: (_) => CategoryFormPage(existing: existing),
+          ),
+        );
     if (result == null) return;
 
     if (existing == null) {
-      await ref.read(categoryListProvider.notifier).add(
-        name: result.name,
-        description: result.description,
-        colorHex: result.colorHex,
-      );
+      await ref
+          .read(categoryListProvider.notifier)
+          .add(
+            name: result.name,
+            description: result.description,
+            colorHex: result.colorHex,
+          );
     } else {
-      await ref.read(categoryListProvider.notifier).update(
-        id: existing.id,
-        name: result.name,
-        description: result.description,
-        colorHex: result.colorHex,
-      );
+      await ref
+          .read(categoryListProvider.notifier)
+          .update(
+            id: existing.id,
+            name: result.name,
+            description: result.description,
+            colorHex: result.colorHex,
+          );
     }
   }
 
@@ -93,61 +100,50 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     }
   }
 
-  Widget _card(CategoryEntity c, AppLocalizations l10n) {
-    final color = c.color;
-
-    return AppCard(
-      onTap: () => _openForm(existing: c),
-      padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // Category (colour dot + name, description under) | Products | ⋮.
+  List<AppTableColumn<CategoryEntity>> _columns(AppLocalizations l10n) => [
+    AppTableColumn(
+      label: l10n.category,
+      sortValue: (c) => c.name.toLowerCase(),
+      cell: (c) => Row(
         children: [
-          // The category's own colour: soft background, same colour icon.
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.label_outline, size: 20, color: color),
-          ),
-          const SizedBox(width: 14),
+          AppColorDot(c.color, size: 10),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(c.name, style: AppTheme.rowTitle, maxLines: 2),
-                if (c.description != null &&
-                    c.description!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(c.description!, style: AppTheme.label, maxLines: 2),
-                ],
-                const SizedBox(height: 10),
-                AppBadge(
-                  label: l10n.productCount(c.productCount),
-                  tone: BadgeTone.neutral,
-                ),
-              ],
+            child: AppCellText(
+              c.name,
+              strong: true,
+              maxLines: 2,
+              sub: (c.description ?? '').trim().isEmpty ? null : c.description,
             ),
           ),
-          AppRowMenu(actions: [
-            AppMenuAction(
-              label: l10n.edit,
-              icon: Icons.edit_outlined,
-              onTap: () => _openForm(existing: c),
-            ),
-            AppMenuAction(
-              label: l10n.delete,
-              icon: Icons.delete_outline,
-              destructive: true,
-              onTap: () => _delete(c, l10n),
-            ),
-          ]),
         ],
       ),
-    );
-  }
+    ),
+    AppTableColumn(
+      label: l10n.colProducts,
+      numeric: true,
+      measure: (c) => '${c.productCount}',
+      sortValue: (c) => c.productCount,
+      cell: (c) => AppCellText('${c.productCount}', numeric: true),
+    ),
+  ];
+
+  Widget _rowMenu(CategoryEntity c, AppLocalizations l10n) => AppRowMenu(
+    actions: [
+      AppMenuAction(
+        label: l10n.edit,
+        icon: Icons.edit_outlined,
+        onTap: () => _openForm(existing: c),
+      ),
+      AppMenuAction(
+        label: l10n.delete,
+        icon: Icons.delete_outline,
+        destructive: true,
+        onTap: () => _delete(c, l10n),
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -155,39 +151,41 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(categoryListProvider, (previous, next) {
-      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
+      if (next.error != null) {
+        _showSnack(errorText(next.error, l10n), isError: true);
+      }
     });
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
       appBar: searchVisible
           ? AppSearchHeader(
-        controller: searchController,
-        hint: l10n.searchCategories,
-        onChanged: (v) =>
-            ref.read(categoryListProvider.notifier).search(v),
-        onClose: () {
-          setState(() => searchVisible = false);
-          searchController.clear();
-          ref.read(categoryListProvider.notifier).clearSearch();
-        },
-      )
+              controller: searchController,
+              hint: l10n.searchCategories,
+              onChanged: (v) =>
+                  ref.read(categoryListProvider.notifier).search(v),
+              onClose: () {
+                setState(() => searchVisible = false);
+                searchController.clear();
+                ref.read(categoryListProvider.notifier).clearSearch();
+              },
+            )
           : AppPageHeader(
-        title: l10n.categories,
-        subtitle: state.categories.isEmpty
-            ? null
-            : '${state.categories.length} ${l10n.categories.toLowerCase()}',
-        icon: Icons.category_outlined,
-        color: AppColors.accent,
-        actions: [
-          AppHeaderAction(
-            icon: Icons.search,
-            tooltip: l10n.search,
-            onTap: () => setState(() => searchVisible = true),
-          ),
-          AppHeaderAddButton(onPressed: () => _openForm(), label: l10n.category),
-        ],
-      ),
+              title: l10n.categories,
+              subtitle: state.categories.isEmpty
+                  ? null
+                  : '${state.categories.length} ${l10n.categories.toLowerCase()}',
+              icon: Icons.category_outlined,
+              color: AppColors.accent,
+              actions: [
+                AppHeaderAction(
+                  icon: Icons.search,
+                  phoneOnly: true,
+                  tooltip: l10n.search,
+                  onTap: () => setState(() => searchVisible = true),
+                ),
+              ],
+            ),
       body: state.isLoading
           ? AppSkeletonList(semanticLabel: l10n.loading)
           : state.error != null && state.categories.isEmpty
@@ -199,29 +197,33 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
             )
           : state.categories.isEmpty
           ? AppEmptyState(
-        icon: state.hasSearched
-            ? Icons.search_off
-            : Icons.category_outlined,
-        title:
-        state.hasSearched ? l10n.noResults : l10n.noCategories,
-        subtitle: state.hasSearched
-            ? l10n.tryDifferentSearch
-            : '',
-          actionLabel: state.hasSearched ? null : l10n.category,
-          onAction: () => _openForm(),
-      )
+              icon: state.hasSearched
+                  ? Icons.search_off
+                  : Icons.category_outlined,
+              title: state.hasSearched ? l10n.noResults : l10n.noCategories,
+              subtitle: state.hasSearched ? l10n.tryDifferentSearch : '',
+              actionLabel: state.hasSearched ? null : l10n.category,
+              onAction: () => _openForm(),
+            )
           : RefreshIndicator(
-        color: AppColors.accent,
-        onRefresh: () =>
-            ref.read(categoryListProvider.notifier).load(),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          itemCount: state.categories.length,
-          itemBuilder: (context, index) =>
-              _card(state.categories[index], l10n),
-        ),
+              color: AppColors.accent,
+              onRefresh: () => ref.read(categoryListProvider.notifier).load(),
+              child: AppDataTable<CategoryEntity>(
+                columns: _columns(l10n),
+                rows: state.categories,
+                initialSortColumn: 0,
+                onRowTap: (c) => _openForm(existing: c),
+                rowMenu: (c) => _rowMenu(c, l10n),
+                searchText: (c) => '${c.name} ${c.description ?? ''}',
+                searchHint: l10n.searchCategories,
+                onAdd: () => _openForm(),
+                addLabel: l10n.category,
+              ),
+            ),
+      floatingActionButton: AppAddFab(
+        onPressed: () => _openForm(),
+        label: l10n.category,
       ),
-      floatingActionButton: AppAddFab(onPressed: () => _openForm(), label: l10n.category),
     );
   }
 }

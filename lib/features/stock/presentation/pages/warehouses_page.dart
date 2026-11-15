@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/formatters.dart';
@@ -40,20 +40,22 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     AppSnack.show(context, message, error: isError);
   }
 
-  Future<void> _openForm(AppLocalizations l10n,
-      {WarehouseEntity? existing}) async {
-    final input = await Navigator.of(context, rootNavigator: true).push<WarehouseInput>(
-      MaterialPageRoute(
-          builder: (_) => WarehouseFormPage(existing: existing)),
-    );
+  Future<void> _openForm(
+    AppLocalizations l10n, {
+    WarehouseEntity? existing,
+  }) async {
+    final input = await Navigator.of(context, rootNavigator: true)
+        .push<WarehouseInput>(
+          MaterialPageRoute(
+            builder: (_) => WarehouseFormPage(existing: existing),
+          ),
+        );
     if (input == null) return;
 
     if (existing == null) {
       await ref.read(warehouseListProvider.notifier).add(input);
     } else {
-      await ref
-          .read(warehouseListProvider.notifier)
-          .update(existing.id, input);
+      await ref.read(warehouseListProvider.notifier).update(existing.id, input);
       if (mounted) _showSnack(l10n.warehouseUpdated);
     }
   }
@@ -79,8 +81,7 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     );
     if (confirmed != true) return;
 
-    final error =
-    await ref.read(warehouseListProvider.notifier).remove(w.id);
+    final error = await ref.read(warehouseListProvider.notifier).remove(w.id);
     if (!mounted) return;
 
     if (error == null) {
@@ -92,50 +93,63 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     }
   }
 
+  // Order: name, information, amounts, Status, ⋮.
   List<AppTableColumn<WarehouseEntity>> _columns(AppLocalizations l10n) => [
-        AppTableColumn(
-          label: l10n.warehouse,
-          flex: 4,
-          sortValue: (w) => w.name.toLowerCase(),
-          cell: (w) => Opacity(
-            opacity: w.isActive ? 1 : 0.55,
-            child: AppCellText(w.name, strong: true, sub: w.location),
-          ),
-        ),
-        AppTableColumn(
-          label: l10n.manager,
-          flex: 3,
-          showFrom: 760,
-          sortValue: (w) => (w.managerName ?? '').toLowerCase(),
-          cell: (w) => AppCellText(w.managerName ?? '—'),
-        ),
-        AppTableColumn(
-          label: l10n.colProducts,
-          width: 80,
-          numeric: true,
-          sortValue: (w) => w.productCount,
-          cell: (w) => AppCellText('${w.productCount}', numeric: true),
-        ),
-        AppTableColumn(
-          label: l10n.stockValue,
-          width: 120,
-          numeric: true,
-          sortValue: (w) => w.stockValue,
-          cell: (w) => AppCellText(formatDT(w.stockValue), numeric: true),
-        ),
-      ];
+    AppTableColumn(
+      label: l10n.warehouse,
+      sortValue: (w) => w.name.toLowerCase(),
+      cell: (w) =>
+          AppCellText(w.name, strong: true, maxLines: 2, sub: w.location),
+    ),
+    AppTableColumn(
+      label: l10n.manager,
+      showFrom: 760,
+      measure: (w) => w.managerName ?? '—',
+      sortValue: (w) => (w.managerName ?? '').toLowerCase(),
+      cell: (w) =>
+          AppCellText(w.managerName ?? '—', color: AppColors.textSecondary),
+    ),
+    AppTableColumn(
+      label: l10n.colProducts,
+      numeric: true,
+      showFrom: 480,
+      measure: (w) => '${w.productCount}',
+      sortValue: (w) => w.productCount,
+      cell: (w) => AppCellText('${w.productCount}', numeric: true),
+    ),
+    AppTableColumn(
+      label: l10n.stockValue,
+      numeric: true,
+      measure: (w) => formatDT(w.stockValue),
+      sortValue: (w) => w.stockValue,
+      cell: (w) => AppCellText(formatDT(w.stockValue), numeric: true),
+    ),
+    AppTableColumn(
+      label: l10n.status,
+      chip: true,
+      measure: (w) => w.isActive ? l10n.active : l10n.inactive,
+      sortValue: (w) => w.isActive ? 0 : 1,
+      cell: (w) => w.isActive
+          ? AppBadge(label: l10n.active, tone: BadgeTone.success)
+          : AppBadge(label: l10n.inactive, tone: BadgeTone.neutral),
+    ),
+  ];
 
-  Widget _rowMenu(WarehouseEntity w, AppLocalizations l10n) => AppRowMenu(actions: [
-        AppMenuAction(
-            label: l10n.edit,
-            icon: Icons.edit_outlined,
-            onTap: () => _openForm(l10n, existing: w)),
-        AppMenuAction(
-            label: l10n.delete,
-            icon: Icons.delete_outline,
-            destructive: true,
-            onTap: () => _delete(w, l10n)),
-      ]);
+  Widget _rowMenu(WarehouseEntity w, AppLocalizations l10n) => AppRowMenu(
+    actions: [
+      AppMenuAction(
+        label: l10n.edit,
+        icon: Icons.edit_outlined,
+        onTap: () => _openForm(l10n, existing: w),
+      ),
+      AppMenuAction(
+        label: l10n.delete,
+        icon: Icons.delete_outline,
+        destructive: true,
+        onTap: () => _delete(w, l10n),
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -143,11 +157,15 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
     final l10n = AppLocalizations.of(context)!;
 
     ref.listen(warehouseListProvider, (previous, next) {
-      if (next.error != null) _showSnack(errorText(next.error, l10n), isError: true);
+      if (next.error != null) {
+        _showSnack(errorText(next.error, l10n), isError: true);
+      }
     });
 
-    final totalValue =
-    state.warehouses.fold<double>(0, (sum, w) => sum + w.stockValue);
+    final totalValue = state.warehouses.fold<double>(
+      0,
+      (sum, w) => sum + w.stockValue,
+    );
     final subtitle = state.warehouses.isEmpty
         ? null
         : '${state.warehouses.length} · ${formatDT(totalValue)}';
@@ -156,30 +174,30 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
       backgroundColor: AppColors.canvas,
       appBar: searchVisible
           ? AppSearchHeader(
-        controller: searchController,
-        hint: l10n.searchWarehouses,
-        onChanged: (v) =>
-            ref.read(warehouseListProvider.notifier).search(v),
-        onClose: () {
-          setState(() => searchVisible = false);
-          searchController.clear();
-          ref.read(warehouseListProvider.notifier).clearSearch();
-        },
-      )
+              controller: searchController,
+              hint: l10n.searchWarehouses,
+              onChanged: (v) =>
+                  ref.read(warehouseListProvider.notifier).search(v),
+              onClose: () {
+                setState(() => searchVisible = false);
+                searchController.clear();
+                ref.read(warehouseListProvider.notifier).clearSearch();
+              },
+            )
           : AppPageHeader(
-        title: l10n.warehouses,
-        subtitle: subtitle,
-        icon: Icons.warehouse_outlined,
-        color: AppColors.stock,
-        actions: [
-          AppHeaderAction(
-            icon: Icons.search,
-            tooltip: l10n.search,
-            onTap: () => setState(() => searchVisible = true),
-          ),
-          AppHeaderAddButton(onPressed: () => _openForm(l10n), label: l10n.warehouse),
-        ],
-      ),
+              title: l10n.warehouses,
+              subtitle: subtitle,
+              icon: Icons.warehouse_outlined,
+              color: AppColors.stock,
+              actions: [
+                AppHeaderAction(
+                  icon: Icons.search,
+                  phoneOnly: true,
+                  tooltip: l10n.search,
+                  onTap: () => setState(() => searchVisible = true),
+                ),
+              ],
+            ),
       body: state.isLoading
           ? AppSkeletonList(semanticLabel: l10n.loading)
           : state.error != null && state.warehouses.isEmpty
@@ -191,30 +209,41 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
             )
           : state.warehouses.isEmpty
           ? AppEmptyState(
-        icon: state.hasSearched
-            ? Icons.search_off
-            : Icons.warehouse_outlined,
-        title: state.hasSearched
-            ? l10n.noResults
-            : l10n.noWarehouses,
-        subtitle: state.hasSearched
-            ? l10n.tryDifferentSearch
-            : '',
-          actionLabel: state.hasSearched ? null : l10n.warehouse,
-          onAction: () => _openForm(l10n),
-      )
+              icon: state.hasSearched
+                  ? Icons.search_off
+                  : Icons.warehouse_outlined,
+              title: state.hasSearched ? l10n.noResults : l10n.noWarehouses,
+              subtitle: state.hasSearched ? l10n.tryDifferentSearch : '',
+              actionLabel: state.hasSearched ? null : l10n.warehouse,
+              onAction: () => _openForm(l10n),
+            )
           : RefreshIndicator(
-        onRefresh: () =>
-            ref.read(warehouseListProvider.notifier).load(),
-        child: AppDataTable<WarehouseEntity>(
-          columns: _columns(l10n),
-          rows: state.warehouses,
-          initialSortColumn: 0,
-          onRowTap: (w) => _openForm(l10n, existing: w),
-          rowMenu: (w) => _rowMenu(w, l10n),
-        ),
+              onRefresh: () => ref.read(warehouseListProvider.notifier).load(),
+              child: AppDataTable<WarehouseEntity>(
+                columns: _columns(l10n),
+                rows: state.warehouses,
+                initialSortColumn: 0,
+                onRowTap: (w) => _openForm(l10n, existing: w),
+                rowMenu: (w) => _rowMenu(w, l10n),
+                searchText: (w) =>
+                    '${w.name} ${w.code ?? ''} ${w.location ?? ''} ${w.managerName ?? ''}',
+                searchHint: l10n.searchWarehouses,
+                tabs: AppTableFilter(
+                  label: l10n.status,
+                  options: [
+                    AppFilterOption(l10n.filterAll),
+                    AppFilterOption(l10n.active, (w) => w.isActive),
+                    AppFilterOption(l10n.inactive, (w) => !w.isActive),
+                  ],
+                ),
+                onAdd: () => _openForm(l10n),
+                addLabel: l10n.warehouse,
+              ),
+            ),
+      floatingActionButton: AppAddFab(
+        onPressed: () => _openForm(l10n),
+        label: l10n.warehouse,
       ),
-      floatingActionButton: AppAddFab(onPressed: () => _openForm(l10n), label: l10n.warehouse),
     );
   }
 }

@@ -145,9 +145,14 @@ class ProductDetailNotifier extends StateNotifier<ProductDetailState> {
   final ProductRepositoryImpl repository;
   ProductDetailNotifier(this.repository) : super(const ProductDetailState());
 
+  /// Latest request wins (fast row switching in the side panel).
+  int _seq = 0;
+
   Future<void> load(String id) async {
+    final seq = ++_seq;
     state = const ProductDetailState(isLoading: true);
     final result = await repository.getProductDetail(id);
+    if (seq != _seq || !mounted) return;
     result.fold(
           (failure) => state = ProductDetailState(error: failure.message),
           (detail) => state = ProductDetailState(
