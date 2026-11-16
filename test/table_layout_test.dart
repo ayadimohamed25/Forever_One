@@ -102,7 +102,7 @@ void main() {
     await _pump(tester, 412);
     await tester.fling(find.byType(Scrollable).first, const Offset(0, -20000), 5000);
     await tester.pumpAndSettle();
-    final last = tester.getRect(find.text('Client 56'));
+    final last = tester.getRect(_cell('Client 56'));
     expect(900 - last.bottom, greaterThanOrEqualTo(96));
   });
 
@@ -124,7 +124,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.chevron_right));
     await tester.pumpAndSettle();
     // Page 2 opens at its first row (Client 25), then the range updates.
-    expect(find.text('Client 25'), findsOneWidget);
+    expect(_cell('Client 25'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('26–50 of 57'), 400,
         scrollable: find.byType(Scrollable).first);
     expect(find.text('26–50 of 57'), findsOneWidget);
@@ -135,6 +135,10 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Barquettes');
     await tester.pumpAndSettle();
     expect(find.text('Barquettes aluminium 500ml'), findsOneWidget);
-    expect(find.text('Client 01'), findsNothing);
+    expect(_cell('Client 01'), findsNothing);
   });
 }
+
+/// A row name as the table displays it (short last words are kept with the
+/// word before by a non-breaking space).
+Finder _cell(String name) => find.text(keepUnitsTogether(name));

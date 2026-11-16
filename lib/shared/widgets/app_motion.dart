@@ -36,12 +36,17 @@ class AppEntrance extends StatefulWidget {
   final double offset;
   final Duration? stagger;
 
+  /// Read once, when the widget first appears: false shows the child at once
+  /// (a table row scrolled back into view must not fade in again).
+  final bool animate;
+
   const AppEntrance({
     super.key,
     required this.child,
     this.index = 0,
     this.offset = 10,
     this.stagger,
+    this.animate = true,
   });
 
   @override
@@ -55,7 +60,7 @@ class _AppEntranceState extends State<AppEntrance>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_c != null || !AppMotion.enabled(context)) return;
+    if (_c != null || !widget.animate || !AppMotion.enabled(context)) return;
     final step = widget.stagger ?? const Duration(milliseconds: 60);
     final i = widget.index.clamp(0, AppMotion.maxStaggered);
     final delay = step * i;

@@ -1814,4 +1814,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String greetingWithName(String greeting, String name) {
     return '$greeting, $name';
   }
+
+  @override
+  String get cashPosition => 'Trésorerie';
+
+  @override
+  String get moreShort => 'Plus';
+
+  @override
+  String get toReorder => 'À recommander';
+
+  @override
+  String get lowOrOutOfStock => 'Faible ou en rupture';
 }

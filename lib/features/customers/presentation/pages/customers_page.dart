@@ -150,12 +150,16 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     AppTableColumn(
       label: l10n.colBalance,
       numeric: true,
-      measure: (c) => formatDT(c.balance > 0 ? c.balance : 0),
+      // A settled customer shows a dash, not "0.00 DT": the eye goes
+      // straight to the amounts that matter.
+      measure: (c) => c.owesMoney ? formatDT(c.balance) : '—',
       sortValue: (c) => c.balance,
       cell: (c) => AppCellText(
-        formatDT(c.balance > 0 ? c.balance : 0),
+        c.owesMoney ? formatDT(c.balance) : '—',
         numeric: true,
-        color: c.isOverCreditLimit
+        color: !c.owesMoney
+            ? AppColors.textSecondary
+            : c.isOverCreditLimit
             ? AppColors.dangerText
             : AppColors.textPrimary,
       ),
@@ -203,13 +207,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       }
     });
 
-    final outstanding = state.customers
-        .where((c) => c.owesMoney)
-        .fold<double>(0, (sum, c) => sum + c.balance);
+    // Just the count: the balance is in the summary strip below.
     final subtitle = state.customers.isEmpty
         ? null
-        : outstanding > 0.009
-        ? '${state.customers.length} · ${formatDT(outstanding)} ${l10n.outstandingBalance.toLowerCase()}'
         : '${state.customers.length} ${l10n.customers.toLowerCase()}';
 
     return Scaffold(

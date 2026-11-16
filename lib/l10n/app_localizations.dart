@@ -3367,6 +3367,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{greeting}, {name}'**
   String greetingWithName(String greeting, String name);
+
+  /// No description provided for @cashPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash position'**
+  String get cashPosition;
+
+  /// No description provided for @moreShort.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get moreShort;
+
+  /// No description provided for @toReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'To reorder'**
+  String get toReorder;
+
+  /// No description provided for @lowOrOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low or out of stock'**
+  String get lowOrOutOfStock;
 }
 
 class _AppLocalizationsDelegate

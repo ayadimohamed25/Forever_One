@@ -73,20 +73,20 @@ void main() {
     await _pump(tester, 1400);
     expect(find.text('10'), findsOneWidget); // All
     expect(find.text('6'), findsOneWidget); // Paid
-    expect(find.text('Client 9'), findsOneWidget);
+    expect(_cell('Client 9'), findsOneWidget);
 
     await tester.tap(find.text('Paid'));
     await tester.pumpAndSettle();
-    expect(find.text('Client 9'), findsNothing);
-    expect(find.text('Client 0'), findsOneWidget);
+    expect(_cell('Client 9'), findsNothing);
+    expect(_cell('Client 0'), findsOneWidget);
   });
 
   testWidgets('a summary figure selects its tab', (tester) async {
     await _pump(tester, 1400);
     await tester.tap(find.text('Unpaid total'));
     await tester.pumpAndSettle();
-    expect(find.text('Client 0'), findsNothing);
-    expect(find.text('Client 9'), findsOneWidget);
+    expect(_cell('Client 0'), findsNothing);
+    expect(_cell('Client 9'), findsOneWidget);
   });
 
   testWidgets('phones show the tabs as chips with counts', (tester) async {
@@ -94,27 +94,27 @@ void main() {
     expect(find.text('All 10'), findsOneWidget);
     await tester.tap(find.text('Unpaid 4'));
     await tester.pumpAndSettle();
-    expect(find.text('Client 0'), findsNothing);
+    expect(_cell('Client 0'), findsNothing);
   });
 
   testWidgets('wide: selecting a row opens the panel beside the table',
       (tester) async {
     await _pump(tester, 1400);
-    await tester.tap(find.text('Client 3'));
+    await tester.tap(_cell('Client 3'));
     await tester.pumpAndSettle();
     final panel = tester.getRect(find.text('Panel for Client 3'));
-    final row = tester.getRect(find.text('Client 3'));
+    final row = tester.getRect(_cell('Client 3'));
     expect(panel.left, greaterThan(row.right));
 
     // Selecting another row replaces the panel's content.
-    await tester.tap(find.text('Client 4'));
+    await tester.tap(_cell('Client 4'));
     await tester.pumpAndSettle();
     expect(find.text('Panel for Client 4'), findsOneWidget);
   });
 
   testWidgets('phones never show the side panel', (tester) async {
     final page = await _pump(tester, 412);
-    await tester.tap(find.text('Client 3'));
+    await tester.tap(_cell('Client 3'));
     await tester.pumpAndSettle();
     expect(page.selected, 'Client 3');
     expect(find.text('Panel for Client 3'), findsNothing);
@@ -123,7 +123,7 @@ void main() {
   testWidgets('the panel closes when a tab hides the selected row',
       (tester) async {
     final page = await _pump(tester, 1400);
-    await tester.tap(find.text('Client 1')); // paid
+    await tester.tap(_cell('Client 1')); // paid
     await tester.pumpAndSettle();
     expect(find.text('Panel for Client 1'), findsOneWidget);
 
@@ -133,3 +133,7 @@ void main() {
     expect(find.textContaining('Panel for'), findsNothing);
   });
 }
+
+/// A row name as the table displays it (short last words are kept with the
+/// word before by a non-breaking space).
+Finder _cell(String name) => find.text(keepUnitsTogether(name));

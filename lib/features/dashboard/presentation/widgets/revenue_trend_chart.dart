@@ -8,8 +8,10 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/app_motion.dart';
 import '../../domain/entities/dashboard_summary_entity.dart';
 
-/// Revenue over the chosen period as a line with a soft area, the previous
-/// period of the same length as a dashed line, and the latest point marked.
+/// Revenue accumulated over the chosen period as a line with a soft area
+/// (it ends on the period total), the previous period's running total as a
+/// dashed line, and the latest point marked. Running totals read calmly
+/// where daily values zig-zag on every day without sales.
 ///
 /// Motion (skipped with reduced motion): the line draws in from the left,
 /// then the latest point pulses three times. A new period replays it.
@@ -91,7 +93,8 @@ class _RevenueTrendChartState extends State<RevenueTrendChart>
 
   String _label(DateTime d, String locale) => widget.trendDays == 365
       ? DateFormat.MMM(locale).format(d)
-      : '${d.day}/${d.month}';
+      // dd/MM, the same day-first, zero-padded form as formatDate().
+      : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -110,11 +113,15 @@ class _RevenueTrendChartState extends State<RevenueTrendChart>
       );
     }
 
-    final peak = [
-      ...cur.map((p) => p.revenue),
-      ...prev.map((p) => p.revenue),
-    ].fold<double>(0, (m, v) => v > m ? v : m);
-    final maxY = peak <= 0 ? 1.0 : peak * 1.15;
+    List<double> running(List<SalesTrendPoint> pts) {
+      var sum = 0.0;
+      return [for (final p in pts) sum += p.revenue];
+    }
+
+    final curV = running(cur);
+    final prevV = running(prev);
+    final peak = [...curV, ...prevV].fold<double>(0, (m, v) => v > m ? v : m);
+    final maxY = peak <= 0 ? 1.0 : peak * 1.08;
     final last = cur.length - 1;
     // About five labels whatever the period length.
     final step = (cur.length / 5).ceil().clamp(1, 1000);
@@ -154,8 +161,12 @@ class _RevenueTrendChartState extends State<RevenueTrendChart>
                       (last - i) % step != 0) {
                     return const SizedBox.shrink();
                   }
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 6),
+                  // fitInside keeps the first and last dates inside the
+                  // chart instead of half cut at the edge.
+                  return SideTitleWidget(
+                    axisSide: meta.axisSide,
+                    space: 6,
+                    fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
                     child: Text(_label(cur[i].day, locale),
                         style: AppTheme.font(
                             size: 11,
@@ -196,7 +207,7 @@ class _RevenueTrendChartState extends State<RevenueTrendChart>
             LineChartBarData(
               spots: [
                 for (var i = 0; i < cur.length; i++)
-                  FlSpot(i.toDouble(), cur[i].revenue),
+                  FlSpot(i.toDouble(), curV[i]),
               ],
               isCurved: true,
               curveSmoothness: 0.25,
@@ -231,7 +242,7 @@ class _RevenueTrendChartState extends State<RevenueTrendChart>
               LineChartBarData(
                 spots: [
                   for (var i = 0; i < prev.length && i < cur.length; i++)
-                    FlSpot(i.toDouble(), prev[i].revenue),
+                    FlSpot(i.toDouble(), prevV[i]),
                 ],
                 isCurved: true,
                 curveSmoothness: 0.25,
@@ -282,12 +293,14 @@ class _RevenueTrendChartState extends State<RevenueTrendChart>
         width: 16,
         height: 2,
         child: dashed
+            // Two dashes; a childless ColoredBox has no size in a Row, so
+            // the earlier dashes never showed.
             ? Row(children: [
-                Expanded(child: ColoredBox(color: color)),
+                Expanded(child: Container(height: 2, color: color)),
                 const SizedBox(width: 3),
-                Expanded(child: ColoredBox(color: color)),
+                Expanded(child: Container(height: 2, color: color)),
               ])
-            : ColoredBox(color: color),
+            : Container(height: 2, color: color),
       ),
       const SizedBox(width: 6),
       Text(label,

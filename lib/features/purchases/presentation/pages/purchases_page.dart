@@ -311,11 +311,8 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
       }
     });
 
-    final pending = state.purchases.where((p) => p.isPending).length;
     final subtitle = state.purchases.isEmpty
         ? null
-        : pending > 0
-        ? '${state.purchases.length} · $pending ${l10n.pendingDelivery.toLowerCase()}'
         : '${state.purchases.length} ${l10n.purchases.toLowerCase()}';
 
     return Scaffold(

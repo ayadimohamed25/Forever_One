@@ -588,4 +588,8 @@
   ,"lowStockProducts": "{count, plural, =0{Tout est en stock} =1{1 produit à recommander} other{{count} produits à recommander}}"
   ,"revenueTrendLabel": "Évolution du chiffre d'affaires, {amount} sur la période"
   ,"greetingWithName": "{greeting}, {name}"
+  ,"cashPosition": "Trésorerie"
+  ,"moreShort": "Plus"
+  ,"toReorder": "À recommander"
+  ,"lowOrOutOfStock": "Faible ou en rupture"
 }

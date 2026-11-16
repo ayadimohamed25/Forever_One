@@ -88,7 +88,76 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   // ── Header ──
 
-  String _greeting(AppLocalizations l10n) => l10n.goodMorning;
+  /// Follows the clock: morning until noon, afternoon until 18:00, then
+  /// evening.
+  String _greeting(AppLocalizations l10n, [DateTime? now]) {
+    final h = (now ?? DateTime.now()).hour;
+    if (h < 12) return l10n.goodMorning;
+    if (h < 18) return l10n.goodAfternoon;
+    return l10n.goodEvening;
+  }
+
+  void _downloadReport() => ref
+      .read(reportProvider.notifier)
+      .download(lang: ref.read(localeProvider).languageCode);
+
+  /// Phones: every secondary action in one "More" menu next to New sale,
+  /// instead of five buttons wrapping over three ragged rows.
+  Widget _moreMenu(UserEntity? user, ReportState report, AppLocalizations l10n) {
+    final items = <(IconData, String, VoidCallback)>[
+      if (!report.isLoading)
+        (Icons.download_outlined, l10n.downloadPdfReport, _downloadReport),
+      if (_can(user, 'manage_purchases'))
+        (Icons.local_shipping_outlined, l10n.newPurchase, _newPurchase),
+      if (_can(user, 'manage_products'))
+        (Icons.add_box_outlined, l10n.addProduct, _addProduct),
+      if (_can(user, 'scan_documents'))
+        (Icons.document_scanner_outlined, l10n.scanShort,
+            () => context.go('/scan')),
+    ];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return PopupMenuButton<VoidCallback>(
+      tooltip: l10n.moreActions,
+      onSelected: (action) => action(),
+      position: PopupMenuPosition.under,
+      itemBuilder: (_) => [
+        for (final (icon, label, action) in items)
+          PopupMenuItem(
+            value: action,
+            child: Row(children: [
+              Icon(icon, size: 20, color: AppColors.icon),
+              const SizedBox(width: 12),
+              Text(label, style: AppTheme.body),
+            ]),
+          ),
+      ],
+      child: IgnorePointer(
+        child: OutlinedButton.icon(
+          onPressed: () {},
+          icon: report.isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.more_horiz, size: 18),
+          label: Text(l10n.moreShort),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _newPurchase() async {
+    await Navigator.of(context, rootNavigator: true)
+        .push(MaterialPageRoute(builder: (_) => const CreatePurchasePage()));
+    if (mounted) _reload();
+  }
+
+  Future<void> _addProduct() async {
+    final input = await openProductForm(context, ref);
+    if (input == null) return;
+    await ref.read(productListProvider.notifier).add(input);
+    if (mounted) _reload();
+  }
 
   Widget _header(UserEntity? user, ReportState report, AppLocalizations l10n,
       bool wide) {
@@ -97,36 +166,59 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final title = name.isEmpty
         ? _greeting(l10n)
         : l10n.greetingWithName(_greeting(l10n), name);
+    final greeting = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          // Day first, like every other date in the app (15/11/2026).
+          toBeginningOfSentenceCase(
+                  DateFormat('EEEE d MMMM y', locale).format(DateTime.now())) ??
+              '',
+          style: AppTheme.font(
+              size: 13,
+              weight: FontWeight.w500,
+              color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 4),
+        Text(title,
+            style: wide ? AppTheme.pageTitleWide : AppTheme.heading(size: 22)),
+      ],
+    );
+    if (!wide) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          greeting,
+          const SizedBox(height: 14),
+          Row(children: [
+            if (_can(user, 'manage_sales'))
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _newSale,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.newSale),
+                ),
+              ),
+            const SizedBox(width: 8),
+            _moreMenu(user, report, l10n),
+          ]),
+        ],
+      );
+    }
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       crossAxisAlignment: WrapCrossAlignment.end,
       alignment: WrapAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              DateFormat.yMMMMEEEEd(locale).format(DateTime.now()),
-              style: AppTheme.font(
-                  size: 13,
-                  weight: FontWeight.w500,
-                  color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 4),
-            Text(title,
-                style: wide ? AppTheme.pageTitleWide : AppTheme.heading(size: 22)),
-          ],
-        ),
+        greeting,
         Wrap(spacing: 8, runSpacing: 8, children: [
           OutlinedButton.icon(
             onPressed: report.isLoading
                 ? null
                 // The app's own language setting decides the PDF language.
-                : () => ref
-                    .read(reportProvider.notifier)
-                    .download(lang: ref.read(localeProvider).languageCode),
+                : _downloadReport,
             icon: report.isLoading
                 ? const SizedBox(
                     width: 16,
@@ -281,9 +373,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       spacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
+                        // One indicator: the arrow replaces the badge's dot.
                         AppBadge(
-                          label:
-                              '${growth >= 0 ? '↑' : '↓'} ${growth.abs().toStringAsFixed(1)}%',
+                          icon: growth >= 0
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          label: '${growth.abs().toStringAsFixed(1)}%',
                           tone: growth >= 0
                               ? BadgeTone.success
                               : BadgeTone.danger,
@@ -299,7 +394,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               _periodSwitch(state.trendDays, l10n),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           // A thin bar while another period loads; the old chart stays.
           SizedBox(
             height: 2,
@@ -327,7 +422,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               ]),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           RevenueTrendChart(
             current: s.salesTrend,
             previous: s.salesTrendPrevious,
@@ -362,7 +457,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(l10n.receivables, style: AppTheme.sectionTitle),
+          Text(l10n.cashPosition, style: AppTheme.sectionTitle),
           const SizedBox(height: 16),
           line(l10n.toCollect, k.receivables, AppColors.primary),
           const SizedBox(height: 14),
@@ -457,12 +552,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
 
     return [
+      // Stock value, not "To collect" again: the cash card above already
+      // shows what customers owe.
       _kpi(
         dot: AppColors.primary,
-        label: l10n.toCollect,
-        value: formatDT(k.receivables),
-        sub: l10n.receivables,
-        onTap: () => go('/sales', 'view_sales'),
+        label: l10n.stockValue,
+        value: formatDT(k.stockValue),
+        sub: l10n.navGroupInventory,
+        onTap: () => go('/products', 'view_products'),
       ),
       _kpi(
         dot: AppColors.danger,
@@ -475,16 +572,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ),
       _kpi(
         dot: AppColors.warning,
-        label: l10n.statusLowStock,
+        // The API counts low AND out of stock together; say so, so the
+        // number matches Products (Low stock 3 + Out of stock 1 = 4).
+        label: l10n.toReorder,
         value: '${k.lowStockCount}',
-        sub: l10n.lowStockProducts(k.lowStockCount),
+        sub: l10n.lowOrOutOfStock,
         onTap: () => go('/products', 'view_products'),
       ),
       _kpi(
         dot: AppColors.success,
         label: l10n.salesThisMonth,
         value: '${k.salesCountThisMonth}',
-        sub: l10n.revenueThisMonth,
+        sub: formatDT(k.revenueThisMonth),
         onTap: () => go('/sales', 'view_sales'),
       ),
     ];
@@ -656,9 +755,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
             title: item.title,
             subtitle: notificationDetail(item, l10n),
-            trailing: Text(notificationFigure(item),
-                style: AppTheme.font(
-                    size: 13, weight: FontWeight.w600, tabularFigures: true)),
+            // Stock lines already say "7 left · minimum 20"; a figure on
+            // the right would only repeat it. Amounts keep theirs.
+            trailing: item.type == NotificationType.lowStock ||
+                    item.type == NotificationType.outOfStock
+                ? null
+                : Text(notificationFigure(item),
+                    style: AppTheme.font(
+                        size: 13,
+                        weight: FontWeight.w600,
+                        tabularFigures: true)),
             onTap: () async {
               await openNotificationItem(context, item, l10n);
               if (mounted) _reload();
@@ -734,7 +840,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
           final sections = <Widget>[
             _header(user, reportState, l10n, wide),
-            _shortcuts(user, l10n),
+            if (wide) _shortcuts(user, l10n),
             if (wide)
               IntrinsicHeight(
                 child: Row(

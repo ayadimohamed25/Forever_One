@@ -76,10 +76,16 @@ class AppBadge extends StatelessWidget {
               decoration: BoxDecoration(color: c.fg, shape: BoxShape.circle),
             ),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: AppTheme.font(size: 12, weight: FontWeight.w500, color: c.fg),
-            maxLines: 1,
+          // Shrinks with an ellipsis instead of overflowing when space is
+          // short (large accessibility text, a long translated label).
+          Flexible(
+            child: Text(
+              label,
+              style:
+                  AppTheme.font(size: 12, weight: FontWeight.w500, color: c.fg),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

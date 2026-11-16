@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -12,6 +14,10 @@ import 'app_shell.dart';
 /// amounts, then Status, then the ⋮ menu.
 class AppTableColumn<T> {
   final String label;
+
+  /// Title used on phones when [label] is long ("Total" for "Total incl.
+  /// VAT"), so the column stays as narrow as its values.
+  final String? shortLabel;
 
   /// The FIRST column (the name) is flexible and takes all remaining width.
   /// Other columns are sized to their content: give [measure] (the text the
@@ -46,6 +52,7 @@ class AppTableColumn<T> {
   const AppTableColumn({
     required this.label,
     required this.cell,
+    this.shortLabel,
     this.width,
     this.maxWidth = 180,
     this.numeric = false,
@@ -194,6 +201,11 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
   late List<int> _filterChoice;
   int _page = 0;
   int _tab = 0;
+
+  /// Rows fade in only while the table first appears; rows built later
+  /// (scrolled into view, next page) show at once.
+  bool _entering = true;
+  Timer? _enteringTimer;
   final _scroll = ScrollController();
 
   void _selectTab(int i) => setState(() {
@@ -203,6 +215,7 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
 
   @override
   void dispose() {
+    _enteringTimer?.cancel();
     _scroll.dispose();
     super.dispose();
   }
@@ -216,10 +229,14 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
   static const double _menuWidth = 40;
   static const double _hPad = 14;
   static const double _gap = 12;
+  static const double _phoneGap = 10;
 
   @override
   void initState() {
     super.initState();
+    _enteringTimer = Timer(const Duration(milliseconds: 900), () {
+      _entering = false;
+    });
     _sortColumn = widget.initialSortColumn;
     _ascending = widget.initialAscending;
     _filterChoice = List.filled(widget.filters.length, 0);
@@ -294,7 +311,10 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
   }
 
   /// Width of every non-first column: the widest of its header and its values.
-  Map<int, double> _columnWidths(List<int> visible, List<T> rows) {
+  /// On phones ([headers] false) only the values count: a long title such
+  /// as "Total incl. VAT" is ellipsized instead of stealing the name's room.
+  Map<int, double> _columnWidths(List<int> visible, List<T> rows,
+      {bool headers = true}) {
     final head = AppTheme.font(size: 12, weight: FontWeight.w500);
     final value = AppTheme.font(
       size: 14,
@@ -309,7 +329,15 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
         widths[i] = c.width ?? 80;
         continue;
       }
-      var w = _textWidth(c.label, head) + (c.sortValue != null ? 18 : 0);
+      // Wide: the title plus room for its sort arrow. Phones: the title's
+      // own width (never cut to an icon), plus the arrow only on the column
+      // actually sorted — other columns show no arrow there.
+      var w = _textWidth(headers ? c.label : (c.shortLabel ?? c.label), head) +
+          (c.sortValue == null
+              ? 0
+              : headers
+                  ? 18
+                  : (_sortColumn == i ? 16 : 0));
       for (final r in rows) {
         final t = c.measure!(r);
         final tw = c.chip ? _textWidth(t, chip) + 30 : _textWidth(t, value);
@@ -322,7 +350,11 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
 
   Widget _cell(AppTableColumn<T> c, Widget child, double? width) {
     final aligned = Align(
-      alignment: c.numeric ? Alignment.centerRight : Alignment.centerLeft,
+      // Chips sit at the right edge, flush against the ⋮ menu whatever
+      // their length ("Paid" vs "Partially paid").
+      alignment: c.numeric || c.chip
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
       child: child,
     );
     return width == null
@@ -361,7 +393,31 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
         final rows = wide
             ? all.skip(page * widget.pageSize).take(widget.pageSize).toList()
             : all;
-        final widths = _columnWidths(visible, rows.isEmpty ? all : rows);
+        // Phones stack the status chip under the amount before it, as on the
+        // approved Phone board: one right-hand column instead of two, so the
+        // name keeps most of the row.
+        int? stackChip;
+        int? stackInto;
+        if (!wide) {
+          final chipPos = visible.indexWhere((i) => widget.columns[i].chip);
+          for (var p = chipPos - 1; p > 0; p--) {
+            if (widget.columns[visible[p]].numeric) {
+              stackInto = visible[p];
+              stackChip = visible[chipPos];
+              break;
+            }
+          }
+        }
+        final laidOut = [
+          for (final i in visible)
+            if (i != stackChip) i,
+        ];
+        final widths = _columnWidths(visible, rows.isEmpty ? all : rows,
+            headers: wide);
+        if (stackInto != null && stackChip != null) {
+          final a = widths[stackInto] ?? 0, b = widths[stackChip] ?? 0;
+          widths[stackInto] = a > b ? a : b;
+        }
         final hasMenu = widget.rowMenu != null;
         final isSelected = widget.isSelected;
         if (panelOpen &&
@@ -384,12 +440,13 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
 
         Widget rowCells(Widget Function(int i) cellOf) => Row(
           children: [
-            for (final i in visible) ...[
-              if (i != visible.first) const SizedBox(width: _gap),
+            for (final i in laidOut) ...[
+              if (i != laidOut.first)
+                SizedBox(width: wide ? _gap : _phoneGap),
               _cell(
                 widget.columns[i],
                 cellOf(i),
-                i == visible.first ? null : widths[i],
+                i == laidOut.first ? null : widths[i],
               ),
             ],
             if (hasMenu) const SizedBox(width: 4),
@@ -414,11 +471,14 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
           ),
           child: rowCells(
             (i) => _HeaderLabel(
-              label: widget.columns[i].label,
+              label: wide
+                  ? widget.columns[i].label
+                  : (widget.columns[i].shortLabel ?? widget.columns[i].label),
               sortable: widget.columns[i].sortValue != null,
               active: _sortColumn == i,
               ascending: _ascending,
               numeric: widget.columns[i].numeric,
+              compact: !wide,
               onTap: widget.columns[i].sortValue == null
                   ? null
                   : () => _toggleSort(i),
@@ -434,7 +494,19 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
             padding: EdgeInsets.only(left: _hPad, right: hasMenu ? 0 : _hPad),
             child: Row(
               children: [
-                Expanded(child: rowCells((i) => widget.columns[i].cell(item))),
+                Expanded(
+                  child: rowCells((i) => i == stackInto && stackChip != null
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            widget.columns[i].cell(item),
+                            const SizedBox(height: 4),
+                            widget.columns[stackChip].cell(item),
+                          ],
+                        )
+                      : widget.columns[i].cell(item)),
+                ),
                 if (hasMenu)
                   SizedBox(width: _menuWidth, child: widget.rowMenu!(item)),
               ],
@@ -469,6 +541,7 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
             index: index,
             stagger: AppMotion.stagger,
             offset: 6,
+            animate: _entering,
             child: cell,
           );
         }
@@ -613,6 +686,10 @@ class _PanelEntrance extends StatelessWidget {
 }
 
 /// Figures above the table in one bordered card; tapping one selects its tab.
+///
+/// Wide: one row. Phones: a 2-column grid, so labels are never cut and every
+/// figure keeps the same size (no per-cell shrinking). A zero is shown in the
+/// neutral colour: red or amber on "0" reads as an alarm that isn't there.
 class _SummaryStrip extends StatelessWidget {
   final List<AppTableStat> stats;
   final bool compact;
@@ -621,8 +698,65 @@ class _SummaryStrip extends StatelessWidget {
   const _SummaryStrip(
       {required this.stats, required this.compact, required this.onTab});
 
+  static bool _isZero(String value) =>
+      RegExp(r'^[\s ]*[0.,\s ]+(DT)?[\s ]*$').hasMatch(value) &&
+      !RegExp(r'[1-9]').hasMatch(value);
+
+  Widget _cell(AppTableStat s, {required bool leftRule, required bool topRule}) {
+    final color =
+        _isZero(s.value) ? AppColors.textPrimary : (s.color ?? AppColors.textPrimary);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          left: leftRule
+              ? const BorderSide(color: AppColors.border)
+              : BorderSide.none,
+          top: topRule
+              ? const BorderSide(color: AppColors.border)
+              : BorderSide.none,
+        ),
+      ),
+      child: AppPressable(
+        onTap: s.tab == null || onTab == null ? null : () => onTab!(s.tab!),
+        borderRadius: BorderRadius.zero,
+        hoverColor: AppColors.surfaceAlt,
+        semanticLabel: '${s.label} ${s.value}',
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+              horizontal: compact ? 14 : 20, vertical: compact ? 12 : 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(s.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.font(
+                      size: compact ? 12 : 13,
+                      weight: FontWeight.w500,
+                      color: AppColors.textSecondary)),
+              const SizedBox(height: 4),
+              Text(s.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.heading(
+                      size: compact ? 17 : 22,
+                      tabularFigures: true,
+                      color: color)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final perRow = compact ? 2 : stats.length;
+    final rows = <List<AppTableStat>>[
+      for (var i = 0; i < stats.length; i += perRow)
+        stats.sublist(i, (i + perRow).clamp(0, stats.length)),
+    ];
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -630,54 +764,26 @@ class _SummaryStrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            for (var i = 0; i < stats.length; i++) ...[
-              if (i > 0)
-                const VerticalDivider(
-                    width: 1, thickness: 1, color: AppColors.border),
-              Expanded(
-                child: AppPressable(
-                  onTap: stats[i].tab == null || onTab == null
-                      ? null
-                      : () => onTab!(stats[i].tab!),
-                  borderRadius: BorderRadius.zero,
-                  hoverColor: AppColors.surfaceAlt,
-                  semanticLabel: '${stats[i].label} ${stats[i].value}',
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: compact ? 12 : 20,
-                        vertical: compact ? 12 : 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(stats[i].label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTheme.font(
-                                size: compact ? 12 : 13,
-                                weight: FontWeight.w500,
-                                color: AppColors.textSecondary)),
-                        const SizedBox(height: 4),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(stats[i].value,
-                              style: AppTheme.heading(
-                                  size: compact ? 16 : 22,
-                                  tabularFigures: true,
-                                  color: stats[i].color ??
-                                      AppColors.textPrimary)),
-                        ),
-                      ],
-                    ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var r = 0; r < rows.length; r++)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var c = 0; c < perRow; c++)
+                  Expanded(
+                    // An odd last cell spans the free column as well.
+                    flex: c == rows[r].length - 1 && rows[r].length < perRow
+                        ? perRow - c
+                        : 1,
+                    child: c < rows[r].length
+                        ? _cell(rows[r][c], leftRule: c > 0, topRule: r > 0)
+                        : const SizedBox.shrink(),
                   ),
-                ),
-              ),
-            ],
-          ],
-        ),
+              ].take(rows[r].length).toList(),
+            ),
+        ],
       ),
     );
   }
@@ -1006,6 +1112,9 @@ class _HeaderLabel extends StatelessWidget {
   final bool numeric;
   final VoidCallback? onTap;
 
+  /// Phones: the arrow shows only on the sorted column.
+  final bool compact;
+
   const _HeaderLabel({
     required this.label,
     required this.sortable,
@@ -1013,6 +1122,7 @@ class _HeaderLabel extends StatelessWidget {
     required this.ascending,
     required this.numeric,
     this.onTap,
+    this.compact = false,
   });
 
   @override
@@ -1036,11 +1146,15 @@ class _HeaderLabel extends StatelessWidget {
       size: 14,
       color: active ? AppColors.textPrimary : AppColors.textMuted,
     );
+    // The arrow always follows the title, on every column.
+    final showArrow = sortable && (active || !compact);
     final content = Row(
       mainAxisSize: MainAxisSize.min,
-      children: numeric
-          ? [if (sortable) arrow, if (sortable) const SizedBox(width: 2), text]
-          : [text, if (sortable) const SizedBox(width: 2), if (sortable) arrow],
+      children: [
+        text,
+        if (showArrow) const SizedBox(width: 2),
+        if (showArrow) arrow,
+      ],
     );
     if (!sortable) return content;
     return Semantics(
@@ -1056,6 +1170,23 @@ class _HeaderLabel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Keeps a number with its unit and a short last word with the word before
+/// it, using non-breaking spaces, so a wrapped name never ends a line on
+/// "500" with "g" alone below ("Pâtes spaghetti 500 g", "(pack 8)").
+String keepUnitsTogether(String s) {
+  const nbsp = '\u00A0';
+  var out = s.replaceAllMapped(
+    RegExp(r'(\d)\s+(?=(?:[a-zA-Zµ]{1,3}\b|x\d|%))'),
+    (m) => '${m[1]}$nbsp',
+  );
+  // "(pack 8)" or "… 1 L": glue a final token of up to 3 characters.
+  out = out.replaceAllMapped(
+    RegExp(r'\s+(\S{1,3})$'),
+    (m) => '$nbsp${m[1]}',
+  );
+  return out;
 }
 
 /// A table cell's text with an optional small grey line under it (category
@@ -1086,7 +1217,7 @@ class AppCellText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final main = Text(
-      text,
+      keepUnitsTogether(text),
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
       textAlign: numeric ? TextAlign.right : TextAlign.left,

@@ -176,14 +176,8 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
       }
     });
 
-    final owed = state.suppliers.fold<double>(
-      0,
-      (sum, s) => sum + (s.balance > 0 ? s.balance : 0),
-    );
     final subtitle = state.suppliers.isEmpty
         ? null
-        : owed > 0.009
-        ? '${state.suppliers.length} · ${formatDT(owed)} ${l10n.amountOwed.toLowerCase()}'
         : '${state.suppliers.length} ${l10n.suppliers.toLowerCase()}';
 
     return Scaffold(

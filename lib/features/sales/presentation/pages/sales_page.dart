@@ -227,6 +227,7 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     ),
     AppTableColumn(
       label: l10n.colTotalInclVat,
+      shortLabel: l10n.total,
       numeric: true,
       measure: (s) => formatDT(s.total),
       sortValue: (s) => s.total,
@@ -276,13 +277,9 @@ class _SalesPageState extends ConsumerState<SalesPage> {
       }
     });
 
-    final outstanding = state.sales
-        .where((s) => !s.isFullyPaid)
-        .fold<double>(0, (sum, s) => sum + s.balance);
+    // Just the count: the amounts are in the summary strip below.
     final subtitle = state.sales.isEmpty
         ? null
-        : outstanding > 0.009
-        ? '${state.sales.length} · ${formatDT(outstanding)} ${l10n.unpaid.toLowerCase()}'
         : '${state.sales.length} ${l10n.sales.toLowerCase()}';
 
     return Scaffold(

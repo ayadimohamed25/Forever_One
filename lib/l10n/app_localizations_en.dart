@@ -1806,4 +1806,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String greetingWithName(String greeting, String name) {
     return '$greeting, $name';
   }
+
+  @override
+  String get cashPosition => 'Cash position';
+
+  @override
+  String get moreShort => 'More';
+
+  @override
+  String get toReorder => 'To reorder';
+
+  @override
+  String get lowOrOutOfStock => 'Low or out of stock';
 }

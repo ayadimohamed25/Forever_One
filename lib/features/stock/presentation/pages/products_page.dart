@@ -126,7 +126,8 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     }
   }
 
-  /// Filter chip: white with a grey border; selected = light blue, blue text.
+  /// Category chip: the same rounded pill as the status chips below it
+  /// (white with a grey border; selected = light indigo, indigo text).
   Widget _categoryChip({
     required String label,
     required bool selected,
@@ -138,24 +139,24 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         onTap: onTap,
         selected: selected,
         semanticLabel: label,
-        borderRadius: BorderRadius.circular(AppRadius.chip),
+        borderRadius: BorderRadius.circular(999),
         color: selected ? AppColors.primarySoft : AppColors.surface,
         child: Container(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             border: Border.all(
-              color: selected ? AppColors.primary : AppColors.fieldBorder,
+              color: selected ? AppColors.primaryBorder : AppColors.fieldBorder,
             ),
-            borderRadius: BorderRadius.circular(AppRadius.chip),
+            borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             label,
             style: AppTheme.font(
               size: 13,
-              weight: selected ? FontWeight.w600 : FontWeight.w500,
-              color: selected ? AppColors.primary : AppColors.textLabel,
+              weight: FontWeight.w500,
+              color: selected ? AppColors.primaryText : AppColors.textLabel,
             ),
           ),
         ),
@@ -250,6 +251,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     ),
     AppTableColumn(
       label: l10n.colPriceInclVat,
+      shortLabel: l10n.price,
       numeric: true,
       measure: (p) => formatDT(_priceTtc(p)),
       sortValue: (p) => _priceTtc(p),
@@ -285,12 +287,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       }
     });
 
-    final lowStockCount = state.products.where((p) => p.isLowStock).length;
+    // Just the count: the strip and tabs split low stock and out of stock,
+    // so a combined "4 low stock alerts" here contradicted them.
     final subtitle = state.products.isEmpty
         ? null
-        : lowStockCount > 0
-        ? '${state.products.length} · $lowStockCount ${l10n.lowStockAlerts.toLowerCase()}'
-        : '${state.products.length} ${l10n.products.toLowerCase()}';
+        : l10n.productCount(state.products.length);
 
     return Scaffold(
       backgroundColor: AppColors.canvas,

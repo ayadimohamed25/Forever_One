@@ -625,4 +625,8 @@
   ,"@revenueTrendLabel": {"placeholders":{"amount":{"type":"String"}}}
   ,"greetingWithName": "{greeting}, {name}"
   ,"@greetingWithName": {"placeholders":{"greeting":{"type":"String"},"name":{"type":"String"}}}
+  ,"cashPosition": "Cash position"
+  ,"moreShort": "More"
+  ,"toReorder": "To reorder"
+  ,"lowOrOutOfStock": "Low or out of stock"
 }
