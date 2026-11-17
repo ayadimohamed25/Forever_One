@@ -157,7 +157,8 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
       MaterialPageRoute(
         builder: (_) => PaymentPage(
           purchaseId: p.id,
-          title: '${l10n.payment} — ${p.supplierName}',
+          party: p.supplierName,
+          reference: p.reference,
         ),
       ),
     );

@@ -38,7 +38,8 @@ void main() {
     'sale': const CreateSalePage(),
     'purchase': const CreatePurchasePage(),
     'stock movement': const StockMovementPage(),
-    'payment': const PaymentPage(saleId: 's1', title: 'Payment'),
+    'payment': const PaymentPage(
+        saleId: 's1', party: 'Restaurant Le Golfe', reference: 'FAC-2026-0057'),
   };
 
   for (final width in [1280.0, 412.0]) {
@@ -75,6 +76,15 @@ void main() {
         if (entry.key != 'payment') {
           expect(inputs.hitTestable(), findsWidgets,
               reason: 'the form body must be visible');
+        }
+
+        // Payment: "Payment", then who and which invoice (not "Payment /
+        // Payment — Restaurant Le Golfe").
+        if (entry.key == 'payment') {
+          expect(find.text('Payment'), findsOneWidget);
+          expect(find.text('Restaurant Le Golfe · FAC-2026-0057'),
+              findsOneWidget);
+          expect(find.textContaining('Payment —'), findsNothing);
         }
       });
     }

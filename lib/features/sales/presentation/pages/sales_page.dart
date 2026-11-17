@@ -144,7 +144,8 @@ class _SalesPageState extends ConsumerState<SalesPage> {
       MaterialPageRoute(
         builder: (_) => PaymentPage(
           saleId: s.id,
-          title: '${l10n.payment} — ${s.customerName}',
+          party: s.customerName,
+          reference: s.reference,
         ),
       ),
     );

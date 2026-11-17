@@ -10,17 +10,28 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/errors/error_text.dart';
+import '../../../purchases/presentation/providers/purchase_provider.dart';
+import '../../../sales/presentation/providers/sale_provider.dart';
 
+/// Records a payment on one invoice. Header: "Payment", then
+/// "Restaurant Le Golfe · FAC-2026-0057" like the other detail screens.
 class PaymentPage extends ConsumerStatefulWidget {
   final String? saleId;
   final String? purchaseId;
-  final String title;
+
+  /// The customer or supplier.
+  final String party;
+
+  /// The invoice number when the caller has it; otherwise the screen looks
+  /// it up (customer history and notifications don't carry it).
+  final String? reference;
 
   const PaymentPage({
     super.key,
     this.saleId,
     this.purchaseId,
-    required this.title,
+    required this.party,
+    this.reference,
   });
 
   @override
@@ -30,6 +41,28 @@ class PaymentPage extends ConsumerStatefulWidget {
 class _PaymentPageState extends ConsumerState<PaymentPage> {
   final amountController = TextEditingController();
   String method = 'cash';
+  late String? _reference = widget.reference;
+
+  /// Reads the invoice number from the sale / purchase detail (the same
+  /// read the side panels use) when the caller didn't pass it.
+  Future<void> _loadReference() async {
+    if (_reference != null && _reference!.isNotEmpty) return;
+    String? found;
+    if (widget.saleId != null) {
+      final r = await ref
+          .read(saleRepositoryProvider)
+          .getSaleDetail(widget.saleId!);
+      found = r.fold((_) => null, (d) => d.sale.reference);
+    } else if (widget.purchaseId != null) {
+      final r = await ref
+          .read(purchaseRepositoryProvider)
+          .getPurchaseDetail(widget.purchaseId!);
+      found = r.fold((_) => null, (d) => d.purchase.reference);
+    }
+    if (mounted && found != null && found.isNotEmpty) {
+      setState(() => _reference = found);
+    }
+  }
 
   @override
   void initState() {
@@ -42,6 +75,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             .read(paymentProvider.notifier)
             .loadPurchaseBalance(widget.purchaseId!);
       }
+      _loadReference();
     });
   }
 
@@ -117,7 +151,10 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       backgroundColor: AppColors.surfaceAlt,
       appBar: AppPageHeader(
         title: l10n.payment,
-        subtitle: widget.title,
+        subtitle: [
+          widget.party,
+          if (_reference != null && _reference!.isNotEmpty) _reference!,
+        ].join(' · '),
         icon: Icons.payments_rounded,
         color: AppColors.finance,
         showMenuButton: false,

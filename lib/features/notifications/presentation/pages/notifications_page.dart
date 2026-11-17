@@ -73,14 +73,14 @@ Future<void> openNotificationItem(
     case 'sale':
       page = PaymentPage(
         saleId: n.entityId,
-        title: '${l10n.payment} — ${n.title}',
+        party: n.title,
       );
     case 'purchase':
       page = n.type == NotificationType.pendingDelivery
           ? CreatePurchasePage(existingPurchaseId: n.entityId)
           : PaymentPage(
               purchaseId: n.entityId,
-              title: '${l10n.payment} — ${n.title}',
+              party: n.title,
             );
     default:
       return;

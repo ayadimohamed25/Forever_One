@@ -76,7 +76,7 @@ class _CustomerDetailBodyState extends ConsumerState<CustomerDetailBody> {
       MaterialPageRoute(
         builder: (_) => PaymentPage(
           saleId: s.id,
-          title: '${l10n.payment} — ${c.name}',
+          party: c.name,
         ),
       ),
     );
