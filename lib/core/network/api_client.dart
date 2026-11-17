@@ -1,15 +1,19 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'auth_interceptor.dart';
 
 class ApiClient {
-  /// The API root. Defaults to 10.0.2.2, the address the Android emulator
-  /// uses to reach the PC's localhost. For web, desktop or a real phone pass
-  /// your own, e.g.
-  ///   flutter run -d chrome --dart-define=API_BASE_URL=http://localhost/forever-one-backend/public/index.php/api/v1
-  static const baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2/forever-one-backend/public/index.php/api/v1',
-  );
+  static const _fromDefine = String.fromEnvironment('API_BASE_URL');
+
+  /// The API root: --dart-define=API_BASE_URL=… when given (a real phone,
+  /// another server). Otherwise, in a browser, the PC's own localhost (a
+  /// Chrome run from Android Studio needs no argument), and on Android
+  /// 10.0.2.2, the address the emulator uses to reach the PC's localhost.
+  static String get baseUrl => _fromDefine.isNotEmpty
+      ? _fromDefine
+      : kIsWeb
+          ? 'http://localhost/forever-one-backend/public/index.php/api/v1'
+          : 'http://10.0.2.2/forever-one-backend/public/index.php/api/v1';
 
   final Dio dio;
 
