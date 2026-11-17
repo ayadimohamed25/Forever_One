@@ -192,6 +192,9 @@ class _AuditPageState extends ConsumerState<AuditPage> {
           return l10n.stockIn;
         case 'out':
           return l10n.stockOut;
+        // Report types: words, not internal codes.
+        case 'director':
+          return l10n.reportTypeDirector;
       }
     }
     return '$value';
@@ -323,18 +326,25 @@ class _AuditPageState extends ConsumerState<AuditPage> {
       child: LayoutBuilder(
         builder: (context, box) {
           if (box.maxWidth >= 720) {
+            // Title, then who and when filling the middle, details pinned
+            // to the right edge (flex shares left them floating mid-row).
             return Row(
               children: [
                 icon,
                 const SizedBox(width: 12),
-                Flexible(flex: 3, child: title),
-                const SizedBox(width: 12),
-                Flexible(flex: 4, child: meta),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 4,
-                  child: Align(alignment: Alignment.centerRight, child: chips),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 240),
+                  child: title,
                 ),
+                const SizedBox(width: 12),
+                Expanded(child: meta),
+                if (pills.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: box.maxWidth * 0.35),
+                    child: chips,
+                  ),
+                ],
               ],
             );
           }
@@ -379,7 +389,10 @@ class _AuditPageState extends ConsumerState<AuditPage> {
         title: l10n.auditLog,
         subtitle: state.logs.isEmpty
             ? null
-            : '${logs.length} / ${state.logs.length}',
+            // "25 entries", or "6 of 25 entries" while a filter is on.
+            : logs.length == state.logs.length
+                ? l10n.auditEntries(logs.length)
+                : l10n.auditEntriesFiltered(logs.length, state.logs.length),
         icon: Icons.history,
         color: AppColors.info,
         actions: [

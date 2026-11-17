@@ -3463,6 +3463,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suppliers to pay first'**
   String get suppliersToPayFirst;
+
+  /// No description provided for @reportTypeDirector.
+  ///
+  /// In en, this message translates to:
+  /// **'Director report'**
+  String get reportTypeDirector;
+
+  /// No description provided for @auditEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry} other{{count} entries}}'**
+  String auditEntries(int count);
+
+  /// No description provided for @auditEntriesFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total} entries'**
+  String auditEntriesFiltered(int shown, int total);
 }
 
 class _AppLocalizationsDelegate

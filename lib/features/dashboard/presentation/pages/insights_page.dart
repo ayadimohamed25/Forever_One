@@ -66,7 +66,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           AppPageHeader(
             title: l10n.insightsAndForecasts,
             subtitle: outOfStock > 0
-                ? '$outOfStock · ${l10n.statusOutOfStock.toLowerCase()}'
+                ? l10n.alertsOutOfStock(outOfStock)
                 : null,
             icon: Icons.insights_outlined,
             color: AppColors.primary,

@@ -195,12 +195,12 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     AppTableColumn(
       label: l10n.lastLogin,
       showFrom: 760,
-      measure: (u) => u.lastLoginAt == null
-          ? l10n.neverLoggedIn
-          : formatDate(u.lastLoginAt!),
+      // Never signed in: a dash (the full phrase was cut to "Never logged …").
+      measure: (u) =>
+          u.lastLoginAt == null ? '—' : formatDate(u.lastLoginAt!),
       sortValue: (u) => u.lastLoginAt ?? DateTime(1970),
       cell: (u) => AppCellText(
-        u.lastLoginAt == null ? l10n.neverLoggedIn : formatDate(u.lastLoginAt!),
+        u.lastLoginAt == null ? '—' : formatDate(u.lastLoginAt!),
         color: AppColors.textSecondary,
       ),
     ),
@@ -273,7 +273,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               title: l10n.users,
               subtitle: state.users.isEmpty
                   ? null
-                  : '${state.users.length} · ${state.users.where((u) => u.isActive).length} ${l10n.active.toLowerCase()}',
+                  : '${state.users.length} ${l10n.users.toLowerCase()}',
               icon: Icons.group_rounded,
               color: AppColors.primary,
               actions: [

@@ -114,7 +114,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     final doc = state.document;
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceAlt,
+      backgroundColor: AppColors.canvas,
       appBar: AppPageHeader(
         title: l10n.scanDocument,
         icon: Icons.document_scanner_rounded,
@@ -181,7 +181,8 @@ class _ScanPageState extends ConsumerState<ScanPage> {
               _sourceButton(
                 icon: Icons.photo_library_outlined,
                 label: l10n.gallery,
-                color: AppColors.stock,
+                // Same indigo as Camera: grey read as disabled.
+                color: AppColors.primary,
                 onTap: () => _pickImage(ImageSource.gallery),
               ),
             ],

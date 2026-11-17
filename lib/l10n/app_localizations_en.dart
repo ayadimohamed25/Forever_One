@@ -1856,4 +1856,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get suppliersToPayFirst => 'Suppliers to pay first';
+
+  @override
+  String get reportTypeDirector => 'Director report';
+
+  @override
+  String auditEntries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries',
+      one: '1 entry',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String auditEntriesFiltered(int shown, int total) {
+    return '$shown of $total entries';
+  }
 }

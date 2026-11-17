@@ -419,6 +419,12 @@ class _AskAiButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authNotifierProvider).user;
     if (!(user?.can('use_ai') ?? false)) return const SizedBox.shrink();
+    // Not on the copilot page itself.
+    final path =
+        GoRouter.maybeOf(context)?.routeInformationProvider.value.uri.path;
+    if (path != null && path.startsWith('/ai')) {
+      return const SizedBox.shrink();
+    }
     final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.only(left: 8, right: 4),

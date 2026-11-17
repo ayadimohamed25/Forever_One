@@ -277,16 +277,21 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              notificationFigure(n),
-              style: AppTheme.font(
-                size: 14,
-                weight: FontWeight.w600,
-                color: tone,
-                tabularFigures: true,
+            // Stock lines already say "7 left · minimum 20"; the figure on
+            // the right would only repeat it (same rule as the dashboard).
+            if (n.type != NotificationType.lowStock &&
+                n.type != NotificationType.outOfStock) ...[
+              const SizedBox(width: 12),
+              Text(
+                notificationFigure(n),
+                style: AppTheme.font(
+                  size: 14,
+                  weight: FontWeight.w600,
+                  color: tone,
+                  tabularFigures: true,
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 4),
             const Icon(
               Icons.chevron_right,

@@ -604,4 +604,7 @@
   ,"owesYouMost": "Vous doivent le plus"
   ,"oldestSupplierBills": "Factures fournisseurs les plus anciennes"
   ,"suppliersToPayFirst": "Fournisseurs à payer en premier"
+  ,"reportTypeDirector": "Rapport de direction"
+  ,"auditEntries": "{count, plural, =1{1 entrée} other{{count} entrées}}"
+  ,"auditEntriesFiltered": "{shown} sur {total} entrées"
 }
