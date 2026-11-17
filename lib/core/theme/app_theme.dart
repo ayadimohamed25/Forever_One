@@ -379,9 +379,7 @@ class AppTheme {
         elevation: 0,
         height: 64,
         indicatorColor: AppColors.primarySoft,
-        indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.control),
-        ),
+        indicatorShape: const StadiumBorder(),
         labelTextStyle: WidgetStateProperty.resolveWith((s) => font(
               size: 11,
               weight: s.contains(WidgetState.selected)

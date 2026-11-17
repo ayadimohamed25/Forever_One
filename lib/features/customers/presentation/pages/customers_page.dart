@@ -123,7 +123,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       sortValue: (c) => c.name.toLowerCase(),
       cell: (c) => Row(
         children: [
-          AppAvatar(c.name),
+          AppAvatar(c.name, size: 38, square: true),
           const SizedBox(width: 10),
           Expanded(
             child: AppCellText(c.name, strong: true, maxLines: 2, sub: c.phone),

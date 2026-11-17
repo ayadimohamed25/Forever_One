@@ -17,6 +17,7 @@ import 'categories_page.dart';
 import 'product_detail_page.dart';
 import '../../../../shared/widgets/app_snack.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/app_motion.dart';
 import '../../../../core/errors/error_text.dart';
 
 class ProductsPage extends ConsumerStatefulWidget {
@@ -175,6 +176,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
   Color? _categoryColor(ProductEntity p) => productCategoryColor(p);
 
+  String _stockText(ProductEntity p, AppLocalizations l10n) =>
+      p.currentStock <= 0
+          ? l10n.statusOutOfStock
+          : l10n.stockLeft('${p.currentStock}');
+
   String _margin(ProductEntity p) => p.price > 0
       ? '${((p.price - p.cost) / p.price * 100).toStringAsFixed(0)}%'
       : '—';
@@ -189,12 +195,18 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         final dot = _categoryColor(p);
         return Opacity(
           opacity: p.isActive ? 1 : 0.55,
-          child: AppCellText(
-            p.name,
-            strong: true,
-            maxLines: 2,
-            sub: p.categoryName ?? l10n.noCategory,
-            subLeading: dot == null ? null : AppColorDot(dot),
+          // Phones hide the price column (no titles there to tell 7 from
+          // 12.60): the price joins the category under the name.
+          child: Builder(
+            builder: (context) => AppCellText(
+              p.name,
+              strong: true,
+              maxLines: 2,
+              sub: AppTableWidth.of(context) >= 600
+                  ? p.categoryName ?? l10n.noCategory
+                  : '${p.categoryName ?? l10n.noCategory} · ${formatDT(_priceTtc(p))}',
+              subLeading: dot == null ? null : AppColorDot(dot),
+            ),
           ),
         );
       },
@@ -219,18 +231,46 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       label: l10n.stock,
       numeric: true,
       measure: (p) => '${p.currentStock}',
+      phoneMeasure: (p) => _stockText(p, l10n),
       sortValue: (p) => p.currentStock,
-      cell: (p) => Text(
-        '${p.currentStock}',
-        style: AppTheme.font(
-          size: 14,
-          weight: p.isLowStock || p.currentStock <= 0
-              ? FontWeight.w600
-              : FontWeight.w400,
-          color: _stockColor(p),
-          tabularFigures: true,
-        ),
-      ),
+      cell: (p) => Builder(builder: (context) {
+        final phone = AppTableWidth.of(context) < 600;
+        final text = Text(
+          phone ? _stockText(p, l10n) : '${p.currentStock}',
+          maxLines: 1,
+          style: AppTheme.font(
+            size: 14,
+            weight: p.isLowStock || p.currentStock <= 0
+                ? FontWeight.w600
+                : FontWeight.w400,
+            color: _stockColor(p),
+            tabularFigures: true,
+          ),
+        );
+        if (!phone) return text;
+        // Phones: "7 left" over a small level bar (full at 3× the minimum).
+        final full = (p.minThreshold * 3).clamp(1, double.infinity);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            text,
+            const SizedBox(height: 6),
+            SizedBox(
+              width: 56,
+              child: AppMeter(
+                value: (p.currentStock / full).clamp(0.04, 1).toDouble(),
+                color: p.currentStock <= 0
+                    ? AppColors.danger
+                    : p.isLowStock
+                        ? AppColors.warning
+                        : AppColors.success,
+                height: 5,
+              ),
+            ),
+          ],
+        );
+      }),
     ),
     AppTableColumn(
       label: l10n.colVat,
@@ -253,6 +293,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       label: l10n.colPriceInclVat,
       shortLabel: l10n.price,
       numeric: true,
+      showFrom: 600,
       measure: (p) => formatDT(_priceTtc(p)),
       sortValue: (p) => _priceTtc(p),
       cell: (p) => AppCellText(formatDT(_priceTtc(p)), numeric: true),

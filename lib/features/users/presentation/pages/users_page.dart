@@ -179,7 +179,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       sortValue: (u) => u.displayName.toLowerCase(),
       cell: (u) => Row(
         children: [
-          AppAvatar(u.displayName),
+          AppAvatar(u.displayName, size: 38, square: true),
           const SizedBox(width: 10),
           Expanded(
             child: AppCellText(

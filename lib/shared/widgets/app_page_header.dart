@@ -35,8 +35,10 @@ class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
     this.showBell,
   });
 
+  /// The tallest variant (the large phone title); the compact bar sizes
+  /// itself to 64 inside it.
   @override
-  Size get preferredSize => const Size.fromHeight(64);
+  Size get preferredSize => const Size.fromHeight(92);
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +52,51 @@ class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
     final hideMenu = menu && (shell?.sidebarVisible ?? false);
 
     final bell = showBell ?? showMenuButton;
+
+    // Phone tab roots: a large title on the canvas, no menu button (the
+    // bottom bar navigates), actions and the bell on the right.
+    if (menu && !hideMenu && AppTabRootScope.isActive(context)) {
+      return Container(
+        color: AppColors.canvas,
+        padding: EdgeInsets.fromLTRB(
+            16, MediaQuery.of(context).padding.top + 12, 8, 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTheme.heading(
+                          size: 28, weight: FontWeight.w800, height: 1.15),
+                    ),
+                  ),
+                  if (subtitle != null && subtitle!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTheme.font(
+                          size: 13, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            ...actions,
+            if (bell) const AppNotificationBell(),
+          ],
+        ),
+      );
+    }
 
     return Container(
       decoration: const BoxDecoration(
@@ -73,7 +120,13 @@ class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
                   AppMenuButton(tooltip: l10n.openMenu)
                 else
                   AppIconButton(
-                    icon: Icons.arrow_back,
+                    // A form opened as a sheet (New sale) closes with ×,
+                    // a pushed screen goes back with ←.
+                    icon: ModalRoute.of(context) is PageRoute &&
+                            (ModalRoute.of(context) as PageRoute)
+                                .fullscreenDialog
+                        ? Icons.close
+                        : Icons.arrow_back,
                     tooltip: l10n.back,
                     onTap: () => Navigator.of(context).maybePop(),
                   ),

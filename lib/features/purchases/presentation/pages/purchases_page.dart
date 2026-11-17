@@ -31,21 +31,64 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
   /// The purchase open in the side panel (wide screens only).
   String? selectedId;
 
-  /// Wide: open the purchase panel. Phone: open the payment screen.
+  /// Wide: open the purchase panel. Phone: the purchase on its own screen,
+  /// with its main action (receive, else pay) and Edit at the bottom.
   void _open(PurchaseEntity p, AppLocalizations l10n) {
     if (AppBreakpoints.isWide(context)) {
       setState(() => selectedId = p.id);
     } else {
-      _openPayment(p, l10n);
+      _openInvoice(p, l10n);
     }
   }
 
-  Widget _panel(PurchaseEntity row, AppLocalizations l10n) {
+  Future<void> _openInvoice(PurchaseEntity row, AppLocalizations l10n) async {
+    final nav = Navigator.of(context, rootNavigator: true);
+    final shape =
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
+    final canPay = !row.isFullyPaid && row.status != 'cancelled';
+    await nav.push(MaterialPageRoute(
+      builder: (_) => AppInvoicePage(
+        title: row.reference ?? l10n.purchase,
+        body: _invoice(row, l10n, phone: true),
+        primary: row.isPending || canPay
+            ? FilledButton(
+                style: FilledButton.styleFrom(shape: shape),
+                onPressed: () {
+                  nav.pop();
+                  row.isPending
+                      ? _receive(row, l10n)
+                      : _openPayment(row, l10n);
+                },
+                child: Text(row.isPending
+                    ? l10n.markAsReceived
+                    : l10n.recordPayment),
+              )
+            : null,
+        secondary: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 50), shape: shape),
+          onPressed: () {
+            nav.pop();
+            _edit(row, l10n);
+          },
+          icon: const Icon(Icons.edit_outlined, size: 18),
+          label: Text(l10n.edit),
+        ),
+      ),
+    ));
+    if (mounted) ref.read(purchaseListProvider.notifier).load();
+  }
+
+  Widget _panel(PurchaseEntity row, AppLocalizations l10n) => AppSidePanel(
+        closeLabel: l10n.close,
+        onClose: () => setState(() => selectedId = null),
+        child: _invoice(row, l10n),
+      );
+
+  Widget _invoice(PurchaseEntity row, AppLocalizations l10n,
+      {bool phone = false}) {
     final st = _status(row, l10n);
-    return AppSidePanel(
-      closeLabel: l10n.close,
-      onClose: () => setState(() => selectedId = null),
-      child: AppDetailLoader<PurchaseDetail>(
+    return AppDetailLoader<PurchaseDetail>(
         key: ValueKey('${row.id}-${row.paid}-${row.total}-${row.status}'),
         id: row.id,
         load: (id) =>
@@ -65,11 +108,12 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
           vat: row.totalVat,
           total: row.total,
           paid: row.paid,
+          phone: phone,
           lines: [
             for (final l in d.lines)
               AppInvoiceLine(l.productName, l.quantity, l.quantity * l.unitCost),
           ],
-          actions: [
+          actions: phone ? const [] : [
             if (row.isPending)
               FilledButton.icon(
                 onPressed: () => _receive(row, l10n),
@@ -89,7 +133,6 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -125,7 +168,8 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
     await Navigator.of(
       context,
       rootNavigator: true,
-    ).push(MaterialPageRoute(builder: (_) => const CreatePurchasePage()));
+    ).push(MaterialPageRoute(
+            fullscreenDialog: true, builder: (_) => const CreatePurchasePage()));
     if (mounted) ref.read(purchaseListProvider.notifier).load();
   }
 
@@ -369,6 +413,10 @@ class _PurchasesPageState extends ConsumerState<PurchasesPage> {
                 rows: state.purchases,
                 initialSortColumn: 1,
                 initialAscending: false,
+                phoneGroup: (p) => phoneDayGroup(l10n,
+                    Localizations.localeOf(context).toString(), p.createdAt),
+                phoneLeading: (p) =>
+                    AppAvatar(p.supplierName, size: 38, square: true),
                 onRowTap: (p) => _open(p, l10n),
                 rowMenu: (p) => _rowMenu(p, l10n),
                 searchText: (p) => '${p.supplierName} ${p.reference ?? ''}',

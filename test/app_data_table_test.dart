@@ -65,12 +65,18 @@ void main() {
     await _pump(tester, 400, rows);
     expect(_order(tester, names), ['Attiéké', 'Biscuits', 'Café']);
 
-    await tester.tap(find.text('Stock'));
-    await tester.pumpAndSettle();
+    // Phones have no column titles: sorting goes through the Sort button.
+    Future<void> sortBy(String label) async {
+      await tester.tap(find.byIcon(Icons.swap_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+    }
+
+    await sortBy('Stock');
     expect(_order(tester, names), ['Attiéké', 'Biscuits', 'Café']); // 3,12,40
 
-    await tester.tap(find.text('Stock'));
-    await tester.pumpAndSettle();
+    await sortBy('Stock');
     expect(_order(tester, names), ['Café', 'Biscuits', 'Attiéké']); // desc
   });
 

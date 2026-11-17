@@ -25,6 +25,8 @@ import '../providers/dashboard_provider.dart';
 import '../providers/report_provider.dart';
 import '../widgets/revenue_trend_chart.dart';
 import '../../../../shared/widgets/app_drawer.dart' show roleLabelFor;
+import '../../../../shared/widgets/app_notification_bell.dart';
+import '../../../../shared/widgets/app_shell.dart';
 
 /// Overview, in the "Ledger" layout (inspired by Mercury):
 ///
@@ -113,7 +115,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         (Icons.add_box_outlined, l10n.addProduct, _addProduct),
       if (_can(user, 'scan_documents'))
         (Icons.document_scanner_outlined, l10n.scanShort,
-            () => context.go('/scan')),
+            () => context.push('/scan')),
     ];
     if (items.isEmpty) return const SizedBox.shrink();
     return PopupMenuButton<VoidCallback>(
@@ -131,24 +133,78 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ]),
           ),
       ],
-      child: IgnorePointer(
-        child: OutlinedButton.icon(
-          onPressed: () {},
-          icon: report.isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.more_horiz, size: 18),
-          label: Text(l10n.moreShort),
-        ),
+      child: _squareBox(
+        report.isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.more_horiz, size: 22, color: AppColors.icon),
       ),
     );
   }
 
+  /// Phones: the white rounded square behind Scan / More (52px, thumb size).
+  Widget _squareBox(Widget child, {double size = 52}) => Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(size >= 52 ? 14 : 12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: child,
+      );
+
+  Widget _squareButton(IconData icon, String tooltip, VoidCallback onTap,
+          {double size = 52, Color color = AppColors.icon}) =>
+      Tooltip(
+        message: tooltip,
+        child: AppPressable(
+          onTap: onTap,
+          semanticLabel: tooltip,
+          borderRadius: BorderRadius.circular(size >= 52 ? 14 : 12),
+          child: _squareBox(Icon(icon, size: 22, color: color), size: size),
+        ),
+      );
+
+  /// Phones: New sale in the thumb zone, then Scan and More.
+  Widget _phoneActions(
+      UserEntity? user, ReportState report, AppLocalizations l10n) {
+    return Row(children: [
+      if (_can(user, 'manage_sales'))
+        Expanded(
+          child: SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                textStyle: AppTheme.font(size: 15, weight: FontWeight.w600),
+              ),
+              onPressed: _newSale,
+              icon: const Icon(Icons.add, size: 20),
+              label: Text(l10n.newSale),
+            ),
+          ),
+        )
+      else
+        const Spacer(),
+      if (_can(user, 'scan_documents')) ...[
+        const SizedBox(width: 10),
+        _squareButton(Icons.qr_code_scanner, l10n.scanShort,
+            () => context.push('/scan')),
+      ],
+      const SizedBox(width: 10),
+      _moreMenu(user, report, l10n),
+    ]);
+  }
+
   Future<void> _newPurchase() async {
     await Navigator.of(context, rootNavigator: true)
-        .push(MaterialPageRoute(builder: (_) => const CreatePurchasePage()));
+        .push(MaterialPageRoute(
+            fullscreenDialog: true, builder: (_) => const CreatePurchasePage()));
     if (mounted) _reload();
   }
 
@@ -182,27 +238,37 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ),
         const SizedBox(height: 4),
         Text(title,
-            style: wide ? AppTheme.pageTitleWide : AppTheme.heading(size: 22)),
+            style: wide
+                ? AppTheme.pageTitleWide
+                : AppTheme.heading(
+                    size: 26, weight: FontWeight.w800, height: 1.15)),
       ],
     );
     if (!wide) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      // Phones: the greeting IS the header (no bar above it), with the AI
+      // copilot and the bell as rounded squares on the right.
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          greeting,
-          const SizedBox(height: 14),
-          Row(children: [
-            if (_can(user, 'manage_sales'))
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: _newSale,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(l10n.newSale),
-                ),
-              ),
+          Expanded(child: greeting),
+          if (_can(user, 'use_ai')) ...[
+            _squareButton(Icons.auto_awesome_outlined, l10n.askAi,
+                () => context.push('/ai'),
+                size: 48, color: AppColors.primary),
             const SizedBox(width: 8),
-            _moreMenu(user, report, l10n),
-          ]),
+          ],
+          // 48: the bell button's own size, so its count badge sits on the
+          // corner instead of covering the bell.
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const AppNotificationBell(),
+          ),
         ],
       );
     }
@@ -240,7 +306,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   Future<void> _newSale() async {
     await Navigator.of(context, rootNavigator: true)
-        .push(MaterialPageRoute(builder: (_) => const CreateSalePage()));
+        .push(MaterialPageRoute(
+            fullscreenDialog: true, builder: (_) => const CreateSalePage()));
     if (mounted) _reload();
   }
 
@@ -252,7 +319,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         OutlinedButton.icon(
           onPressed: () async {
             await nav.push(
-                MaterialPageRoute(builder: (_) => const CreatePurchasePage()));
+                MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (_) => const CreatePurchasePage()));
             if (mounted) _reload();
           },
           icon: const Icon(Icons.local_shipping_outlined, size: 18),
@@ -282,7 +351,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   // ── Revenue hero ──
 
-  Widget _periodSwitch(int selected, AppLocalizations l10n) {
+  Widget _periodSwitch(int selected, AppLocalizations l10n,
+      {bool expand = false}) {
     final options = [
       (7, l10n.period7d),
       (30, l10n.period30d),
@@ -297,9 +367,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           color: AppColors.fill,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
+        child: Row(
+            mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+            children: [
           for (final (days, label) in options)
-            AppPressable(
+            _maybeExpanded(expand, AppPressable(
               onTap: () =>
                   ref.read(dashboardProvider.notifier).setPeriod(days),
               selected: days == selected,
@@ -331,8 +403,99 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           : AppColors.textSecondary,
                     )),
               ),
-            ),
+            )),
         ]),
+      ),
+    );
+  }
+
+  Widget _maybeExpanded(bool expand, Widget child) =>
+      expand ? Expanded(child: child) : child;
+
+  /// The loading bar, the retry line and the chart: shared by both heroes.
+  List<Widget> _chartBlock(DashboardState state, DashboardSummaryEntity s,
+      AppLocalizations l10n) => [
+        SizedBox(
+          height: 2,
+          child: state.trendLoading
+              ? const LinearProgressIndicator(
+                  minHeight: 2,
+                  backgroundColor: AppColors.fill,
+                  color: AppColors.primary)
+              : null,
+        ),
+        if (state.trendFailed)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(children: [
+              const Icon(Icons.error_outline,
+                  size: 18, color: AppColors.danger),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: Text(l10n.chartLoadFailed, style: AppTheme.label)),
+              TextButton(
+                onPressed: () => ref
+                    .read(dashboardProvider.notifier)
+                    .setPeriod(state.trendDays),
+                child: Text(l10n.retry),
+              ),
+            ]),
+          ),
+        const SizedBox(height: 4),
+        RevenueTrendChart(
+          current: s.salesTrend,
+          previous: s.salesTrendPrevious,
+          trendDays: s.trendDays,
+        ),
+      ];
+
+  /// Phones: label and growth on one line, the big figure, the comparison,
+  /// the chart, then the period switch full width under it (thumb reach).
+  Widget _phoneHero(DashboardState state, DashboardSummaryEntity s,
+      AppLocalizations l10n) {
+    final k = s.kpis;
+    final growth = k.revenueGrowthPercent;
+    return _card(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(
+              child: Text(l10n.revenueThisMonth,
+                  style: AppTheme.font(
+                      size: 13,
+                      weight: FontWeight.w500,
+                      color: AppColors.textSecondary)),
+            ),
+            if (growth != null)
+              AppBadge(
+                icon: growth >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                label: '${growth.abs().toStringAsFixed(1)}%',
+                tone: growth >= 0 ? BadgeTone.success : BadgeTone.danger,
+              ),
+          ]),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(formatDT(k.revenueThisMonth),
+                style: AppTheme.heading(
+                    size: 34,
+                    weight: FontWeight.w800,
+                    height: 1.1,
+                    tabularFigures: true)),
+          ),
+          if (growth != null) ...[
+            const SizedBox(height: 2),
+            Text('${l10n.vsLastMonth} (${formatDT(k.revenuePrevMonth)})',
+                style: AppTheme.label),
+          ],
+          const SizedBox(height: 10),
+          ..._chartBlock(state, s, l10n),
+          const SizedBox(height: 10),
+          _periodSwitch(state.trendDays, l10n, expand: true),
+        ],
       ),
     );
   }
@@ -396,38 +559,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
           const SizedBox(height: 10),
           // A thin bar while another period loads; the old chart stays.
-          SizedBox(
-            height: 2,
-            child: state.trendLoading
-                ? const LinearProgressIndicator(
-                    minHeight: 2,
-                    backgroundColor: AppColors.fill,
-                    color: AppColors.primary)
-                : null,
-          ),
-          if (state.trendFailed)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(children: [
-                const Icon(Icons.error_outline,
-                    size: 18, color: AppColors.danger),
-                const SizedBox(width: 8),
-                Expanded(
-                    child: Text(l10n.chartLoadFailed, style: AppTheme.label)),
-                TextButton(
-                  onPressed: () => ref
-                      .read(dashboardProvider.notifier)
-                      .setPeriod(state.trendDays),
-                  child: Text(l10n.retry),
-                ),
-              ]),
-            ),
-          const SizedBox(height: 4),
-          RevenueTrendChart(
-            current: s.salesTrend,
-            previous: s.salesTrendPrevious,
-            trendDays: s.trendDays,
-          ),
+          ..._chartBlock(state, s, l10n),
         ],
       ),
     );
@@ -491,9 +623,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     required String value,
     required String sub,
     VoidCallback? onTap,
+    Color? valueColor,
+    bool compact = false,
   }) {
     final body = Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(compact ? 14 : 18),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -521,7 +655,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(value, style: AppTheme.kpi),
+            child: Text(value,
+                style: compact
+                    ? AppTheme.heading(
+                        size: 19,
+                        tabularFigures: true,
+                        color: valueColor ?? AppColors.textPrimary)
+                    : valueColor == null
+                        ? AppTheme.kpi
+                        : AppTheme.kpi.copyWith(color: valueColor)),
           ),
           const SizedBox(height: 4),
           Text(sub,
@@ -585,6 +727,59 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         value: '${k.salesCountThisMonth}',
         sub: formatDT(k.revenueThisMonth),
         onTap: () => go('/sales', 'view_sales'),
+      ),
+    ];
+  }
+
+  /// Phones: the four figures of the mobile board, 2×2: cash (in − out),
+  /// overdue amount, stock value, products to reorder. The separate cash
+  /// card is folded into the first tile.
+  List<Widget> _phoneKpis(DashboardSummaryEntity s, UserEntity? user,
+      AppLocalizations l10n) {
+    final k = s.kpis;
+    final overdue =
+        s.alerts.where((a) => a.type == AlertType.overduePayment).toList();
+    final overdueSum = overdue.fold<double>(0, (t, a) => t + a.value);
+    final net = k.receivables - k.payables;
+    void go(String route, String permission) {
+      if (_can(user, permission)) context.go(route);
+    }
+
+    return [
+      _kpi(
+        compact: true,
+        dot: AppColors.success,
+        label: l10n.cashPosition,
+        value: '${net >= 0 ? '' : '−'}${formatDT(net.abs())}',
+        valueColor: net >= 0 ? null : AppColors.dangerText,
+        sub: l10n.netPosition,
+      ),
+      _kpi(
+        compact: true,
+        dot: AppColors.danger,
+        label: l10n.overdue,
+        value: formatDT(overdueSum),
+        // Zero is not an alarm: neutral, like the summary strips.
+        valueColor: overdue.isEmpty ? null : AppColors.dangerText,
+        sub: l10n.overdueInvoices(overdue.length),
+        onTap: () => go('/sales', 'view_sales'),
+      ),
+      _kpi(
+        compact: true,
+        dot: AppColors.primary,
+        label: l10n.stockValue,
+        value: formatDT(k.stockValue),
+        sub: l10n.navGroupInventory,
+        onTap: () => go('/products', 'view_products'),
+      ),
+      _kpi(
+        compact: true,
+        dot: AppColors.warning,
+        label: l10n.toReorder,
+        value: '${k.lowStockCount}',
+        valueColor: k.lowStockCount == 0 ? null : AppColors.warningText,
+        sub: l10n.lowOrOutOfStock,
+        onTap: () => go('/products', 'view_products'),
       ),
     ];
   }
@@ -834,8 +1029,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         child: LayoutBuilder(builder: (context, box) {
           final wide = box.maxWidth >= 840;
           const gap = SizedBox(height: 20, width: 20);
-          final kpis = _kpis(summary, user, l10n);
-          final hero = _hero(state, summary, l10n);
+          final kpis = wide
+              ? _kpis(summary, user, l10n)
+              : _phoneKpis(summary, user, l10n);
+          final hero = wide
+              ? _hero(state, summary, l10n)
+              : _phoneHero(state, summary, l10n);
           final cash = _cash(summary.kpis, l10n);
 
           final sections = <Widget>[
@@ -852,7 +1051,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   ],
                 ),
               )
-            else ...[hero, cash],
+            else ...[hero, _phoneActions(user, reportState, l10n)],
             if (wide)
               Row(children: [
                 for (var i = 0; i < kpis.length; i++) ...[
@@ -862,17 +1061,25 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ])
             else
               Column(children: [
-                Row(children: [
-                  Expanded(child: kpis[0]),
-                  const SizedBox(width: 12),
-                  Expanded(child: kpis[1]),
-                ]),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(child: kpis[2]),
-                  const SizedBox(width: 12),
-                  Expanded(child: kpis[3]),
-                ]),
+                IntrinsicHeight(
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: kpis[0]),
+                        const SizedBox(width: 10),
+                        Expanded(child: kpis[1]),
+                      ]),
+                ),
+                const SizedBox(height: 10),
+                IntrinsicHeight(
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: kpis[2]),
+                        const SizedBox(width: 10),
+                        Expanded(child: kpis[3]),
+                      ]),
+                ),
               ]),
             if (wide)
               Row(
@@ -902,7 +1109,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.symmetric(
                 horizontal: wide ? 32 : AppSpacing.page,
-                vertical: wide ? 28 : AppSpacing.page),
+                vertical: wide ? 28 : 12),
             children: [
               Center(
                 child: ConstrainedBox(
@@ -911,7 +1118,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (var i = 0; i < sections.length; i++) ...[
-                        if (i > 0) SizedBox(height: wide ? 20 : 12),
+                        if (i > 0) SizedBox(height: wide ? 20 : 14),
                         AppEntrance(index: i, child: sections[i]),
                       ],
                     ],
@@ -933,15 +1140,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       body = AppSkeletonList(rows: 5, semanticLabel: l10n.loading);
     }
 
+    // Phones have no bar: the greeting header scrolls with the page, as on
+    // the mobile board. Wide screens keep the company bar.
+    final wideShell = AppShellScope.maybeOf(context)?.sidebarVisible ??
+        MediaQuery.sizeOf(context).width >= 840;
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      appBar: AppPageHeader(
-        title: company,
-        subtitle: who,
-        icon: Icons.home_outlined,
-        color: AppColors.primary,
-      ),
-      body: body,
+      appBar: wideShell
+          ? AppPageHeader(
+              title: company,
+              subtitle: who,
+              icon: Icons.home_outlined,
+              color: AppColors.primary,
+            )
+          : null,
+      body: wideShell ? body : SafeArea(bottom: false, child: body),
     );
   }
 }

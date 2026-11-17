@@ -19,9 +19,11 @@ import '../../features/dashboard/presentation/pages/insights_page.dart';
 import '../../features/dashboard/presentation/pages/audit_page.dart';
 import '../../features/users/presentation/pages/profile_page.dart';
 import '../../features/users/presentation/pages/users_page.dart';
+import '../../shared/widgets/app_more_page.dart';
 import '../../shared/widgets/app_shell.dart';
 import '../../shared/widgets/app_tabs_scaffold.dart';
 import '../../shared/widgets/splash_page.dart';
+import 'app_destinations.dart';
 import 'auth_redirect.dart';
 
 /// Re-runs the router's redirect whenever the session status changes
@@ -83,8 +85,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       //
       //   ShellRoute (AppShell: drawer | sidebar)
       //   ├─ StatefulShellRoute (AppTabsScaffold: bottom bar on phones)
-      //   │    Home · Products · Sales · Customers · AI Copilot
-      //   └─ the other drawer screens (no bottom bar)
+      //   │    Home · Sales · Stock · Customers · More
+      //   └─ the other screens (no bottom bar; phones push them from More)
       ShellRoute(
         builder: (context, state, child) =>
             AppShell(location: state.uri.toString(), child: child),
@@ -95,14 +97,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             branches: [
               StatefulShellBranch(
                   routes: [_page('/dashboard', const DashboardPage())]),
-              StatefulShellBranch(
-                  routes: [_page('/products', const ProductsPage())]),
               StatefulShellBranch(routes: [_page('/sales', const SalesPage())]),
               StatefulShellBranch(
+                  routes: [_page('/products', const ProductsPage())]),
+              StatefulShellBranch(
                   routes: [_page('/customers', const CustomersPage())]),
-              StatefulShellBranch(routes: [_page('/ai', const AiChatPage())]),
+              StatefulShellBranch(
+                  routes: [_page(moreRoute, const AppMorePage())]),
             ],
           ),
+          _page('/ai', const AiChatPage()),
           _page('/categories', const CategoriesPage()),
           _page('/warehouses', const WarehousesPage()),
           _page('/stock-movement', const StockMovementPage()),

@@ -75,6 +75,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   String get _home => homeFor(ref.read(authNotifierProvider).user);
 
   bool get _onHome {
+    // The More tab is not home: Back from it goes home, not out of the app.
+    if (Uri.parse(widget.location).path == moreRoute) return false;
     final current = destinationFor(widget.location)?.route;
     return current == null || current == _home;
   }
@@ -130,6 +132,21 @@ class _AppShellState extends ConsumerState<AppShell> {
       );
     });
   }
+}
+
+/// Marks the root screen of a phone tab (bottom bar visible). Its header
+/// becomes a large title on the canvas instead of a white bar with a menu
+/// button: navigation is the bottom bar, as on the mobile board.
+class AppTabRootScope extends InheritedWidget {
+  final bool active;
+  const AppTabRootScope({super.key, required this.active, required super.child});
+
+  static bool isActive(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<AppTabRootScope>()?.active ??
+      false;
+
+  @override
+  bool updateShouldNotify(AppTabRootScope old) => old.active != active;
 }
 
 /// Centres a page body and caps its width (see [AppContentWidth]).

@@ -100,11 +100,18 @@ void main() {
     expect(chip.right, lessThanOrEqualTo(cell.right + 0.5));
   });
 
-  testWidgets('phone uses the short title; wide shows the full one',
-      (tester) async {
+  testWidgets('phone: no column titles, the Sort menu names the columns; '
+      'wide shows the titles', (tester) async {
     await _pump(tester, 412);
-    expect(find.text('Total'), findsOneWidget);
+    expect(find.text('Total'), findsNothing);
     expect(find.text('Total incl. VAT'), findsNothing);
+    await tester.tap(find.byIcon(Icons.swap_vert));
+    await tester.pumpAndSettle();
+    // Only sortable columns are listed (here: Customer), by their full title.
+    expect(find.text('Customer'), findsOneWidget);
+    expect(find.text('Total incl. VAT'), findsNothing);
+    await tester.tapAt(const Offset(5, 5)); // close the menu
+    await tester.pumpAndSettle();
     await _pump(tester, 1400);
     expect(find.text('Total incl. VAT'), findsOneWidget);
     expect(find.text('Status'), findsOneWidget);

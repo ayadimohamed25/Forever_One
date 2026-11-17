@@ -592,4 +592,13 @@
   ,"moreShort": "Plus"
   ,"toReorder": "À recommander"
   ,"lowOrOutOfStock": "Faible ou en rupture"
+  ,"tabStock": "Stock"
+  ,"yesterday": "Hier"
+  ,"earlier": "Plus tôt"
+  ,"thisWeek": "Cette semaine"
+  ,"sortBy": "Trier par"
+  ,"callAction": "Appeler"
+  ,"emailAction": "E-mail"
+  ,"messageAction": "Message"
+  ,"stockLeft": "{count} restants"
 }

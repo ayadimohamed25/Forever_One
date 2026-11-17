@@ -68,7 +68,7 @@ const _collapsibleGroups = [
   NavGroup.admin,
 ];
 
-IconData _groupIcon(NavGroup g) {
+IconData navGroupIcon(NavGroup g) {
   switch (g) {
     case NavGroup.sales:
       return Icons.point_of_sale_outlined;
@@ -86,7 +86,7 @@ IconData _groupIcon(NavGroup g) {
   }
 }
 
-String _groupLabel(NavGroup g, AppLocalizations l10n) {
+String navGroupLabel(NavGroup g, AppLocalizations l10n) {
   switch (g) {
     case NavGroup.sales:
       return l10n.navGroupSales;
@@ -170,8 +170,8 @@ class AppNavList extends ConsumerWidget {
         final active = items.any((d) => d.route == current);
         final open = groups.isOpen(g.name, active: active);
         children.add(_GroupHeader(
-          icon: _groupIcon(g),
-          label: _groupLabel(g, l10n),
+          icon: navGroupIcon(g),
+          label: navGroupLabel(g, l10n),
           open: open,
           active: active,
           onTap: () => groups.toggle(g.name, active: active),

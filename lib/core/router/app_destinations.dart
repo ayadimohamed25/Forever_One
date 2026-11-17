@@ -171,10 +171,15 @@ final List<AppDestination> appDestinations = [
   ),
 ];
 
-/// The five screens in the phone's bottom bar, in tab order. Each is a branch
-/// of the router's StatefulShellRoute, so switching tabs keeps each tab's
-/// scroll position and state.
-const tabRoutes = ['/dashboard', '/products', '/sales', '/customers', '/ai'];
+/// The five screens in the phone's bottom bar, in tab order (mobile board:
+/// Home · Sales · Stock · Customers · More). Each is a branch of the router's
+/// StatefulShellRoute, so switching tabs keeps each tab's scroll position and
+/// state. `/more` lists everything else, grouped like the web sidebar.
+const tabRoutes = ['/dashboard', '/sales', '/products', '/customers', moreRoute];
+
+/// The phone's More tab. Not in [appDestinations]: every signed-in user may
+/// open it, and the sidebar never shows it.
+const moreRoute = '/more';
 
 /// The destination a location belongs to, matched on its first segment so
 /// `/products/42` still selects Products.

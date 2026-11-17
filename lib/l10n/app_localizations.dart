@@ -3391,6 +3391,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Low or out of stock'**
   String get lowOrOutOfStock;
+
+  /// No description provided for @tabStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get tabStock;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @earlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get earlier;
+
+  /// No description provided for @thisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeek;
+
+  /// No description provided for @sortBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get sortBy;
+
+  /// No description provided for @callAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get callAction;
+
+  /// No description provided for @emailAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailAction;
+
+  /// No description provided for @messageAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get messageAction;
+
+  /// No description provided for @stockLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} left'**
+  String stockLeft(String count);
 }
 
 class _AppLocalizationsDelegate

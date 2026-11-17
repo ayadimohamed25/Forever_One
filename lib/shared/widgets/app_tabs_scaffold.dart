@@ -7,8 +7,8 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'app_shell.dart';
 
-/// The five main tabs (Home, Products, Sales, Customers, AI Copilot) as a
-/// bottom navigation bar on phones. Each tab is a StatefulShellRoute branch,
+/// The five main tabs (Home, Sales, Stock, Customers, More) as a bottom
+/// navigation bar on phones. Each tab is a StatefulShellRoute branch,
 /// so it keeps its state when you switch away and back. Tabs the user has no
 /// permission for are left out. From 840px the sidebar does this job, so
 /// the bar is hidden.
@@ -28,21 +28,22 @@ class AppTabsScaffold extends ConsumerWidget {
     final tabs = <(int, IconData, IconData, String)>[];
     const icons = [
       (Icons.home_outlined, Icons.home),
-      (Icons.inventory_2_outlined, Icons.inventory_2),
       (Icons.receipt_long_outlined, Icons.receipt_long),
+      (Icons.inventory_2_outlined, Icons.inventory_2),
       (Icons.people_outline, Icons.people),
-      (Icons.auto_awesome_outlined, Icons.auto_awesome),
+      (Icons.grid_view_outlined, Icons.grid_view_rounded),
     ];
     final labels = [
       l10n.tabHome,
-      l10n.products,
       l10n.sales,
+      l10n.tabStock,
       l10n.customers,
-      l10n.tabCopilot,
+      l10n.moreShort,
     ];
     for (var i = 0; i < tabRoutes.length; i++) {
+      // More has no destination entry: every signed-in user has it.
       final d = destinationFor(tabRoutes[i]);
-      if (d != null && d.allows(user)) {
+      if (tabRoutes[i] == moreRoute || (d != null && d.allows(user))) {
         tabs.add((i, icons[i].$1, icons[i].$2, labels[i]));
       }
     }
@@ -52,7 +53,7 @@ class AppTabsScaffold extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
-      body: navigationShell,
+      body: AppTabRootScope(active: showBar, child: navigationShell),
       bottomNavigationBar: showBar
           ? DecoratedBox(
               decoration: const BoxDecoration(

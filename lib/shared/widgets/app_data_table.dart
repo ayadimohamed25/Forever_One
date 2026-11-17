@@ -1,12 +1,29 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show DateFormat, toBeginningOfSentenceCase;
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import 'app_motion.dart';
 import 'app_pressable.dart';
 import 'app_shell.dart';
+
+/// The phone list label for a date: Today, Yesterday, This week, This month,
+/// then the month ("October 2026"). Rows must be sorted newest first.
+String phoneDayGroup(AppLocalizations l10n, String locale, DateTime date,
+    [DateTime? now]) {
+  final n = now ?? DateTime.now();
+  final days = DateTime(n.year, n.month, n.day)
+      .difference(DateTime(date.year, date.month, date.day))
+      .inDays;
+  if (days <= 0) return l10n.today;
+  if (days == 1) return l10n.yesterday;
+  if (days < 7) return l10n.thisWeek;
+  if (date.year == n.year && date.month == n.month) return l10n.periodThisMonth;
+  return toBeginningOfSentenceCase(DateFormat('MMMM y', locale).format(date)) ??
+      '';
+}
 
 /// One column of an [AppDataTable].
 ///
@@ -43,6 +60,9 @@ class AppTableColumn<T> {
   /// The text a cell shows, used to size the column to its content.
   final String Function(T row)? measure;
 
+  /// What the cell shows on phones when it differs ("7 left" for "7").
+  final String Function(T row)? phoneMeasure;
+
   /// Tapping the title sorts by this value; null = not sortable.
   final Comparable<Object?> Function(T row)? sortValue;
 
@@ -59,6 +79,7 @@ class AppTableColumn<T> {
     this.chip = false,
     this.showFrom = 0,
     this.measure,
+    this.phoneMeasure,
     this.sortValue,
     this.flex = 1,
   });
@@ -160,6 +181,13 @@ class AppDataTable<T> extends StatefulWidget {
   /// search hid it), so the page can close its panel.
   final VoidCallback? onSelectionHidden;
 
+  /// Phones: rows are split into labelled cards ("Today", "Yesterday",
+  /// "Earlier") by this key, while the list keeps its initial sort.
+  final String Function(T row)? phoneGroup;
+
+  /// Phones: a widget before the name (an initials avatar, a category tile).
+  final Widget Function(T row)? phoneLeading;
+
   const AppDataTable({
     super.key,
     required this.columns,
@@ -181,6 +209,8 @@ class AppDataTable<T> extends StatefulWidget {
     this.isSelected,
     this.detailPanel,
     this.onSelectionHidden,
+    this.phoneGroup,
+    this.phoneLeading,
   });
 
   /// Width of the side panel on wide screens.
@@ -230,6 +260,9 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
   static const double _hPad = 14;
   static const double _gap = 12;
   static const double _phoneGap = 10;
+
+  /// Hairline between rows inside a phone card (lighter than its frame).
+  static const Color _rowRule = Color(0xFFF0F1F4);
 
   @override
   void initState() {
@@ -332,14 +365,15 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
       // Wide: the title plus room for its sort arrow. Phones: the title's
       // own width (never cut to an icon), plus the arrow only on the column
       // actually sorted — other columns show no arrow there.
-      var w = _textWidth(headers ? c.label : (c.shortLabel ?? c.label), head) +
-          (c.sortValue == null
-              ? 0
-              : headers
-                  ? 18
-                  : (_sortColumn == i ? 16 : 0));
+      // Phones draw no column titles (sorting is the Sort button), so only
+      // the values count there.
+      var w = headers
+          ? _textWidth(c.label, head) + (c.sortValue == null ? 0 : 18)
+          : 0.0;
+      final measure =
+          !headers && c.phoneMeasure != null ? c.phoneMeasure! : c.measure!;
       for (final r in rows) {
-        final t = c.measure!(r);
+        final t = measure(r);
         final tw = c.chip ? _textWidth(t, chip) + 30 : _textWidth(t, value);
         if (tw > w) w = tw;
       }
@@ -437,6 +471,21 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
                   : searched.where((r) => o.test!(r as T)).length,
         ];
         final tabsOnTop = wide && tabs != null;
+        // Hidden columns stay sortable (the date on phones), so the list can
+        // always go back to its initial order.
+        final sortable = [
+          for (var i = 0; i < widget.columns.length; i++)
+            if (widget.columns[i].sortValue != null) i,
+        ];
+
+        // Phones group rows into labelled cards while the list keeps its
+        // initial order (a day label means nothing when sorted by amount).
+        final group = !wide &&
+                widget.phoneGroup != null &&
+                _sortColumn == widget.initialSortColumn &&
+                _ascending == widget.initialAscending
+            ? widget.phoneGroup
+            : null;
 
         Widget rowCells(Widget Function(int i) cellOf) => Row(
           children: [
@@ -486,7 +535,8 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
           ),
         );
 
-        Widget row(T item, bool last, int index) {
+        Widget row(T item,
+            {required bool first, required bool last, required int index}) {
           final selected =
               panelOpen && isSelected != null && isSelected(item);
           final content = Container(
@@ -494,6 +544,10 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
             padding: EdgeInsets.only(left: _hPad, right: hasMenu ? 0 : _hPad),
             child: Row(
               children: [
+                if (!wide && widget.phoneLeading != null) ...[
+                  widget.phoneLeading!(item),
+                  const SizedBox(width: 12),
+                ],
                 Expanded(
                   child: rowCells((i) => i == stackInto && stackChip != null
                       ? Column(
@@ -512,31 +566,63 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
               ],
             ),
           );
-          final cell = Container(
-            decoration: BoxDecoration(
-              color: selected ? AppColors.rowSelected : AppColors.surface,
-              border: const Border(
-                left: BorderSide(color: AppColors.border),
-                right: BorderSide(color: AppColors.border),
-                bottom: BorderSide(color: AppColors.border),
+          final tappable = widget.onRowTap == null
+              ? content
+              : AppPressable(
+                  onTap: () => widget.onRowTap!(item),
+                  borderRadius: BorderRadius.zero,
+                  selected: selected,
+                  hoverColor: AppColors.surfaceAlt,
+                  child: content,
+                );
+          final Widget cell;
+          if (wide) {
+            cell = Container(
+              decoration: BoxDecoration(
+                color: selected ? AppColors.rowSelected : AppColors.surface,
+                border: const Border(
+                  left: BorderSide(color: AppColors.border),
+                  right: BorderSide(color: AppColors.border),
+                  bottom: BorderSide(color: AppColors.border),
+                ),
               ),
-              borderRadius: last && !wide
-                  ? const BorderRadius.vertical(
-                      bottom: Radius.circular(AppRadius.card),
-                    )
-                  : null,
-            ),
-            clipBehavior: last && !wide ? Clip.antiAlias : Clip.none,
-            child: widget.onRowTap == null
-                ? content
-                : AppPressable(
-                    onTap: () => widget.onRowTap!(item),
-                    borderRadius: BorderRadius.zero,
-                    selected: selected,
-                    hoverColor: AppColors.surfaceAlt,
-                    child: content,
+              child: tappable,
+            );
+          } else {
+            // Phones: rows sit in rounded cards (one per day group). Flutter
+            // can't round a border whose sides differ, so the frame is an
+            // outer layer in the border colour and the rows are inset by
+            // 1px; rows inside a card are split by a lighter hairline.
+            const r = Radius.circular(AppRadius.card);
+            const inner = Radius.circular(AppRadius.card - 1);
+            cell = Container(
+              padding: EdgeInsets.fromLTRB(1, first ? 1 : 0, 1, last ? 1 : 0),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.vertical(
+                  top: first ? r : Radius.zero,
+                  bottom: last ? r : Radius.zero,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.vertical(
+                  top: first ? inner : Radius.zero,
+                  bottom: last ? inner : Radius.zero,
+                ),
+                child: ColoredBox(
+                  color: AppColors.surface,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      tappable,
+                      if (!last) const Divider(height: 1, thickness: 1, color: _rowRule),
+                    ],
                   ),
-          );
+                ),
+              ),
+            );
+          }
           return AppEntrance(
             index: index,
             stagger: AppMotion.stagger,
@@ -544,6 +630,27 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
             animate: _entering,
             child: cell,
           );
+        }
+
+        List<Widget> rowWidgets() {
+          final out = <Widget>[];
+          String? previous;
+          for (var i = 0; i < rows.length; i++) {
+            final g = group?.call(rows[i]);
+            final next = group != null && i + 1 < rows.length
+                ? group(rows[i + 1])
+                : null;
+            final starts = g != null && (i == 0 || g != previous);
+            if (starts) out.add(_GroupLabel(g, first: i == 0));
+            out.add(row(
+              rows[i],
+              first: !wide && (i == 0 || starts),
+              last: i == rows.length - 1 || (g != null && next != g),
+              index: i,
+            ));
+            previous = g;
+          }
+          return out;
         }
 
         final showToolbar =
@@ -580,14 +687,31 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
               onAdd: widget.onAdd,
               addLabel: widget.addLabel,
             ),
-          if (tabs != null && !wide)
+          if (!wide && (tabs != null || sortable.isNotEmpty))
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _TabChips(
-                labels: [for (final o in tabs.options) o.label],
-                counts: tabCounts,
-                selected: _tab,
-                onSelect: _selectTab,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: tabs == null
+                        ? const SizedBox.shrink()
+                        : _TabChips(
+                            labels: [for (final o in tabs.options) o.label],
+                            counts: tabCounts,
+                            selected: _tab,
+                            onSelect: _selectTab,
+                          ),
+                  ),
+                  if (sortable.isNotEmpty)
+                    _SortButton(
+                      labels: {
+                        for (final i in sortable) i: widget.columns[i].label
+                      },
+                      column: _sortColumn,
+                      ascending: _ascending,
+                      onSort: _toggleSort,
+                    ),
+                ],
               ),
             ),
           if (tabsOnTop)
@@ -597,23 +721,27 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
               selected: _tab,
               onSelect: _selectTab,
             ),
-          headerRow(),
+          if (wide) headerRow(),
           if (rows.isEmpty)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 28),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surface,
-                border: Border(
-                  left: BorderSide(color: AppColors.border),
-                  right: BorderSide(color: AppColors.border),
-                  bottom: BorderSide(color: AppColors.border),
-                ),
+                border: wide
+                    ? const Border(
+                        left: BorderSide(color: AppColors.border),
+                        right: BorderSide(color: AppColors.border),
+                        bottom: BorderSide(color: AppColors.border),
+                      )
+                    : Border.all(color: AppColors.border),
+                borderRadius: wide
+                    ? null
+                    : BorderRadius.circular(AppRadius.card),
               ),
               alignment: Alignment.center,
               child: Text(l10n.tableResults(0), style: AppTheme.label),
             ),
-          for (var i = 0; i < rows.length; i++)
-            row(rows[i], i == rows.length - 1, i),
+          ...rowWidgets(),
           if (wide)
             _Pagination(
               from: all.isEmpty ? 0 : page * widget.pageSize + 1,
@@ -912,6 +1040,96 @@ class _TabChips extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Phones: the day label above a card of rows ("TODAY").
+class _GroupLabel extends StatelessWidget {
+  final String label;
+  final bool first;
+  const _GroupLabel(this.label, {required this.first});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(4, first ? 0 : 16, 4, 6),
+      child: Semantics(
+        header: true,
+        child: Text(
+          label.toUpperCase(),
+          style: AppTheme.font(
+            size: 12,
+            weight: FontWeight.w600,
+            color: AppColors.iconMuted,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Phones: sorting without column titles. Lists the sortable columns; the
+/// current one carries its direction arrow, and picking it again flips it.
+class _SortButton extends StatelessWidget {
+  final Map<int, String> labels;
+  final int? column;
+  final bool ascending;
+  final ValueChanged<int> onSort;
+
+  const _SortButton({
+    required this.labels,
+    required this.column,
+    required this.ascending,
+    required this.onSort,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: PopupMenuButton<int>(
+        tooltip: l10n.sortBy,
+        onSelected: onSort,
+        position: PopupMenuPosition.under,
+        itemBuilder: (_) => [
+          for (final e in labels.entries)
+            PopupMenuItem(
+              value: e.key,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(e.value,
+                        style: AppTheme.font(
+                          size: 14,
+                          weight: e.key == column
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        )),
+                  ),
+                  if (e.key == column)
+                    Icon(
+                      ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                ],
+              ),
+            ),
+        ],
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.fieldBorder),
+          ),
+          child: const Icon(Icons.swap_vert, size: 18, color: AppColors.icon),
+        ),
       ),
     );
   }
@@ -1277,7 +1495,28 @@ class AppColorDot extends StatelessWidget {
 class AppAvatar extends StatelessWidget {
   final String name;
   final double size;
-  const AppAvatar(this.name, {super.key, this.size = 32});
+
+  /// Rounded square (phone list rows, detail headers) instead of a circle.
+  final bool square;
+  const AppAvatar(this.name, {super.key, this.size = 32, this.square = false});
+
+  /// Soft background / text pairs; a name always gets the same one, so a
+  /// customer is recognisable by colour from list to detail.
+  static const _tints = [
+    (Color(0xFFEEF2FF), Color(0xFF3730A3)),
+    (Color(0xFFECFDF3), Color(0xFF067647)),
+    (Color(0xFFFFF4ED), Color(0xFFB93815)),
+    (Color(0xFFF4F3FF), Color(0xFF5925DC)),
+    (Color(0xFFEFF8FF), Color(0xFF175CD3)),
+  ];
+
+  static (Color, Color) tintOf(String name) {
+    var h = 0;
+    for (final c in name.codeUnits) {
+      h = (h * 31 + c) & 0x7fffffff;
+    }
+    return _tints[h % _tints.length];
+  }
 
   static String initialsOf(String name) {
     final parts = name
@@ -1291,21 +1530,23 @@ class AppAvatar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    alignment: Alignment.center,
-    decoration: const BoxDecoration(
-      color: AppColors.primarySoft,
-      shape: BoxShape.circle,
-    ),
-    child: Text(
-      initialsOf(name),
-      style: AppTheme.font(
-        size: size * 0.38,
-        weight: FontWeight.w600,
-        color: AppColors.primary,
+  Widget build(BuildContext context) {
+    final (bg, fg) = tintOf(name);
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: bg,
+        shape: square ? BoxShape.rectangle : BoxShape.circle,
+        borderRadius: square ? BorderRadius.circular(size * 0.3) : null,
       ),
-    ),
-  );
+      child: ExcludeSemantics(
+        child: Text(
+          initialsOf(name),
+          style: AppTheme.heading(size: size * 0.36, color: fg),
+        ),
+      ),
+    );
+  }
 }

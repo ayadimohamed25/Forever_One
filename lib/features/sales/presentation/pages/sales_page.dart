@@ -31,21 +31,58 @@ class _SalesPageState extends ConsumerState<SalesPage> {
   /// The sale open in the side panel (wide screens only).
   String? selectedId;
 
-  /// Wide: open the invoice panel. Phone: open the payment screen.
+  /// Wide: open the invoice panel. Phone: the invoice on its own screen,
+  /// with Record payment and Edit in a bar at the bottom.
   void _open(SaleEntity s, AppLocalizations l10n) {
     if (AppBreakpoints.isWide(context)) {
       setState(() => selectedId = s.id);
     } else {
-      _openPayment(s, l10n);
+      _openInvoice(s, l10n);
     }
   }
 
-  Widget _panel(SaleEntity row, AppLocalizations l10n) {
+  Future<void> _openInvoice(SaleEntity row, AppLocalizations l10n) async {
+    final nav = Navigator.of(context, rootNavigator: true);
+    final shape =
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
+    await nav.push(MaterialPageRoute(
+      builder: (_) => AppInvoicePage(
+        title: row.reference ?? l10n.sale,
+        body: _invoice(row, l10n, phone: true),
+        primary: row.isFullyPaid
+            ? null
+            : FilledButton(
+                style: FilledButton.styleFrom(shape: shape),
+                onPressed: () {
+                  nav.pop();
+                  _openPayment(row, l10n);
+                },
+                child: Text(l10n.recordPayment),
+              ),
+        secondary: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 50), shape: shape),
+          onPressed: () {
+            nav.pop();
+            _edit(row, l10n);
+          },
+          icon: const Icon(Icons.edit_outlined, size: 18),
+          label: Text(l10n.edit),
+        ),
+      ),
+    ));
+    if (mounted) ref.read(saleListProvider.notifier).load();
+  }
+
+  Widget _panel(SaleEntity row, AppLocalizations l10n) => AppSidePanel(
+        closeLabel: l10n.close,
+        onClose: () => setState(() => selectedId = null),
+        child: _invoice(row, l10n),
+      );
+
+  Widget _invoice(SaleEntity row, AppLocalizations l10n, {bool phone = false}) {
     final st = _paymentStatus(row, l10n);
-    return AppSidePanel(
-      closeLabel: l10n.close,
-      onClose: () => setState(() => selectedId = null),
-      child: AppDetailLoader<SaleDetail>(
+    return AppDetailLoader<SaleDetail>(
         // A payment or edit changes the row; reload the panel with it.
         key: ValueKey('${row.id}-${row.paid}-${row.total}'),
         id: row.id,
@@ -64,11 +101,12 @@ class _SalesPageState extends ConsumerState<SalesPage> {
           vat: row.totalVat,
           total: row.total,
           paid: row.paid,
+          phone: phone,
           lines: [
             for (final l in d.lines)
               AppInvoiceLine(l.productName, l.quantity, l.quantity * l.unitPrice),
           ],
-          actions: [
+          actions: phone ? const [] : [
             if (!row.isFullyPaid)
               FilledButton.icon(
                 onPressed: () => _openPayment(row, l10n),
@@ -82,7 +120,6 @@ class _SalesPageState extends ConsumerState<SalesPage> {
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -118,7 +155,8 @@ class _SalesPageState extends ConsumerState<SalesPage> {
     await Navigator.of(
       context,
       rootNavigator: true,
-    ).push(MaterialPageRoute(builder: (_) => const CreateSalePage()));
+    ).push(MaterialPageRoute(
+            fullscreenDialog: true, builder: (_) => const CreateSalePage()));
     if (mounted) ref.read(saleListProvider.notifier).load();
   }
 
@@ -336,6 +374,10 @@ class _SalesPageState extends ConsumerState<SalesPage> {
                 // Newest first, like an invoice book.
                 initialSortColumn: 1,
                 initialAscending: false,
+                phoneGroup: (s) => phoneDayGroup(l10n,
+                    Localizations.localeOf(context).toString(), s.createdAt),
+                phoneLeading: (s) =>
+                    AppAvatar(s.customerName, size: 38, square: true),
                 onRowTap: (s) => _open(s, l10n),
                 rowMenu: (s) => _rowMenu(s, l10n),
                 searchText: (s) => '${s.customerName} ${s.reference ?? ''}',

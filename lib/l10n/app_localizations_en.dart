@@ -1818,4 +1818,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lowOrOutOfStock => 'Low or out of stock';
+
+  @override
+  String get tabStock => 'Stock';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get earlier => 'Earlier';
+
+  @override
+  String get thisWeek => 'This week';
+
+  @override
+  String get sortBy => 'Sort by';
+
+  @override
+  String get callAction => 'Call';
+
+  @override
+  String get emailAction => 'Email';
+
+  @override
+  String get messageAction => 'Message';
+
+  @override
+  String stockLeft(String count) {
+    return '$count left';
+  }
 }

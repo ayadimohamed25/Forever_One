@@ -629,4 +629,14 @@
   ,"moreShort": "More"
   ,"toReorder": "To reorder"
   ,"lowOrOutOfStock": "Low or out of stock"
+  ,"tabStock": "Stock"
+  ,"yesterday": "Yesterday"
+  ,"earlier": "Earlier"
+  ,"thisWeek": "This week"
+  ,"sortBy": "Sort by"
+  ,"callAction": "Call"
+  ,"emailAction": "Email"
+  ,"messageAction": "Message"
+  ,"stockLeft": "{count} left"
+  ,"@stockLeft": {"placeholders":{"count":{"type":"String"}}}
 }

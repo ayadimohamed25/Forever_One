@@ -11,6 +11,7 @@ import '../../../../shared/widgets/app_data_table.dart';
 import '../../../../shared/widgets/app_motion.dart';
 import '../../../../shared/widgets/app_side_panel.dart';
 import '../../../../shared/widgets/app_widgets.dart';
+import '../../../../shared/widgets/app_pressable.dart';
 import '../../../finance/presentation/pages/payment_page.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../../domain/entities/customer_sale_entity.dart';
@@ -132,7 +133,7 @@ class _CustomerDetailBodyState extends ConsumerState<CustomerDetailBody> {
     final sections = <Widget>[
       // ── Identity ──
       Row(children: [
-        AppAvatar(c.name, size: 48),
+        AppAvatar(c.name, size: 48, square: true),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -154,6 +155,28 @@ class _CustomerDetailBodyState extends ConsumerState<CustomerDetailBody> {
       ]),
       const SizedBox(height: 14),
       // ── Actions ──
+      // Phones: a row of large round actions, as on the mobile board (the
+      // thumb reaches them, and Message opens the SMS app directly).
+      if (!widget.compact && MediaQuery.sizeOf(context).width < 840)
+        Row(children: [
+          for (final (icon, label, onTap, primary) in [
+            if ((c.phone ?? '').isNotEmpty) ...[
+              (Icons.call_outlined, l10n.callAction,
+                  () => _launch(Uri(scheme: 'tel', path: c.phone)), false),
+              (Icons.sms_outlined, l10n.messageAction,
+                  () => _launch(Uri(scheme: 'sms', path: c.phone)), false),
+            ],
+            if ((c.email ?? '').isNotEmpty)
+              (Icons.mail_outline, l10n.emailAction,
+                  () => _launch(Uri(scheme: 'mailto', path: c.email)), false),
+            (Icons.edit_outlined, l10n.edit, () => _edit(c), true),
+          ])
+            Expanded(
+              child: _RoundAction(
+                  icon: icon, label: label, onTap: onTap, primary: primary),
+            ),
+        ])
+      else
       Wrap(spacing: 8, runSpacing: 8, children: [
         FilledButton.icon(
           onPressed: () => _edit(c),
@@ -293,6 +316,53 @@ class _CustomerDetailBodyState extends ConsumerState<CustomerDetailBody> {
         for (var i = 0; i < sections.length; i++)
           AppEntrance(index: i, stagger: AppMotion.stagger, child: sections[i]),
       ],
+    );
+  }
+}
+
+/// Phones: a 52px rounded square with its label under it (Call, Message…).
+class _RoundAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool primary;
+
+  const _RoundAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.primary = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPressable(
+      onTap: onTap,
+      semanticLabel: label,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: primary ? AppColors.primary : AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: primary ? AppColors.primary : AppColors.border),
+            ),
+            child: Icon(icon,
+                size: 21, color: primary ? Colors.white : AppColors.primary),
+          ),
+          const SizedBox(height: 6),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTheme.font(
+                  size: 12, weight: FontWeight.w500, color: AppColors.textLabel)),
+        ]),
+      ),
     );
   }
 }

@@ -1826,4 +1826,33 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get lowOrOutOfStock => 'Faible ou en rupture';
+
+  @override
+  String get tabStock => 'Stock';
+
+  @override
+  String get yesterday => 'Hier';
+
+  @override
+  String get earlier => 'Plus tôt';
+
+  @override
+  String get thisWeek => 'Cette semaine';
+
+  @override
+  String get sortBy => 'Trier par';
+
+  @override
+  String get callAction => 'Appeler';
+
+  @override
+  String get emailAction => 'E-mail';
+
+  @override
+  String get messageAction => 'Message';
+
+  @override
+  String stockLeft(String count) {
+    return '$count restants';
+  }
 }

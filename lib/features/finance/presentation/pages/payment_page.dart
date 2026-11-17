@@ -340,9 +340,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                             amountController.clear();
                           },
                           icon: const Icon(Icons.check),
+                          // No colour here: the button's white foreground
+                          // applies (a fixed colour made it dark on indigo).
                           label: Text(
                             l10n.recordThePayment,
-                            style: AppTheme.font(size: 15),
+                            style: AppTheme.font(
+                                size: 15, weight: FontWeight.w600)
+                                .copyWith(color: Colors.white),
                           ),
                         ),
                       ),
