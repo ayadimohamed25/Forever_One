@@ -85,8 +85,14 @@ void main() {
     // Only permitted items are listed.
     expect(find.text('Users'), findsOneWidget);
     expect(find.text('Audit log'), findsNothing);
+    // One group at a time: opening Administration closed Inventory.
+    expect(find.text('Categories'), findsNothing);
 
-    // Closing the page's own group works too.
+    // Reopening Inventory closes Administration; closing it works too.
+    await tester.tap(find.text('Inventory'));
+    await tester.pumpAndSettle();
+    expect(find.text('Categories'), findsOneWidget);
+    expect(find.text('Users'), findsNothing);
     await tester.tap(find.text('Inventory'));
     await tester.pumpAndSettle();
     expect(find.text('Categories'), findsNothing);
