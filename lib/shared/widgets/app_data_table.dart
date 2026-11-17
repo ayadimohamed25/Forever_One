@@ -287,7 +287,7 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
   /// for the tab counts.
   Iterable<T> _searched(bool wide) {
     Iterable<T> rows = widget.rows;
-    if (wide && _query.trim().isNotEmpty && widget.searchText != null) {
+    if (_query.trim().isNotEmpty && widget.searchText != null) {
       final q = _query.trim().toLowerCase();
       rows = rows.where((r) => widget.searchText!(r).toLowerCase().contains(q));
     }
@@ -660,6 +660,16 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
                 widget.onAdd != null);
 
         final items = <Widget>[
+          // Phones: the search field right under the title (the web has it
+          // in the toolbar). Same local filter on both.
+          if (!wide && widget.searchText != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _PhoneSearch(
+                hint: widget.searchHint ?? l10n.search,
+                onChanged: (v) => setState(() => _query = v),
+              ),
+            ),
           ...widget.header,
           if (widget.summary.isNotEmpty)
             Padding(
@@ -1040,6 +1050,73 @@ class _TabChips extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Phones: a filled search field (grey, rounded) with a clear button.
+class _PhoneSearch extends StatefulWidget {
+  final String hint;
+  final ValueChanged<String> onChanged;
+  const _PhoneSearch({required this.hint, required this.onChanged});
+
+  @override
+  State<_PhoneSearch> createState() => _PhoneSearchState();
+}
+
+class _PhoneSearchState extends State<_PhoneSearch> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return TextField(
+      controller: _controller,
+      onChanged: (v) {
+        setState(() {});
+        widget.onChanged(v);
+      },
+      textInputAction: TextInputAction.search,
+      style: AppTheme.font(size: 15),
+      decoration: InputDecoration(
+        hintText: widget.hint,
+        hintStyle: AppTheme.font(size: 15, color: AppColors.iconMuted),
+        filled: true,
+        fillColor: const Color(0xFFECEEF2),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        prefixIcon:
+            const Icon(Icons.search, size: 20, color: AppColors.iconMuted),
+        suffixIcon: _controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: l10n.clearSearch,
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () {
+                  _controller.clear();
+                  setState(() {});
+                  widget.onChanged('');
+                },
+              ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
       ),
     );
   }

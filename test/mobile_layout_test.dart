@@ -33,6 +33,8 @@ Future<void> _pump(WidgetTester tester, double width) async {
           phoneGroup: (r) => phoneDayGroup(
               AppLocalizations.of(context)!, 'en', r.at, _now),
           phoneLeading: (r) => AppAvatar(r.name, size: 38, square: true),
+          searchText: (r) => r.name,
+          searchHint: 'Search sales',
           columns: [
             AppTableColumn(
               label: 'Customer',
@@ -99,6 +101,25 @@ void main() {
     await _pump(tester, 1400);
     expect(find.text('TODAY'), findsNothing);
     expect(find.byType(AppAvatar), findsNothing); // phone-only leading
+  });
+
+  testWidgets('phones: the search field under the title filters the list',
+      (tester) async {
+    await _pump(tester, 412);
+    final field = find.byType(TextField);
+    expect(field, findsOneWidget);
+    // It is the first thing in the list, above the first day group.
+    expect(tester.getTopLeft(field).dy,
+        lessThan(tester.getTopLeft(find.text('TODAY')).dy));
+
+    await tester.enterText(field, 'djerba');
+    await tester.pumpAndSettle();
+    expect(find.byType(AppAvatar), findsOneWidget);
+    expect(find.text(keepUnitsTogether('Restaurant El Medina')), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.close)); // clear
+    await tester.pumpAndSettle();
+    expect(find.byType(AppAvatar), findsNWidgets(3));
   });
 
   test('bottom bar order follows the mobile board', () {

@@ -232,12 +232,6 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               icon: Icons.people_outline,
               color: AppColors.finance,
               actions: [
-                AppHeaderAction(
-                  icon: Icons.search,
-                  phoneOnly: true,
-                  tooltip: l10n.search,
-                  onTap: () => setState(() => searchVisible = true),
-                ),
               ],
             ),
       body: state.isLoading

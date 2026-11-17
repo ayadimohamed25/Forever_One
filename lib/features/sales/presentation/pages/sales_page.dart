@@ -339,12 +339,6 @@ class _SalesPageState extends ConsumerState<SalesPage> {
               icon: Icons.point_of_sale_outlined,
               color: AppColors.sales,
               actions: [
-                AppHeaderAction(
-                  icon: Icons.search,
-                  phoneOnly: true,
-                  tooltip: l10n.search,
-                  onTap: () => setState(() => searchVisible = true),
-                ),
               ],
             ),
       body: state.isLoading

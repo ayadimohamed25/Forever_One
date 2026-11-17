@@ -190,12 +190,6 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
               icon: Icons.warehouse_outlined,
               color: AppColors.stock,
               actions: [
-                AppHeaderAction(
-                  icon: Icons.search,
-                  phoneOnly: true,
-                  tooltip: l10n.search,
-                  onTap: () => setState(() => searchVisible = true),
-                ),
               ],
             ),
       body: state.isLoading

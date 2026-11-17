@@ -278,11 +278,6 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               color: AppColors.primary,
               actions: [
                 AppHeaderAction(
-                  icon: Icons.search_rounded,
-                  tooltip: l10n.search,
-                  onTap: () => setState(() => searchVisible = true),
-                ),
-                AppHeaderAction(
                   icon: Icons.refresh_rounded,
                   tooltip: l10n.refresh,
                   onTap: () => ref.read(userListProvider.notifier).load(),

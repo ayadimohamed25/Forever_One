@@ -355,12 +355,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               color: AppColors.stock,
               actions: [
                 AppHeaderAction(
-                  icon: Icons.search,
-                  phoneOnly: true,
-                  tooltip: l10n.search,
-                  onTap: () => setState(() => searchVisible = true),
-                ),
-                AppHeaderAction(
                   icon: Icons.category_outlined,
                   tooltip: l10n.categories,
                   onTap: _openCategories,
@@ -369,34 +363,6 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
             ),
       body: Column(
         children: [
-          if (categories.isNotEmpty && !searchVisible)
-            SizedBox(
-              height: 50,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                children: [
-                  _categoryChip(
-                    label: l10n.allCategories,
-                    selected: state.categoryFilter == null,
-                    onTap: () => ref
-                        .read(productListProvider.notifier)
-                        .filterByCategory(null),
-                  ),
-                  ...categories.map(
-                    (c) => _categoryChip(
-                      label: c.name,
-                      selected: state.categoryFilter == c.id,
-                      onTap: () => ref
-                          .read(productListProvider.notifier)
-                          .filterByCategory(
-                            state.categoryFilter == c.id ? null : c.id,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           Expanded(
             child: state.isLoading
                 ? AppSkeletonList(semanticLabel: l10n.loading)
@@ -422,6 +388,42 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
                     onRefresh: () =>
                         ref.read(productListProvider.notifier).load(),
                     child: AppDataTable<ProductEntity>(
+                      // Category chips scroll with the list, under the
+                      // search field (phones) and above the figures.
+                      header: [
+                        if (categories.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: SizedBox(
+                              height: 38,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: [
+                                  _categoryChip(
+                                    label: l10n.allCategories,
+                                    selected: state.categoryFilter == null,
+                                    onTap: () => ref
+                                        .read(productListProvider.notifier)
+                                        .filterByCategory(null),
+                                  ),
+                                  ...categories.map(
+                                    (c) => _categoryChip(
+                                      label: c.name,
+                                      selected: state.categoryFilter == c.id,
+                                      onTap: () => ref
+                                          .read(productListProvider.notifier)
+                                          .filterByCategory(
+                                            state.categoryFilter == c.id
+                                                ? null
+                                                : c.id,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                       columns: _columns(l10n),
                       rows: state.products,
                       initialSortColumn: 0,

@@ -92,8 +92,10 @@ void main() {
     final menu = tester.getRect(find.byKey(const Key('menu')).first);
     expect(menu.left - chip.right, lessThanOrEqualTo(24),
         reason: 'no empty gap between the status chip and the menu');
-    // Phone: no toolbar, simple scrolling (no pagination).
-    expect(find.byType(TextField), findsNothing);
+    // Phone: no toolbar, simple scrolling (no pagination); the search field
+    // sits at the top of the list instead.
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('New sale'), findsNothing);
     expect(find.textContaining(' of 57'), findsNothing);
   });
 

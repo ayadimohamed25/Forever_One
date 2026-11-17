@@ -200,12 +200,6 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
               icon: Icons.local_shipping_outlined,
               color: AppColors.purchases,
               actions: [
-                AppHeaderAction(
-                  icon: Icons.search,
-                  phoneOnly: true,
-                  tooltip: l10n.search,
-                  onTap: () => setState(() => searchVisible = true),
-                ),
               ],
             ),
       body: state.isLoading

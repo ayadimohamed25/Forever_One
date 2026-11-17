@@ -178,12 +178,6 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
               icon: Icons.category_outlined,
               color: AppColors.accent,
               actions: [
-                AppHeaderAction(
-                  icon: Icons.search,
-                  phoneOnly: true,
-                  tooltip: l10n.search,
-                  onTap: () => setState(() => searchVisible = true),
-                ),
               ],
             ),
       body: state.isLoading
