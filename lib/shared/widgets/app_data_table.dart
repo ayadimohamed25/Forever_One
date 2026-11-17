@@ -9,6 +9,20 @@ import 'app_motion.dart';
 import 'app_pressable.dart';
 import 'app_shell.dart';
 
+/// Lower case without accents, for sorting text the way people expect
+/// (é, è, ê → e; ç → c; …).
+String foldAccents(String s) {
+  const from = 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿœæ';
+  const to = 'aaaaaaceeeeiiiinooooouuuuyyoa';
+  final lower = s.toLowerCase();
+  final out = StringBuffer();
+  for (final ch in lower.split('')) {
+    final i = from.indexOf(ch);
+    out.write(i < 0 ? ch : to[i]);
+  }
+  return out.toString();
+}
+
 /// The phone list label for a date: Today, Yesterday, This week, This month,
 /// then the month ("October 2026"). Rows must be sorted newest first.
 String phoneDayGroup(AppLocalizations l10n, String locale, DateTime date,
@@ -313,7 +327,12 @@ class _AppDataTableState<T> extends State<AppDataTable<T>> {
       final key = widget.columns[col].sortValue;
       if (key != null) {
         list.sort((a, b) {
-          final r = Comparable.compare(key(a), key(b));
+          final ka = key(a), kb = key(b);
+          // Text sorts like a dictionary: "Épicerie" next to "Emballage",
+          // not after "Produits".
+          final r = ka is String && kb is String
+              ? foldAccents(ka).compareTo(foldAccents(kb))
+              : Comparable.compare(ka, kb);
           return _ascending ? r : -r;
         });
       }
@@ -1261,7 +1280,13 @@ class _Toolbar<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.gap),
-      child: Wrap(
+      // Search, filters and the count on the left; the page's main action
+      // at the right edge, where web apps put it.
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Wrap(
         spacing: 8,
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -1327,13 +1352,18 @@ class _Toolbar<T> extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(countText, style: AppTheme.label),
           ),
-          if (onAdd != null && addLabel != null)
+        ],
+            ),
+          ),
+          if (onAdd != null && addLabel != null) ...[
+            const SizedBox(width: 12),
             FilledButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add, size: 18),
               label: Text(addLabel!),
               style: FilledButton.styleFrom(minimumSize: const Size(88, 40)),
             ),
+          ],
         ],
       ),
     );

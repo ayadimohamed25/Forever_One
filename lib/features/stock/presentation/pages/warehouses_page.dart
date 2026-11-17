@@ -162,13 +162,10 @@ class _WarehousesPageState extends ConsumerState<WarehousesPage> {
       }
     });
 
-    final totalValue = state.warehouses.fold<double>(
-      0,
-      (sum, w) => sum + w.stockValue,
-    );
     final subtitle = state.warehouses.isEmpty
         ? null
-        : '${state.warehouses.length} · ${formatDT(totalValue)}';
+        // A count, like every other list header (the value is in the table).
+        : '${state.warehouses.length} ${l10n.warehouses.toLowerCase()}';
 
     return Scaffold(
       backgroundColor: AppColors.canvas,

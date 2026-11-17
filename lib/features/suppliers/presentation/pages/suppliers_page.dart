@@ -135,10 +135,14 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
     AppTableColumn(
       label: l10n.amountOwed,
       numeric: true,
-      measure: (s) => formatDT(s.balance > 0 ? s.balance : 0),
+      // Settled: a dash, like Customers, so the eye goes to what is owed.
+      measure: (s) => s.balance > 0.009 ? formatDT(s.balance) : '—',
       sortValue: (s) => s.balance,
-      cell: (s) =>
-          AppCellText(formatDT(s.balance > 0 ? s.balance : 0), numeric: true),
+      cell: (s) => AppCellText(
+        s.balance > 0.009 ? formatDT(s.balance) : '—',
+        numeric: true,
+        color: s.balance > 0.009 ? null : AppColors.textSecondary,
+      ),
     ),
     AppTableColumn(
       label: l10n.status,

@@ -730,7 +730,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final owed = <String, (double, DateTime)>{};
     if (_can(user, 'view_purchases')) {
       for (final p in ref.watch(purchaseListProvider).purchases) {
-        if (p.isFullyPaid || p.status == 'cancelled') continue;
+        // Delivered bills only: an order still awaiting delivery is not
+        // the first thing to pay.
+        if (p.isFullyPaid || p.status == 'cancelled' || p.isPending) continue;
         final was = owed[p.supplierName];
         owed[p.supplierName] = (
           (was?.$1 ?? 0) + p.balance,

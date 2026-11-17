@@ -62,8 +62,18 @@ class NavGroupsNotifier extends StateNotifier<Map<String, bool>> {
   /// user hasn't closed it.
   bool isOpen(String group, {required bool active}) => state[group] ?? active;
 
-  Future<void> toggle(String group, {required bool active}) async {
-    state = {...state, group: !isOpen(group, active: active)};
+  /// Opens or closes [group]. Opening one closes the others in [all]
+  /// (accordion), so the list always fits above the account block.
+  Future<void> toggle(String group,
+      {required bool active, List<String> all = const []}) async {
+    final open = !isOpen(group, active: active);
+    state = {
+      ...state,
+      if (open)
+        for (final other in all)
+          if (other != group) other: false,
+      group: open,
+    };
     try {
       await _storage.write(
         key: _key,

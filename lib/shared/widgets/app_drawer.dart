@@ -174,7 +174,9 @@ class AppNavList extends ConsumerWidget {
           label: navGroupLabel(g, l10n),
           open: open,
           active: active,
-          onTap: () => groups.toggle(g.name, active: active),
+          onTap: () => groups.toggle(g.name,
+              active: active,
+              all: [for (final x in _collapsibleGroups) x.name]),
         ));
         children.add(_GroupBody(
           open: open,

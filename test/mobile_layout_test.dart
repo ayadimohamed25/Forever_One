@@ -122,6 +122,13 @@ void main() {
     expect(find.byType(AppAvatar), findsNWidgets(3));
   });
 
+  test('text sorts ignore accents and case', () {
+    expect(foldAccents('Épicerie sèche'), 'epicerie seche');
+    final names = ['Produits frais', 'Épicerie sèche', 'Emballage']
+      ..sort((a, b) => foldAccents(a).compareTo(foldAccents(b)));
+    expect(names, ['Emballage', 'Épicerie sèche', 'Produits frais']);
+  });
+
   test('bottom bar order follows the mobile board', () {
     expect(tabRoutes,
         ['/dashboard', '/sales', '/products', '/customers', moreRoute]);

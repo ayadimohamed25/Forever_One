@@ -182,13 +182,17 @@ class _StockMovementPageState extends ConsumerState<StockMovementPage> {
               style: AppTheme.font(size: 16, weight: FontWeight.w600),
             ),
           ),
-          GridView.count(
-            crossAxisCount: 2,
+          // Fixed 64px tiles: an aspect ratio made them 135px tall on wide
+          // screens, mostly empty.
+          GridView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 2.5,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              mainAxisExtent: 64,
+            ),
             children: [
               for (final e in types.entries) _typeCard(e.key, e.value),
             ],
