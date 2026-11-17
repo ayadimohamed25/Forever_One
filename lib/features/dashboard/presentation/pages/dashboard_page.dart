@@ -964,8 +964,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         compact: true,
         dot: AppColors.success,
         label: l10n.cashPosition,
-        value: '${net >= 0 ? '' : '−'}${formatDT(net.abs())}',
-        valueColor: net >= 0 ? null : AppColors.dangerText,
+        // Signed and coloured like the web cash card: +green, −red.
+        value: '${net >= 0 ? '+' : '−'}${formatDT(net.abs())}',
+        valueColor: net >= 0 ? AppColors.successText : AppColors.dangerText,
         sub: l10n.netPosition,
       ),
       _kpi(

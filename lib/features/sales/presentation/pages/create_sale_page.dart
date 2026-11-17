@@ -169,7 +169,14 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          // Same 720px column as the form above it on wide windows, so the
+          // total and the button line up with the fields.
+          padding: EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: ((MediaQuery.sizeOf(context).width - 720) / 2)
+                    .clamp(0, double.infinity) +
+                16,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
