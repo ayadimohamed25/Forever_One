@@ -126,6 +126,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       if (_can(user, 'scan_documents'))
         (Icons.document_scanner_outlined, l10n.scanShort,
             () => context.push('/scan')),
+      // Categories one tap from the overview (the web has them in the
+      // sidebar's Inventory group).
+      if (_can(user, 'view_products'))
+        (Icons.category_outlined, l10n.categories,
+            () => context.push('/categories')),
     ];
     if (items.isEmpty) return const SizedBox.shrink();
     return PopupMenuButton<VoidCallback>(
@@ -370,6 +375,68 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ),
     ];
     return items;
+  }
+
+  // ── Alerts ──
+
+  /// The alert strip at the top of the overview: how many alerts, split by
+  /// kind (overdue payments, out of stock, low stock), with a way to see
+  /// them all. Red when one is critical, amber otherwise; hidden when clear.
+  Widget? _alertStrip(NotificationState n, AppLocalizations l10n) {
+    if (n.count == 0) return null;
+    int count(NotificationType t) => n.items.where((i) => i.type == t).length;
+    final overdue = count(NotificationType.overduePayment);
+    final out = count(NotificationType.outOfStock);
+    final low = count(NotificationType.lowStock);
+    final critical = n.items.any((i) => i.isCritical);
+    final fg = critical ? AppColors.dangerText : AppColors.warningText;
+    final details = [
+      if (overdue > 0) l10n.alertsOverdue(overdue),
+      if (out > 0) l10n.alertsOutOfStock(out),
+      if (low > 0) l10n.alertsLowStock(low),
+    ].join(' · ');
+    return AppPressable(
+      onTap: () async {
+        await openNotifications(context);
+        if (mounted) _reload();
+      },
+      semanticLabel: '${l10n.alertsBanner(n.count)}. $details',
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      color: critical ? AppColors.dangerSoft : AppColors.warningSoft,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: fg.withValues(alpha: 0.25)),
+        ),
+        child: Row(children: [
+          Icon(critical ? Icons.error_outline : Icons.warning_amber_rounded,
+              size: 20, color: fg),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                    text: l10n.alertsBanner(n.count),
+                    style: AppTheme.font(
+                        size: 14, weight: FontWeight.w600, color: fg)),
+                if (details.isNotEmpty)
+                  TextSpan(
+                      text: '  ·  $details',
+                      style: AppTheme.font(size: 13, color: fg)),
+              ]),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(l10n.seeAll,
+              style: AppTheme.font(
+                  size: 13, weight: FontWeight.w600, color: fg)),
+          Icon(Icons.chevron_right, size: 18, color: fg),
+        ]),
+      ),
+    );
   }
 
   // ── Revenue hero ──
@@ -835,9 +902,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   List<Widget> _kpis(DashboardSummaryEntity s, UserEntity? user,
       AppLocalizations l10n) {
     final k = s.kpis;
-    final overdue =
-        s.alerts.where((a) => a.type == AlertType.overduePayment).toList();
-    final overdueSum = overdue.fold<double>(0, (t, a) => t + a.value);
+    final (overdue, overdueSum) = _overdue(s);
     void go(String route, String permission) {
       if (_can(user, permission)) context.go(route);
     }
@@ -855,8 +920,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       _kpi(
         dot: AppColors.danger,
         label: l10n.overdue,
-        value: '${overdue.length}',
-        sub: overdue.isEmpty
+        value: '$overdue',
+        sub: overdue == 0
             ? l10n.overdueInvoices(0)
             : formatDT(overdueSum),
         onTap: () => go('/sales', 'view_sales'),
@@ -886,9 +951,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   List<Widget> _phoneKpis(DashboardSummaryEntity s, UserEntity? user,
       AppLocalizations l10n) {
     final k = s.kpis;
-    final overdue =
-        s.alerts.where((a) => a.type == AlertType.overduePayment).toList();
-    final overdueSum = overdue.fold<double>(0, (t, a) => t + a.value);
+    final (overdue, overdueSum) = _overdue(s);
     final net = k.receivables - k.payables;
     void go(String route, String permission) {
       if (_can(user, permission)) context.go(route);
@@ -909,8 +972,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         label: l10n.overdue,
         value: formatDT(overdueSum),
         // Zero is not an alarm: neutral, like the summary strips.
-        valueColor: overdue.isEmpty ? null : AppColors.dangerText,
-        sub: l10n.overdueInvoices(overdue.length),
+        valueColor: overdue == 0 ? null : AppColors.dangerText,
+        sub: l10n.overdueInvoices(overdue),
         onTap: () => go('/sales', 'view_sales'),
       ),
       _kpi(
@@ -931,6 +994,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         onTap: () => go('/products', 'view_products'),
       ),
     ];
+  }
+
+  /// Overdue invoices: the count and what is still owed on them. The
+  /// notifications list has every overdue invoice; the summary's alert list
+  /// stops at the 5 most overdue, so it is only the fallback (it made the
+  /// card say 5 while the alerts said 8).
+  (int, double) _overdue(DashboardSummaryEntity s) {
+    final all = ref
+        .watch(notificationProvider)
+        .items
+        .where((i) => i.type == NotificationType.overduePayment)
+        .map((i) => i.value)
+        .toList();
+    final values = all.isNotEmpty
+        ? all
+        : [
+            for (final a in s.alerts)
+              if (a.type == AlertType.overduePayment) a.value,
+          ];
+    return (values.length, values.fold<double>(0, (t, v) => t + v));
   }
 
   // ── Lists ──
@@ -1186,7 +1269,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               : _phoneHero(state, summary, l10n);
           final cash = _cash(summary.kpis, l10n);
 
+          final alerts = _alertStrip(notifications, l10n);
           final sections = <Widget>[
+            // Alerts first: the owner sees what needs doing before anything
+            // else.
+            ?alerts,
             _header(user, reportState, l10n, wide),
             if (wide)
               IntrinsicHeight(
