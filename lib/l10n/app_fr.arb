@@ -601,4 +601,7 @@
   ,"emailAction": "E-mail"
   ,"messageAction": "Message"
   ,"stockLeft": "{count} restants"
+  ,"owesYouMost": "Vous doivent le plus"
+  ,"oldestSupplierBills": "Factures fournisseurs les plus anciennes"
+  ,"suppliersToPayFirst": "Fournisseurs à payer en premier"
 }

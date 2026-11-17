@@ -1847,4 +1847,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String stockLeft(String count) {
     return '$count left';
   }
+
+  @override
+  String get owesYouMost => 'Owe you the most';
+
+  @override
+  String get oldestSupplierBills => 'Oldest supplier bills';
+
+  @override
+  String get suppliersToPayFirst => 'Suppliers to pay first';
 }

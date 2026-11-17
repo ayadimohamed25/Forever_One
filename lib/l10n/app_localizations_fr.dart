@@ -1855,4 +1855,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String stockLeft(String count) {
     return '$count restants';
   }
+
+  @override
+  String get owesYouMost => 'Vous doivent le plus';
+
+  @override
+  String get oldestSupplierBills => 'Factures fournisseurs les plus anciennes';
+
+  @override
+  String get suppliersToPayFirst => 'Fournisseurs à payer en premier';
 }

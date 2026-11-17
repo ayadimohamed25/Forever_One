@@ -639,4 +639,7 @@
   ,"messageAction": "Message"
   ,"stockLeft": "{count} left"
   ,"@stockLeft": {"placeholders":{"count":{"type":"String"}}}
+  ,"owesYouMost": "Owe you the most"
+  ,"oldestSupplierBills": "Oldest supplier bills"
+  ,"suppliersToPayFirst": "Suppliers to pay first"
 }

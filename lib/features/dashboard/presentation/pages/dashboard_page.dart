@@ -16,7 +16,10 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/pages/notifications_page.dart';
 import '../../../notifications/presentation/providers/notification_provider.dart';
+import '../../../customers/presentation/providers/customer_provider.dart';
 import '../../../purchases/presentation/pages/create_purchase_page.dart';
+import '../../../purchases/presentation/providers/purchase_provider.dart';
+import '../../../../shared/widgets/app_data_table.dart' show AppAvatar;
 import '../../../sales/presentation/pages/create_sale_page.dart';
 import '../../../stock/presentation/providers/product_provider.dart';
 import '../../../stock/presentation/widgets/product_form_route.dart';
@@ -54,9 +57,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Future<void> _reload() async {
+    final user = ref.read(authNotifierProvider).user;
     await Future.wait([
       ref.read(dashboardProvider.notifier).load(),
       ref.read(notificationProvider.notifier).load(),
+      // The cash card (wide screens) names who owes the most and which
+      // supplier bills are oldest; only for users who may see those lists.
+      if (_can(user, 'view_customers'))
+        ref.read(customerListProvider.notifier).load(),
+      if (_can(user, 'view_purchases'))
+        ref.read(purchaseListProvider.notifier).load(),
     ]);
   }
 
@@ -272,34 +282,48 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ],
       );
     }
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      crossAxisAlignment: WrapCrossAlignment.end,
-      alignment: WrapAlignment.spaceBetween,
+    // Wide: every action on one row under the greeting: New sale first
+    // (primary), then the other shortcuts, and the PDF report at the end.
+    final download = OutlinedButton.icon(
+      onPressed: report.isLoading
+          ? null
+          // The app's own language setting decides the PDF language.
+          : _downloadReport,
+      icon: report.isLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          : const Icon(Icons.download_outlined, size: 18),
+      label: Text(l10n.downloadPdfReport),
+    );
+    final actions = [
+      if (_can(user, 'manage_sales'))
+        FilledButton.icon(
+          onPressed: _newSale,
+          icon: const Icon(Icons.add, size: 18),
+          label: Text(l10n.newSale),
+        ),
+      ..._shortcuts(user, l10n),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         greeting,
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          OutlinedButton.icon(
-            onPressed: report.isLoading
-                ? null
-                // The app's own language setting decides the PDF language.
-                : _downloadReport,
-            icon: report.isLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.download_outlined, size: 18),
-            label: Text(l10n.downloadPdfReport),
-          ),
-          if (_can(user, 'manage_sales'))
-            FilledButton.icon(
-              onPressed: _newSale,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(l10n.newSale),
-            ),
-        ]),
+        const SizedBox(height: 16),
+        LayoutBuilder(
+          builder: (context, box) => box.maxWidth >= 860
+              ? Row(children: [
+                  for (final a in actions) ...[a, const SizedBox(width: 8)],
+                  const Spacer(),
+                  download,
+                ])
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [...actions, download],
+                ),
+        ),
       ],
     );
   }
@@ -312,7 +336,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   /// The other shortcuts (purchase, product, scan), as quiet buttons.
-  Widget _shortcuts(UserEntity? user, AppLocalizations l10n) {
+  List<Widget> _shortcuts(UserEntity? user, AppLocalizations l10n) {
     final nav = Navigator.of(context, rootNavigator: true);
     final items = <Widget>[
       if (_can(user, 'manage_purchases'))
@@ -345,8 +369,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           label: Text(l10n.scanShort),
         ),
     ];
-    if (items.isEmpty) return const SizedBox.shrink();
-    return Wrap(spacing: 8, runSpacing: 8, children: items);
+    return items;
   }
 
   // ── Revenue hero ──
@@ -414,7 +437,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   /// The loading bar, the retry line and the chart: shared by both heroes.
   List<Widget> _chartBlock(DashboardState state, DashboardSummaryEntity s,
-      AppLocalizations l10n) => [
+      AppLocalizations l10n, {double height = 200}) => [
         SizedBox(
           height: 2,
           child: state.trendLoading
@@ -446,6 +469,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           current: s.salesTrend,
           previous: s.salesTrendPrevious,
           trendDays: s.trendDays,
+          height: height,
         ),
       ];
 
@@ -559,13 +583,137 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
           const SizedBox(height: 10),
           // A thin bar while another period loads; the old chart stays.
-          ..._chartBlock(state, s, l10n),
+          // Taller on wide screens so the card lines up with the cash card
+          // beside it (its customer and supplier lists).
+          ..._chartBlock(state, s, l10n, height: 320),
         ],
       ),
     );
   }
 
   // ── Cash ──
+
+  /// One name + amount line inside the cash card.
+  Widget _cashRow({
+    required Widget leading,
+    required String name,
+    String? sub,
+    required double amount,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        leading,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.font(size: 13, weight: FontWeight.w500)),
+              if (sub != null)
+                Text(sub,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTheme.font(
+                        size: 12, color: AppColors.textSecondary)),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(formatDT(amount),
+            style: AppTheme.font(
+                size: 13,
+                weight: FontWeight.w600,
+                tabularFigures: true,
+                color: color)),
+      ]),
+    );
+    if (onTap == null) return row;
+    return AppPressable(
+      onTap: onTap,
+      semanticLabel: '$name ${formatDT(amount)}',
+      borderRadius: BorderRadius.circular(8),
+      hoverColor: AppColors.surfaceAlt,
+      child: row,
+    );
+  }
+
+  /// Wide screens: under the net position, the 3 customers who owe the most
+  /// and the 2 oldest unpaid supplier bills, so the card has no empty space
+  /// and says who is behind the figures.
+  List<Widget> _cashDetails(AppLocalizations l10n) {
+    final user = ref.watch(authNotifierProvider.select((s) => s.user));
+    final debtors = _can(user, 'view_customers')
+        ? (ref
+              .watch(customerListProvider)
+              .customers
+              .where((c) => c.owesMoney)
+              .toList()
+            ..sort((a, b) => b.balance.compareTo(a.balance)))
+            .take(3)
+            .toList()
+        : const [];
+    // Per supplier: what is still owed, and the date of the oldest unpaid
+    // bill (the one to settle first). Two suppliers, oldest first.
+    final owed = <String, (double, DateTime)>{};
+    if (_can(user, 'view_purchases')) {
+      for (final p in ref.watch(purchaseListProvider).purchases) {
+        if (p.isFullyPaid || p.status == 'cancelled') continue;
+        final was = owed[p.supplierName];
+        owed[p.supplierName] = (
+          (was?.$1 ?? 0) + p.balance,
+          was == null || p.createdAt.isBefore(was.$2) ? p.createdAt : was.$2,
+        );
+      }
+    }
+    final bills = (owed.entries.toList()
+          ..sort((a, b) => a.value.$2.compareTo(b.value.$2)))
+        .take(2)
+        .toList();
+    Widget label(String text) => Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 2),
+          child: Text(text.toUpperCase(),
+              style: AppTheme.font(
+                  size: 11,
+                  weight: FontWeight.w600,
+                  color: AppColors.iconMuted,
+                  letterSpacing: 0.5)),
+        );
+    return [
+      if (debtors.isNotEmpty) ...[
+        const Divider(height: 24),
+        label(l10n.owesYouMost),
+        for (final c in debtors)
+          _cashRow(
+            leading: AppAvatar(c.name, size: 28, square: true),
+            name: c.name,
+            amount: c.balance,
+            color: c.isOverCreditLimit
+                ? AppColors.dangerText
+                : AppColors.warningText,
+            onTap: () => context.go('/customers'),
+          ),
+      ],
+      if (bills.isNotEmpty) ...[
+        const Divider(height: 24),
+        label(l10n.suppliersToPayFirst),
+        for (final b in bills)
+          _cashRow(
+            leading: AppAvatar(b.key, size: 28, square: true),
+            name: b.key,
+            sub: l10n.issuedOn(formatDate(b.value.$2)),
+            amount: b.value.$1,
+            color: AppColors.textPrimary,
+            onTap: () => context.go('/purchases'),
+          ),
+      ],
+    ];
+  }
 
   Widget _cash(DashboardKpis k, AppLocalizations l10n) {
     final maxV = [k.receivables, k.payables, 1.0]
@@ -610,6 +758,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         ? AppColors.successText
                         : AppColors.dangerText)),
           ]),
+          ..._cashDetails(l10n),
         ],
       ),
     );
@@ -1039,7 +1188,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
           final sections = <Widget>[
             _header(user, reportState, l10n, wide),
-            if (wide) _shortcuts(user, l10n),
             if (wide)
               IntrinsicHeight(
                 child: Row(

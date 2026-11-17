@@ -3445,6 +3445,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} left'**
   String stockLeft(String count);
+
+  /// No description provided for @owesYouMost.
+  ///
+  /// In en, this message translates to:
+  /// **'Owe you the most'**
+  String get owesYouMost;
+
+  /// No description provided for @oldestSupplierBills.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest supplier bills'**
+  String get oldestSupplierBills;
+
+  /// No description provided for @suppliersToPayFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers to pay first'**
+  String get suppliersToPayFirst;
 }
 
 class _AppLocalizationsDelegate
