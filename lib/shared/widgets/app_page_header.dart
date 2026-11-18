@@ -59,10 +59,14 @@ class AppPageHeader extends StatelessWidget implements PreferredSizeWidget {
       return Container(
         color: AppColors.canvas,
         padding: EdgeInsets.fromLTRB(
-            16, MediaQuery.of(context).padding.top + 12, 8, 6),
+            4, MediaQuery.of(context).padding.top + 12, 8, 6),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // The full navigation (same groups as the web sidebar), on top
+            // of the bottom bar.
+            AppMenuButton(tooltip: l10n.openMenu),
+            const SizedBox(width: 4),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

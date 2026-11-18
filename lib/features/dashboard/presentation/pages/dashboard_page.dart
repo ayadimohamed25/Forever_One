@@ -265,6 +265,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // ☰ opens the full navigation, like the web sidebar.
+          Transform.translate(
+            offset: const Offset(-8, 0),
+            child: AppMenuButton(tooltip: l10n.openMenu),
+          ),
           Expanded(child: greeting),
           if (_can(user, 'use_ai')) ...[
             _squareButton(Icons.auto_awesome_outlined, l10n.askAi,

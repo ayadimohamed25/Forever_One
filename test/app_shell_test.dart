@@ -31,7 +31,8 @@ class _SignedIn extends AuthNotifier {
   }
 }
 
-Future<void> _pumpShell(WidgetTester tester, double width) async {
+Future<void> _pumpShell(WidgetTester tester, double width,
+    {bool tabRoot = false}) async {
   tester.view.physicalSize = Size(width, 900);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -48,13 +49,16 @@ Future<void> _pumpShell(WidgetTester tester, double width) async {
         locale: const Locale('en'),
         home: AppShell(
           location: '/products',
-          child: Scaffold(
-            appBar: const AppPageHeader(
-              title: 'Products',
-              icon: Icons.inventory_2_outlined,
-              color: AppColors.stock,
+          child: AppTabRootScope(
+            active: tabRoot,
+            child: Scaffold(
+              appBar: const AppPageHeader(
+                title: 'Products',
+                icon: Icons.inventory_2_outlined,
+                color: AppColors.stock,
+              ),
+              body: const SizedBox.expand(),
             ),
-            body: const SizedBox.expand(),
           ),
         ),
       ),
@@ -64,6 +68,25 @@ Future<void> _pumpShell(WidgetTester tester, double width) async {
 }
 
 void main() {
+  testWidgets('phone tab screens (large title) keep the menu button; the '
+      'drawer shows the user on top and logout at the bottom', (tester) async {
+    await _pumpShell(tester, 412, tabRoot: true);
+    final menu = find.byTooltip('Open menu');
+    expect(menu, findsOneWidget);
+    // The button sits left of the large title.
+    expect(tester.getCenter(menu).dx,
+        lessThan(tester.getTopLeft(find.text('Products')).dx));
+
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    final user = tester.getTopLeft(find.text('Amira Admin')).dy;
+    final overview = tester.getTopLeft(find.text('Overview')).dy;
+    final logout = tester.getTopLeft(find.text('Logout')).dy;
+    expect(user, lessThan(overview));
+    expect(logout, greaterThan(overview));
+    expect(find.text('Language'), findsOneWidget);
+  });
+
   testWidgets('phones get a menu button and a drawer, no sidebar',
       (tester) async {
     await _pumpShell(tester, 400);

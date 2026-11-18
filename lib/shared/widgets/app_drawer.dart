@@ -479,8 +479,7 @@ class _Brand extends ConsumerWidget {
 /// sign-out, at the foot of the navigation.
 class _AccountBlock extends ConsumerWidget {
   final bool collapsed;
-  final VoidCallback? onNavigated;
-  const _AccountBlock({this.collapsed = false, this.onNavigated});
+  const _AccountBlock({this.collapsed = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -489,7 +488,6 @@ class _AccountBlock extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     void openProfile() {
-      onNavigated?.call();
       context.go('/profile');
     }
 
@@ -654,17 +652,143 @@ class AppDrawer extends StatelessWidget {
       elevation: 0,
       shape: const RoundedRectangleBorder(),
       child: SafeArea(
+        // Phones: who is signed in and for which company at the top, the
+        // same groups as the web sidebar, then language and logout.
         child: Column(
           children: [
-            const _Brand(),
+            _DrawerUser(onNavigated: close),
+            const Divider(height: 1, color: AppColors.sidebarActive),
+            const SizedBox(height: 8),
             Expanded(
               child: AppNavList(location: location, onNavigated: close),
             ),
             const Divider(height: 1, color: AppColors.sidebarActive),
-            _AccountBlock(onNavigated: close),
+            const _DrawerFooter(),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Drawer top: initials, name, role · company; opens the profile.
+class _DrawerUser extends ConsumerWidget {
+  final VoidCallback onNavigated;
+  const _DrawerUser({required this.onNavigated});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final UserEntity? user = ref.watch(authNotifierProvider).user;
+    final detail = [
+      if (user != null) roleLabelFor(user.role, l10n),
+      if ((user?.companyName ?? '').isNotEmpty) user!.companyName,
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+      child: AppPressable(
+        onTap: () {
+          onNavigated();
+          context.go('/profile');
+        },
+        semanticLabel: l10n.openProfile,
+        hoverColor: AppColors.sidebarHover,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(user?.initials ?? '?',
+                  style: AppTheme.heading(size: 15, color: Colors.white)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(user?.displayName ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTheme.font(
+                          size: 15,
+                          weight: FontWeight.w600,
+                          color: Colors.white)),
+                  const SizedBox(height: 2),
+                  Text(detail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTheme.font(
+                          size: 12, color: AppColors.sidebarTextMuted)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right,
+                size: 20, color: AppColors.sidebarTextMuted),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// Drawer bottom: language (EN / FR) and logout.
+class _DrawerFooter extends ConsumerWidget {
+  const _DrawerFooter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = ref.watch(localeProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 10, 12, 12),
+      child: Column(children: [
+        Row(children: [
+          const Icon(Icons.language_outlined,
+              size: 18, color: AppColors.sidebarTextMuted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(l10n.language,
+                style:
+                    AppTheme.font(size: 14, color: AppColors.sidebarText)),
+          ),
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.sidebarHover,
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+            ),
+            child: Row(children: [
+              _LangChip(code: 'en', label: 'EN', current: locale.languageCode),
+              _LangChip(code: 'fr', label: 'FR', current: locale.languageCode),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        AppPressable(
+          onTap: () => confirmLogout(context, ref, l10n),
+          semanticLabel: l10n.logout,
+          hoverColor: AppColors.sidebarHover,
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            height: 44,
+            child: Row(children: [
+              const Icon(Icons.logout_outlined,
+                  size: 18, color: AppColors.sidebarTextMuted),
+              const SizedBox(width: 10),
+              Text(l10n.logout,
+                  style: AppTheme.font(
+                      size: 14, color: AppColors.sidebarText)),
+            ]),
+          ),
+        ),
+      ]),
     );
   }
 }
