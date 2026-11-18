@@ -192,6 +192,10 @@ class AppAddFab extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return FloatingActionButton.extended(
+      // No hero: the tabs keep their pages (and these buttons) alive side by
+      // side, so the shared default tag clashed when a page was pushed
+      // ("multiple heroes that share the same tag").
+      heroTag: null,
       onPressed: onPressed,
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
