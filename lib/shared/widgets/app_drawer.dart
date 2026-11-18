@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/di/locale_provider.dart';
@@ -647,7 +648,10 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     void close() => Navigator.of(context).pop();
-    return Drawer(
+    // Light status bar icons over the navy drawer (dark ones vanished).
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Drawer(
       backgroundColor: AppColors.sidebar,
       elevation: 0,
       shape: const RoundedRectangleBorder(),
@@ -667,6 +671,7 @@ class AppDrawer extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
